@@ -44,14 +44,14 @@ pro visao_cube, nims, unsharp=unsharp, name=name, sdi=sdi, subdir=subdir
     rotoff[x]=sxpar(head, 'ROTOFF')
   endfor
 
-  writefits, 'Ha_'+string(name)+'.fits', Ha_ims
+  writefits, 'Line_'+string(name)+'.fits', Ha_ims
   writefits, 'Cont_'+string(name)+'.fits', Cont_ims
   if keyword_set(sdi) then begin
     writefits, 'SDI_sc'+string(sdi, format='(f05.2)')+'_'+string(name)+'.fits', SDI_ims
     writefits, 'SDI_sc01.00_'+string(name)+'.fits', SDI_ims2
   endif
   if keyword_set(unsharp) then begin
-    writefits, 'Ha_'+string(name)+'_unsharp.fits', Ha_ims_smoot
+    writefits, 'Line_'+string(name)+'_unsharp.fits', Ha_ims_smoot
     writefits, 'Cont_'+string(name)+'_unsharp.fits', Cont_ims_smoot
     if keyword_set(sdi) then begin
       writefits, 'SDI_sc'+string(sdi, format='(f05.2)')+'_'+string(name)+'_unsharp.fits', SDI_ims_smoot

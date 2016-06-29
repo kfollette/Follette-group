@@ -58,7 +58,7 @@ pro find_cens_new, fname, ghost=ghost, fits=fits
   if keyword_set(ghost) then begin
     ;;measured distance from star to ghost
     ghost_offset=[158.,-6.]
-    mask=mkmask(dim1, dim2, 25, cen=[(dim1-1)/2.+ghost_offset[0],(dim2-1)/2.+ghost_offset[1]], /reverse)
+    mkmask, dim1, dim2, mask, 25, cen=[(dim1-1)/2.+ghost_offset[0],(dim2-1)/2.+ghost_offset[1]], /reverse
   endif
 
   ;; loop over images beginning with fname, measuring stellar (and ghost) centroid and peak and writing these into the header

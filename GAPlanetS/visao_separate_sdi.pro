@@ -95,11 +95,11 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, fits=fits, indiv=
 
     if keyword_set(indiv) then begin
       if keyword_set(flat) then begin
-        writefits, './aligned/Line_flat_'+string(i+1, format='(i04)')+'.fits', Line[*,*,j]
-        writefits, './aligned/Cont_flat_'+string(i+1, format='(i04)')+'.fits', Cont[*,*,j]
+        writefits, './aligned/Line_flat_'+string(i+1, format='(i04)')+'.fits', Line[*,*,j], head
+        writefits, './aligned/Cont_flat_'+string(i+1, format='(i04)')+'.fits', Cont[*,*,j], head
       endif else begin
-        writefits, './aligned/Line_'+string(i+1, format='(i04)')+'.fits', Line[*,*,j]
-        writefits, './aligned/Cont_'+string(i+1, format='(i04)')+'.fits', Cont[*,*,j]
+        writefits, './aligned/Line_'+string(i+1, format='(i04)')+'.fits', Line[*,*,j], head
+        writefits, './aligned/Cont_'+string(i+1, format='(i04)')+'.fits', Cont[*,*,j], head
       endelse
     endif
 

@@ -22,7 +22,10 @@ pro center_circlesym, im, xr, yr, rmax, xc, yc, grid, mask=mask
          r = rarr(dim1, dim2, xc=xr[i], yc=yr[j], /pix)
 
          for k=0,rmax do begin
-
+          status = string(i) + ' /' + string(n_elements(xr)) + $
+            string(j) + ' /' + string(n_elements(yr)) + $
+            string(k) + ' /' + string(rmax)
+          statusline, status, 0
             if(n_elements(mask) eq n_elements(im)) then begin
                idx = where( r ge k and r lt k+1 and mask gt 0 )
             endif else begin

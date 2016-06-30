@@ -2,7 +2,7 @@
 ; NAME: visao_reg
 ;
 ; PURPOSE:
-;  separate, register and align all of the raw science images and write into the 'aligned' directory
+;  separate, register and align all of the raw science images and create an image cube
 ;
 ; INPUTS:
 ;  sci_imlist :
@@ -28,7 +28,7 @@
 ;
 ;-
 
-pro visao_reg_new, ref, clip=clip, fwhm=fwhm, sdi=sdi, fits=fits, indiv=indiv, scl=scl
+pro visao_reg_new, ref, clip=clip, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=scl
 
   visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, mag1=mag1
   ;;create aligned directory if doesn't already exist
@@ -51,9 +51,9 @@ pro visao_reg_new, ref, clip=clip, fwhm=fwhm, sdi=sdi, fits=fits, indiv=indiv, s
   center_ref_cont=Cont[*,*,ref-1]
   print, 'regsitering against', sci_imlist[ref-1]
   endif else begin
-    center_ref_line=readfits('./aligned/Line_flat_'+string(ref, format='(i04)')+'.fits')
-    center_ref_cont=readfits('./aligned/Cont_flat_'+string(ref, format='(i04)')+'.fits')
-   print, 'regsitering against', './aligned/Line/Cont_flat_'+string(ref, format='(i04)')+'.fits'
+    center_ref_line=readfits('./indiv/Line_flat_'+string(ref, format='(i04)')+'.fits')
+    center_ref_cont=readfits('./indiv/Cont_flat_'+string(ref, format='(i04)')+'.fits')
+   print, 'regsitering against', './indiv/Line/Cont_flat_'+string(ref, format='(i04)')+'.fits'
   endelse
 
   ;create a gaussian at very center of dummy array  with FWHM~star FWHM (measure!) to register against
@@ -98,8 +98,8 @@ pro visao_reg_new, ref, clip=clip, fwhm=fwhm, sdi=sdi, fits=fits, indiv=indiv, s
   for i=0, nims-1 do begin
   
    if keyword_set(indiv) then begin
-    Line=readfits('./aligned/Line_flat_'+string(i+1, format='(i04)')+'.fits')
-    Cont=readfits('./aligned/Cont_flat_'+string(i+1, format='(i04)')+'.fits')    
+    Line=readfits('./indiv/Line_flat_'+string(i+1, format='(i04)')+'.fits')
+    Cont=readfits('./indiv/Cont_flat_'+string(i+1, format='(i04)')+'.fits')    
     j=0
    endif else begin
     j=i
@@ -171,11 +171,11 @@ pro visao_reg_new, ref, clip=clip, fwhm=fwhm, sdi=sdi, fits=fits, indiv=indiv, s
     ;;1:1 subtraction of Ha and Cont images
     if keyword_set(sdi) then begin
       SDI_im[*,*,i]=Line_reg[*,*,i]-sdi*Cont_reg[*,*,i]
-      SDI_im2[*,*,i]=Line_reg[*,*,i]-Cont_reg[*,*,i]
+      ;SDI_im2[*,*,i]=Line_reg[*,*,i]-Cont_reg[*,*,i]
     endif
   endfor
 
-  if keyword_set(fits) then begin
+
     if keyword_set(clip) then begin
     writefits, 'Line_clip'+string(clip, format='(i03)')+'_reg.fits', Line_reg
     writefits, 'Cont_clip'+string(clip, format='(i03)')+'_reg.fits', Cont_reg
@@ -183,16 +183,16 @@ pro visao_reg_new, ref, clip=clip, fwhm=fwhm, sdi=sdi, fits=fits, indiv=indiv, s
       writefits, 'Line_reg.fits', Line_reg
       writefits, 'Cont_reg.fits', Cont_reg
     endelse
+    
     if keyword_set(sdi) then begin
       if keyword_set(clip) then begin
       writefits, 'SDI_sc'+string(sdi, format='(f05.2)')+'_clip'+string(clip, format='(i03)')+'_reg.fits', SDI_im
-      writefits, 'SDI_sc'+string(1, format='(f05.2)')+'_clip'+string(clip, format='(i03)')+'_reg.fits', SDI_im2
+      ;writefits, 'SDI_sc'+string(1, format='(f05.2)')+'_clip'+string(clip, format='(i03)')+'_reg.fits', SDI_im2
       endif else begin
         writefits, 'SDI_sc'+string(sdi, format='(f05.2)')+'_reg.fits', SDI_im
-        writefits, 'SDI_sc'+string(1, format='(f05.2)')+'_reg.fits', SDI_im2 
+        ;writefits, 'SDI_sc'+string(1, format='(f05.2)')+'_reg.fits', SDI_im2 
       endelse
     endif
-  endif
 
-  ;stop
+  stop
 end

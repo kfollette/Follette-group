@@ -58,13 +58,13 @@ pro find_cens_new, fname, ghost=ghost, fits=fits
   if keyword_set(ghost) then begin
     ;;measured distance from star to ghost
     ghost_offset=[158.,-6.]
-    mkmask, dim1, dim2, mask, 25, cen=[(dim1-1)/2.+ghost_offset[0],(dim2-1)/2.+ghost_offset[1]], /reverse
+    mkmask, dim1, dim2, 25, mask, cen=[(dim1-1)/2.+ghost_offset[0],(dim2-1)/2.+ghost_offset[1]], /reverse
   endif
 
   ;; loop over images beginning with fname, measuring stellar (and ghost) centroid and peak and writing these into the header
   for i=0, nims-1 do begin
     print, 'image ', i+1, '   of', nims
-
+    
     im=ims[*,*,i]
 
     fixpix, im, badpix, outim, /nan, npix=20, /silent
@@ -100,17 +100,17 @@ pro find_cens_new, fname, ghost=ghost, fits=fits
   endfor
 
 ;;clean outliers (cosmics) - test is if centroid is >2pix from median
-peak[where(xcen - median(xcen) gt 2)]='NaN'
-xcen[where(xcen - median(xcen) gt 2)]='NaN'
-ycen[where(xcen - median(xcen) gt 2)]='NaN'
-x_fwhm[where(xcen - median(xcen) gt 2)]='NaN'
-y_fwhm[where(xcen - median(xcen) gt 2)]='NaN'
+peak[where(abs(xcen - median(xcen)) gt 2, /NULL)] ='NaN'
+ycen[where(abs(xcen - median(xcen)) gt 2, /NULL)] ='NaN'
+x_fwhm[where(abs(xcen - median(xcen)) gt 2, /NULL)] ='NaN'
+y_fwhm[where(abs(xcen - median(xcen)) gt 2, /NULL)] ='NaN'
+xcen[where(abs(xcen - median(xcen)) gt 2, /NULL)] ='NaN'
 
-ghost_peak[where(ghost_xcen - median(ghost_xcen) gt 2)]='NaN'
-ghost_xcen[where(ghost_xcen - median(ghost_xcen) gt 2)]='NaN'
-ghost_ycen[where(ghost_xcen - median(ghost_xcen) gt 2)]='NaN'
-ghost_x_fwhm[where(ghost_xcen - median(ghost_xcen) gt 2)]='NaN'
-ghost_y_fwhm[where(ghost_xcen - median(ghost_xcen) gt 2)]='NaN'
+ghost_peak[where(ghost_xcen - median(ghost_xcen) gt 2, /NULL)]='NaN'
+ghost_ycen[where(ghost_ycen - median(ghost_ycen) gt 2, /NULL)]='NaN'
+ghost_x_fwhm[where(ghost_xcen - median(ghost_xcen) gt 2, /NULL)]='NaN'
+ghost_y_fwhm[where(ghost_ycen - median(ghost_ycen) gt 2, /NULL)]='NaN'
+ghost_xcen[where(ghost_xcen - median(ghost_xcen) gt 2, /NULL)]='NaN'
 
   if keyword_set(fits) then begin
       
@@ -146,7 +146,7 @@ ghost_y_fwhm[where(ghost_xcen - median(ghost_xcen) gt 2)]='NaN'
     print, 'ratio ghost xFWHM/yFWHM= ', median(ghost_x_fwhm)/median(ghost_y_fwhm)
   endif
   
-  ;stop
+  stop
 
 end
 

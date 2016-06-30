@@ -28,7 +28,7 @@
 ;
 ;-
 
-pro visao_reg_new, ref, clip=clip, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=scl
+pro visao_reg, ref, clip=clip, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=scl
 
   visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, mag1=mag1
   ;;create aligned directory if doesn't already exist

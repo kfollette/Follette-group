@@ -52,7 +52,7 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv
     if x eq 1 then begin 
       ok_str = 'ok'
       ;;count files that begin with the string 'Line'
-      spawn, 'ls -l Line* | wc -l', nfile
+      spawn, 'ls -l indiv/* | wc -l', nfile
       read, ok_str, prompt='there are currently'+string(nfile)+$
         'files in your indiv directory, and I am going to delete them. OK? [y/n]'
       if(ok_str eq 'y' or ok_str eq 'Y') then spawn, 'rm indiv/*'
@@ -105,11 +105,11 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv
 
     if keyword_set(indiv) then begin
       if keyword_set(flat) then begin
-        writefits, './aligned/Line_flat_'+string(i+1, format='(i04)')+'.fits', Line[*,*,j], head
-        writefits, './aligned/Cont_flat_'+string(i+1, format='(i04)')+'.fits', Cont[*,*,j], head
+        writefits, './indiv/Line_flat_'+string(i+1, format='(i04)')+'.fits', Line[*,*,j], head
+        writefits, './indiv/Cont_flat_'+string(i+1, format='(i04)')+'.fits', Cont[*,*,j], head
       endif else begin
-        writefits, './aligned/Line_'+string(i+1, format='(i04)')+'.fits', Line[*,*,j], head
-        writefits, './aligned/Cont_'+string(i+1, format='(i04)')+'.fits', Cont[*,*,j], head
+        writefits, './indiv/Line_'+string(i+1, format='(i04)')+'.fits', Line[*,*,j], head
+        writefits, './indiv/Cont_'+string(i+1, format='(i04)')+'.fits', Cont[*,*,j], head
       endelse
     endif
 

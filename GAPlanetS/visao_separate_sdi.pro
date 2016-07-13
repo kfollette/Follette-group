@@ -23,7 +23,7 @@
 ;
 ;-
 
-pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, fits=fits, indiv=indiv
+pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv
 
   visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, mag1=mag1
   ;;create aligned directory if doesn't already exist
@@ -47,9 +47,19 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, fits=fits, indiv=
     raw=dblarr(dim1,dim2,1)
     Line=dblarr(dim1, dim2/2,1)
     Cont=dblarr(dim1, dim2/2,1)
-    x=file_test('./aligned', /DIRECTORY)
-    if x eq 0 then spawn, 'mkdir aligned'
+    x=file_test('./indiv', /DIRECTORY)
+    if x eq 0 then spawn, 'mkdir indiv'
+    if x eq 1 then begin 
+      ok_str = 'ok'
+      ;;count files that begin with the string 'Line'
+      spawn, 'ls -l indiv/* | wc -l', nfile
+      read, ok_str, prompt='there are currently'+string(nfile)+$
+        'files in your indiv directory, and I am going to delete them. OK? [y/n]'
+      if(ok_str eq 'y' or ok_str eq 'Y') then spawn, 'rm indiv/*'
+      if(ok_str eq 'n' or ok_str eq 'N') then stop
+    endif
   endelse
+  
   expt=dblarr(nims)
   avgwfe=dblarr(nims)
   rotoff=dblarr(nims)
@@ -95,11 +105,11 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, fits=fits, indiv=
 
     if keyword_set(indiv) then begin
       if keyword_set(flat) then begin
-        writefits, './aligned/Line_flat_'+string(i+1, format='(i04)')+'.fits', Line[*,*,j], head
-        writefits, './aligned/Cont_flat_'+string(i+1, format='(i04)')+'.fits', Cont[*,*,j], head
+        writefits, './indiv/Line_flat_'+string(i+1, format='(i04)')+'.fits', Line[*,*,j], head
+        writefits, './indiv/Cont_flat_'+string(i+1, format='(i04)')+'.fits', Cont[*,*,j], head
       endif else begin
-        writefits, './aligned/Line_'+string(i+1, format='(i04)')+'.fits', Line[*,*,j], head
-        writefits, './aligned/Cont_'+string(i+1, format='(i04)')+'.fits', Cont[*,*,j], head
+        writefits, './indiv/Line_'+string(i+1, format='(i04)')+'.fits', Line[*,*,j], head
+        writefits, './indiv/Cont_'+string(i+1, format='(i04)')+'.fits', Cont[*,*,j], head
       endelse
     endif
 
@@ -121,7 +131,6 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, fits=fits, indiv=
   ;;check that the filter wheel was in the same place in all images
   if n_elements(uniq(vfw3)) ne 1 then print, 'WARNING - more than one SDI filter in this cube'
 
-  if keyword_set(fits) then begin
     if not keyword_set(indiv) then begin
       if keyword_set(flat) then begin
         writefits, 'Line_flat_preproc.fits', Line
@@ -134,6 +143,7 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, fits=fits, indiv=
     writefits, 'avgwfe_preproc.fits', avgwfe
     writefits, 'rotoff_preproc.fits', rotoff
     writefits, 'exptime_preproc.fits', expt
-  endif
+
+stop
 
 end

@@ -15,6 +15,7 @@ visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=
     expt[i]=sxpar(head, 'EXPTIME')
   endfor
 
+
   if n_elements(uniq(expt)) eq 1 then begin
     if n_elements(dark_imlist) eq 1 then master_dark=darks else master_dark=median(darks, dim=3)
       mkhdr, hdr, master_dark
@@ -22,4 +23,6 @@ visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=
       sxaddpar, hdr, 'NDARKS', n_elements(dark_imlist)
     writefits, 'master_dark.fits', master_dark, hdr
   endif else print, 'more than one exposure time in dark list - no dark created'
+  
+  stop
 end

@@ -54,8 +54,8 @@ pro visao_circlesym, Line_cent, Cont_cent, msk=msk, clip=clip, sdi=sdi, rmax=rma
   delvar, Line_cent, Linemed
   ;;;; release the Line cubes from memory and do the same thing all over again for the continuum
 
-  if keyword_set(clip) then Cont=readfits('Cont_clip'+string(clip,format='(i03)')+'_reg.fits') $
-  else Cont=readfits('Cont_reg.fits')
+  if keyword_set(clip) then Cont=readfits('Cont_clip'+string(clip,format='(i03)')+string(namestr)+'reg.fits') $
+  else Cont=readfits('Cont'+string(namestr)+'reg.fits')
 
   Contmed=median(Cont, dim=3)
 

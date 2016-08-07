@@ -1,8 +1,9 @@
-pro visao_circlesym, Line_cent, Cont_cent, msk=msk, clip=clip, sdi=sdi, rmax=rmax, flat=flat
+pro visao_circlesym, Line_cent, Cont_cent, msk=msk, clip=clip, rmax=rmax, flat=flat
 
   ;;finds center of circular symmetry of median combinations of registered images, and shifts this center to the center of the image cube
   ;;6-30-2016 KBF modification - do line and continuum separately, then SDI so don't hold too many large arrays in memory at once
   ;; also adding more print statements and removing /fits keyword so will write output to disk by default
+  ;;7-27-2016 KBF modification to remove SDI scalings (now all in separate visao_sdi.pro)
 
   if keyword_set(flat) then namestr='_flat_' else namestr='_'
   
@@ -40,15 +41,15 @@ pro visao_circlesym, Line_cent, Cont_cent, msk=msk, clip=clip, sdi=sdi, rmax=rma
   Line_cent=dblarr(dim1, dim2, nims)
 
   for i=0, nims-1 do begin
-    print, 'shifting Line image', i+1, '   of', nims
+    ;print, 'shifting Line image', i+1, '   of', nims
     Line_cent[*,*,i]=shift_interp(Line[*,*,i], Line_shift, spline=-0.5)
   endfor
 
   print, 'writing centered line image cube'
   if keyword_set(clip) then begin
-    writefits, 'Line_clip'+string(clip, format='(i03)')+'_reg_circsym.fits', Line_cent
+    writefits, 'Line_clip'+string(clip, format='(i03)')+string(namestr)+'reg_circsym.fits', Line_cent
   endif else begin
-    writefits, 'Line_reg_circsym.fits', Line_cent
+    writefits, 'Line'+string(namestr)+'reg_circsym.fits', Line_cent
   endelse
 
   delvar, Line_cent, Linemed
@@ -80,45 +81,17 @@ pro visao_circlesym, Line_cent, Cont_cent, msk=msk, clip=clip, sdi=sdi, rmax=rma
   Cont_cent=dblarr(dim1, dim2, nims)
 
   for i=0, nims-1 do begin
-    print, 'shifting Continuum image', i+1, '   of', nims
+    ;print, 'shifting Continuum image', i+1, '   of', nims
     Cont_cent[*,*,i]=shift_interp(Cont[*,*,i], Cont_shift, spline=-0.5)
   endfor
 
   print, 'writing centered continuum image cube'
   if keyword_set(clip) then begin
-    writefits, 'Cont_clip'+string(clip, format='(i03)')+'_reg_circsym.fits', Cont_cent
+    writefits, 'Cont_clip'+string(clip, format='(i03)')+string(namestr)+'reg_circsym.fits', Cont_cent
   endif else begin
-    writefits, 'Cont_reg_circsym.fits', Cont_cent
+    writefits, 'Cont'+string(namestr)+'reg_circsym.fits', Cont_cent
   endelse
 
-  ;;now release continuum cubes from memory and shift SDI
-  delvar, Cont_cent, Contmed
 
-  if keyword_set(sdi) then begin
-    if keyword_set(clip) then begin
-      SDI1=readfits('SDI_sc'+string(sdi, format='(f05.2)')+'_clip'+string(clip, format='(i03)')+string(namestr)+'reg.fits')
-      ;SDI2=readfits('SDI_sc'+string(1, format='(f05.2)')+'_clip'+string(clip, format='(i03)')+'_reg.fits')
-    endif else begin
-      SDI1=readfits('SDI_sc'+string(sdi, format='(f05.2)')+string(namestr)+'reg.fits')
-      ; SDI2=readfits('SDI_sc'+string(1, format='(f05.2)')+'_reg.fits')
-    endelse
-    SDI1_cent=dblarr(dim1,dim2,nims)
-    ;SDI2_cent=dblarr(dim1,dim2,nims)
-
-    for i=0, nims-1 do begin
-      print, 'shifting SDI image', i+1, '   of', nims
-      SDI1_cent[*,*,i]=shift_interp(SDI1[*,*,i], avg_shift, spline=-0.5)
-      ;SDI2_cent[*,*,i]=shift_interp(SDI2[*,*,i], avg_shift, spline=-0.5)
-    endfor
-
-    print, 'writing centered SDI image cube'
-    if keyword_set(clip) then begin
-      writefits, 'SDI_sc'+string(sdi, format='(f05.2)')+'_clip'+string(clip, format='(i03)')+string(namestr)+'reg_circsym.fits',SDI1_cent
-      ;writefits, 'SDI_sc'+string(1, format='(f05.2)')+'_clip'+string(clip, format='(i03)')+'_reg_circsym.fits',SDI2_cent
-    endif else begin
-      writefits, 'SDI_sc'+string(sdi, format='(f05.2)')+string(namestr)+'reg_circsym.fits',SDI1_cent
-      ;writefits, 'SDI_sc'+string(1, format='(f05.2)')+'_reg_circsym.fits',SDI2_cent
-    endelse
-  endif
   stop
 end

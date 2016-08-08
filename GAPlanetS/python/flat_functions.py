@@ -10,6 +10,8 @@ from scipy.ndimage.filters import median_filter
 from astropy.stats import sigma_clip
 
 """
+NAME: raw_flat_process
+
 
 
 """

@@ -11,16 +11,14 @@ pro center_circlesym, im, xr, yr, rmax, xc, yc, grid, mask=mask
 ; mask : optional 1/0 mask, 0 specifies pixels to ignore.
 ;-
 
-
    get_cubedims, im, dim1, dim2
-
+   
    grid = fltarr(n_elements(xr), n_elements(yr))
-
    for i=0,n_elements(xr)-1 do begin
+    print, i, format='((x, I0),$)'
       for j=0,n_elements(yr)-1 do begin
 
          r = rarr(dim1, dim2, xc=xr[i], yc=yr[j], /pix)
-
          for k=0,rmax do begin
           status = string(i) + ' /' + string(n_elements(xr)) + $
             string(j) + ' /' + string(n_elements(yr)) + $
@@ -33,24 +31,22 @@ pro center_circlesym, im, xr, yr, rmax, xc, yc, grid, mask=mask
             endelse
             
             if(idx[0] eq -1) then continue
-            
             sd = stddev(im[idx])
             if(~finite(sd)) then sd = 0
             grid[i,j] = grid[i,j] + sd/abs(median(im[idx]))
-
          endfor
-
-
       endfor
    endfor
 
-
+  writefits, 'circym_grid_idl.fits', grid
    ming = min(grid, idx)
    pos = array_indices(grid, idx)
    
    
    gcntrd, -1*grid, pos[0], pos[1], xcc, ycc, 0.5*n_elements(xr)
-
+   
+   print, xcc
+   print, ycc
    xc = xr[0] + xcc*(xr[1]-xr[0]) + 0.5*(dim1-1)
    yc = yr[0] + ycc*(yr[1]-yr[0]) + 0.5*(dim2-1)
    

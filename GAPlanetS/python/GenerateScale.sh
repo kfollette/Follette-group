@@ -1,8 +1,8 @@
 #Written by Elijah Spiro
-#Last edited 7/19/2016
+#Last edited 8/18/2016
 
-#Syntax to run: [./Program name] [directory location relative from code location] ["cube" for long version, empty for short version]
-#Example: ./GenerateScale.sh "../HD100546/12Apr14/" "cube"
+#Syntax to run: [./Program name] [directory location relative from code location] ["cube" for long version, empty for short version] [H-Alpha data cube] [Continuum data cube]
+#Example: ./GenerateScale.sh "../HD100546/12Apr14/" "cube" "Line_clip450_reg_circsym.fits" "Cont_clip450_reg_circsym.fits"
 # --> Argument 2 allows you to specify whether to run in "cube" mode. This will take ~5x longer, but will produce a unique ratio for every image. Otherwise, you will get a quick and dirty (median) answer
 
 #######################################################################################                                                                                                                    
@@ -10,7 +10,7 @@
 #######################################################################################
 #This script is designed to produce the perfect scaling ratio for an arbitrary number of files in a FITS image cube. 
 #Requirements: Files "Line_clip450_reg_circsym.fits" and "Cont_clip450_reg_circsym.fits" must be in the directory specified by command line argument (format to navigate to this directory from coding directory). Additionally, python files "GenerateMedianScale.py" and "GenerateCubeScale.py" must be in the same directory as this bash script.
-#Output: This script will produce 8 FITS files ("SDI_MEDIAN_SR.fits", "SDI_CUBE_SR.fits", "SDI_CUBE_MR.fits", "RATIO_LIST.fits", "MEDIAN_MASK.fits", "CUBE_MASK.fits", "MASKED_DATA_HA.fits", "MASKED_DATA_CONT.fits") and create 2 plots near completion. 
+#Output: This script will produce 8 FITS files ("SDI_MEDIAN_SR.fits", "SDI_CUBE_SR.fits", "SDI_CUBE_MR.fits", "scale_factors.fits", "MEDIAN_MASK.fits", "CUBE_MASK.fits", "MASKED_DATA_HA.fits", "MASKED_DATA_CONT.fits") and create 2 plots near completion. 
 #Expect long runtime (~20 seconds per image in data cube)
 #If the script must be halted prior to completion, and any of the eight output files have already been created, please delete them before running the script again.
 
@@ -29,7 +29,7 @@
 #8. Multiply each image in Continuous spectrum data cube by ratio, subtract corresponding pixels, produce "SDI_CUBE_SR.fits" (long)
 #9. Read in masked image cubes created in step 5
 #10. Recursively generate scaling ratio for every image in Continuous spectrum data cube (very long)
-#11. Generate 1D Fits file with list of these ratios for later use --> "RATIO_LIST.fits"
+#11. Generate 1D Fits file with list of these ratios for later use --> "scale_factors.fits"
 #12. Multiply each image in continuous spectrum data cube by unique ratio, subtract corresponding pixels, produce "SDI_CUBE_MR.fits" (long)
 #13. Produce plot of unique ratios vs. median ratio (short)
 #14. Produce plot of starlight remaining post-subtraction in SDI_CUBE_SR vs. SDI_CUBE_MR (medium)
@@ -44,9 +44,9 @@ echo "|          Now running total scaling script. This might take a while.     
 echo "---------------------------------------------------------------------------------"
 echo ""
 
-python GenerateMedianScale.py $1
+python GenerateMedianScale.py $1 $3 $4
 if [ $2 == "cube" ]; then 
-    python GenerateCubeScale.py $1
+    python GenerateCubeScale.py $1 $3 $4
 fi
 
 for i in `seq 1 10`;

@@ -412,8 +412,11 @@ def getMedianScale():
 #Prepare for calculations
 debug() #Prompts user whether or not to display progress as program runs
 switchDirectories() #Navigates to the proper working directory (NOTE you'll have to change this function to fit your machine)
-readFitsCubeToArray("Line_clip450_reg.fits", 1) #Data is stored in dataHA
-readFitsCubeToArray("Cont_clip450_reg.fits", 2) #Data is stored in dataCONT
+#readFitsCubeToArray("Line_clip450_reg.fits", 1) #Data is stored in dataHA
+#readFitsCubeToArray("Cont_clip450_reg.fits", 2) #Data is stored in dataCONT
+readFitsCubeToArray(str(sys.argv[2]), 1)
+readFitsCubeToArray(str(sys.argv[3]), 2)
+
 
 #try:
 #    errors = getWaveFrontErrors()

@@ -43,8 +43,12 @@ def visao_inventory(sci_imlist=None, dark_imlist=None, flat_imlist=None, rotoff_
 
     fnames = []
     imtypes = []
+    if 'subdir' in keysMap:
+        subdir = keysMap['subdir']
+    else:
+        subdir = 'raw'
     imInfo = visao_getimtypes(fnames, imtypes, 'EXPTIME', 'VFW3POSN', 'VFW2POSN', 'AOLOOPST', 'ROTOFF', 'AVGWFE', 'AM',
-                              subdir='raw', region='region')
+                              subdir=subdir, region='region')
 
     num_sciframes = num_darks = num_flats = 0
     dark_indices = []
@@ -56,7 +60,8 @@ def visao_inventory(sci_imlist=None, dark_imlist=None, flat_imlist=None, rotoff_
         if imtypes[x] == 2:
             dark_indices.append(x)
             num_darks += 1
-        if imtypes[x] == 4:
+        if imtypes[x] == 4 or (imtypes[x] == 0 and imInfo['AOLOOPST'][x] == 0 and
+                                       imInfo['VFW3POSN'][x].strip == 'open'):
             flat_indices.append(x)
             num_flats += 1
 
@@ -133,7 +138,6 @@ def visao_inventory(sci_imlist=None, dark_imlist=None, flat_imlist=None, rotoff_
         sci_ims = exposure_type[types[nfilt[0]]]
         types = ['Ha', 'SII', 'OI', 'zp']
         filt = types[nfilt[0]]
-    #if len(nfilt) > 1: sci_ims = math.nan  # think this is correct, not completely sure yet
 
     if rotoff_sciims == None:
         rotoff_sciims = [imInfo['ROTOFF'][i] for i in sci_ims]
@@ -176,8 +180,8 @@ HISTORY:
     CREATOR: 2016 by Kate Follette
     PY TRANS: 2016-07-11 by Wyatt Mullen, wmullen1@stanford.edu
 """
-def visao_dark(dark_imlist = [], master_dark = []):
-    imLists = visao_inventory()
+def visao_dark(dark_imlist = [], master_dark = [], subdir=None, name=None, move=False):
+    imLists = visao_inventory(subdir=subdir)
 
     #check to make sure dark_imlist hasn't been provided or that there were no dark frames from visao_inventory
     if not dark_imlist and 'dark_imlist' in imLists:
@@ -186,6 +190,12 @@ def visao_dark(dark_imlist = [], master_dark = []):
     print('Creating master dark from ' + str(len(dark_imlist)) + ' dark frames.')
     dark_cube_list = []
     exp_time = []
+
+    if len(dark_imlist) == 0:
+        #raise RuntimeError('Cannot create dark frame because no dark images.')
+        print('Cannot create dark frame ' + name + ' because no dark images.')
+        return
+
     for dark in dark_imlist:
         #may need to include 'raw' here
         dark_fits = fits.open(dark)
@@ -199,11 +209,11 @@ def visao_dark(dark_imlist = [], master_dark = []):
     if len(uniq_exp) == 1:
         if len(dark_imlist) == 1:
             master_dark = darks
-            fits.writeto('master_dark.fits', master_dark, clobber = True)
+            fits.writeto('master_dark_' + name + '.fits', master_dark, clobber = True)
         else:
-            master_dark = np.median(darks, axis=2) #think this will work
-            fits.writeto('master_dark.fits', master_dark, clobber = True)
-            f = fits.open('master_dark.fits', mode = 'update')
+            master_dark = np.median(darks, axis=2)
+            fits.writeto('master_dark_' + name + '.fits', master_dark, clobber = True)
+            f = fits.open('master_dark_' + name + '.fits', mode = 'update')
             dark_changes = f[0].header
             dark_changes['DATE'] = (time.strftime('%Y-%m-%d'), 'Creation UTC (CCCC-MM-DD) date of FITS header')
             dark_changes['EXPTIME'] = exp_time[0]
@@ -211,6 +221,16 @@ def visao_dark(dark_imlist = [], master_dark = []):
             f.close()
     else:
         print('More than one exposure time in dark list - no dark created.')
+
+    #for file in imLists['sci_imlist']:
+        #os.rename(file, subdir + '/science' + file.replace(subdir, ''))
+
+    if move:
+        os.mkdir('darks')
+        for file in dark_imlist:
+            os.rename(file, subdir + '/darks' + file.replace(subdir, ''))
+
+    dark_imlist.clear()
 
 """
 NAME: visao_separate_sdi
@@ -319,6 +339,9 @@ def visao_separate_sdi(*keywords, **keysMap):
         else:
             fits.writeto('Line_preproc.fits', Line, clobber = True)
             fits.writeto('Cont_preproc.fits', Cont, clobber = True)
+
+    fits.writeto('rotoff_preproc.fits', dataDict['rotoff'], clobber=True)
+    fits.writeto('avgwfe_preproc.fits', dataDict['avgwfe'], clobber=True)
 
     return dataDict
 
@@ -546,3 +569,19 @@ def cube_median(image_cube, type):
     image_cube = fits.open(image_cube)[0]
     med = np.nanmedian(image_cube.data, axis=0)
     fits.writeto('im_cube_med_' + type + '.fits', med, clobber=True)
+
+"""
+NAME: remove_cosmics
+
+PURPOSE:
+
+DESCRIPTION
+
+INPUTS:
+
+OUTPUTS:
+
+HISTORY:
+
+"""
+def remove_cosmics():

@@ -44,7 +44,12 @@ echo "|          Now running total scaling script. This might take a while.     
 echo "---------------------------------------------------------------------------------"
 echo ""
 
+##shell scripts do not by default expand aliases, so this is to make it work with gpicruncher. shouldn't affect how it is executed on your machine
+shopt -s expand_aliases
+source ~/.bashrc
+
 python GenerateMedianScale.py $1 $3 $4
+
 if [ $2 == "cube" ]; then 
     python GenerateCubeScale.py $1 $3 $4
 fi

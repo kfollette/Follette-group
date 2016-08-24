@@ -1,8 +1,6 @@
-pro scl_corr, dir
+pro scl_corr
 
 ;;;calculate matrix with pearson correlation coefficients between scale factors, airmass, seeing and wavefront error
-
-cd, dir
 
 visao_inventory, /stp
 

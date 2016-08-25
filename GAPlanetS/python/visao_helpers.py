@@ -26,8 +26,8 @@ import scipy.optimize as optimize
 
 
 
-
 """
+##################################################################################################################
 NAME: visao_getimtypes
 
 PURPOSE: Extracts image type and other headers from all the VisAO images in a directory
@@ -108,7 +108,7 @@ def visao_getimtypes(fnames=None, imtypes=None, *keywords, **keysMap):
         head = fitsData[0]
 
         #helps specify the image type
-        imageType = head.header['VIMTYPE']
+        imageType = head.header['VIMTYPE'].strip()
         if imageType == 'SCIENCE': imtypes.append(0)
         if imageType == 'ACQUISITION': imtypes.append(1)
         if imageType == 'DARK': imtypes.append(2)
@@ -143,17 +143,16 @@ def visao_getimtypes(fnames=None, imtypes=None, *keywords, **keysMap):
                 if g == 'LOW': returnDictionary[word].append(3)
 
             else:
-                returnDictionary[word].append(head.header[word])
+                if word in head.header:
+                    returnDictionary[word].append(head.header[word])
 
     #all values we need are in this "return dictionary"
     #if you need to access them in another function, use whatever dictionary you have assigned to the function
     #call the word you needed and get the list or whatever
     return returnDictionary
 
-
-
-
 """
+##################################################################################################################
 NAME: requad_angles
 
 PURPOSE/DESCRIPTION: Adjusts the vector of angles such that it is continuous if it wraps around 0 or 360 by moving
@@ -186,23 +185,21 @@ def requad_angles(angles, *keyWords):
     if angles[ind] > angles[0]:
         min_angle = min(angles)
         if min_angle < angles[0]:
-            for x in range [0:len(angles)]:
+            for x in range (0,len(angles)):
                 if angles[x] >= angles[0]:
                     rangles[x] = angles[x] - subval
     else:
         max_angle = max(angles)
         if max_angle > angles[0]:
-            for x in range [0:len(angles)]:
+            for x in range (0,len(angles)):
                 if angles[x] >= angles [0]:
                     rangles[x] = angles[x] - subval
 
     return rangles
 
 
-
-
-
 """
+##################################################################################################################
 NAME: fitsdate_conv
 
 PURPOSE: Converts a string date in fits format to a double
@@ -244,11 +241,8 @@ def fitsdate_conv(date):
     return newDate
 
 
-
-
-
-
 """
+##################################################################################################################
 NAME: make_Gaussian
 
 Purpose: Creates a gaussian array of the specified dimensions, fwhm, and center
@@ -287,9 +281,8 @@ def make_Gaussian(dimX, dimY, fwhm = 10, center=None):
 
 
 
-
-
 """
+##################################################################################################################
 NAME: 2D Gaussian Functions: gaussian, moments, fitgaussian (main function)
 
 PURPOSE/DESCRIPTION: Fits a 2 gaussian to the given array, cannot be a fits image

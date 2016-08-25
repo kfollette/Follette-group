@@ -1,0 +1,14 @@
+Metadata-Version: 1.0
+Name: pyds9
+Version: 1.9.dev123
+Summary: Python connection to ds9 via XPA
+Home-page: http://hea-www.harvard.edu/saord/ds9/
+Author: Bill Joye and Eric Mandel
+Author-email: saord@cfa.harvard.edu
+License: BSD
+Description: 
+        Connects python and ds9 via the xpa messaging system.
+        
+        This package aims at being an Astropy affiliated package.
+        
+Platform: UNKNOWN

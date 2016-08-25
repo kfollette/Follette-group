@@ -1,0 +1,16 @@
+*.pyc
+*.[oa]
+*~
+*.so
+*.bak
+foo*
+casa.fits
+build/
+_build/
+_static/
+_templates/
+dist/
+xpa/config.status
+xpa/Makefile
+xpa/conf.h
+*egg*

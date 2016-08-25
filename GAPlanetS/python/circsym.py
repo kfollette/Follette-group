@@ -77,8 +77,9 @@ def visao_circlesym(*args, **kwargs):
     print('Center of circular symmetry for median Line image is (' + str(Line_xc) + ',' + str(Line_yc) + ')')
     print('Shifting all Line images by ' + str(Line_shift))
     Line_cent = np.zeros(Line.shape)
+    print('Out of ' + str(nims) + ' items, shifting Line image number: ')
     for i in range(0,nims):
-        print('Shifting Line image ' + str(i + 1) + ' of ' + str(nims))
+        print(str(i + 1) + ', ', end='', flush=True)
         sci.shift(Line.data[i,:,:], Line_shift, order=1, output=Line_cent[i,:,:]) # shifting the line images
 
     print('Writing centered line image cube')
@@ -117,8 +118,9 @@ def visao_circlesym(*args, **kwargs):
     print('Shifting all continuum images by' + str(Cont_shift)) #the shift reads as y,x
 
     Cont_cent = np.zeros(Cont.shape)
-    for i in range(0,nims):
-        print('Shifting continuum image ' + str(i + 1) + ' of ' + str(nims))
+    print('Out of ' + str(nims) + ' items, shifting continuum image number: ')
+    for i in range(0, nims):
+        print(str(i + 1) + ', ', end='', flush=True)
         sci.shift(Cont.data[i,:,:], Cont_shift, order=1, output=Cont_cent[i,:,:]) #shift each image
 
     print('Writing centered continuum image cube.')
@@ -260,10 +262,10 @@ def gcntrd(img, x, y, fwhm, *args, **kwargs):
     xsize = sz_image[1]
     ysize = sz_image[0]
 
-    if isinstance(x, int) or isinstance(x, float):
-        npts = 1
-    else:
-        npts = len(x)
+    #if isinstance(x, int) or isinstance(x, float):
+    npts = 1
+    #else:
+        #npts = len(x)
 
     maxbox = 13 #why this value?
     radius = max(0.637 * fwhm, 2.001)
@@ -542,7 +544,6 @@ HISTORY:
         modified 2016-03-29 to allow off center mask and reversed options
         modified 2016-06-07 to add nan option
     PY TRANS: 2016-07-18 by Wyatt Mullen, wmullen1@stanford.edu
-
 """
 def mkmask(xdim, ydim, r, *args, **kwargs):
     print('Starting mkmask')

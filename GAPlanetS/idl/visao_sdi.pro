@@ -24,7 +24,7 @@
 ;
 ;-
 
-pro visao_sdi, indiv=indiv, scale=scale, clip=clip, flat=flat
+pro visao_sdi, indiv=indiv, scale=scale, clip=clip, flat=flat, stp=stp
 
   if keyword_set(flat) then namestr='_flat_' else namestr='_'
 
@@ -69,5 +69,6 @@ pro visao_sdi, indiv=indiv, scale=scale, clip=clip, flat=flat
 
   writefits, 'SDI_'+string(sdi)+'_clip'+string(clip,format='(i03)')+string(namestr)+'reg_circsym.fits', SDIim
 
-  stop
+if keyword_set(stp) then stop
+
 end

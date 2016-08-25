@@ -1,4 +1,4 @@
-pro visao_circlesym, Line_cent, Cont_cent, msk=msk, clip=clip, rmax=rmax, flat=flat
+pro visao_circlesym, Line_cent, Cont_cent, msk=msk, clip=clip, rmax=rmax, flat=flat, stp=stp
 
   ;;finds center of circular symmetry of median combinations of registered images, and shifts this center to the center of the image cube
   ;;6-30-2016 KBF modification - do line and continuum separately, then SDI so don't hold too many large arrays in memory at once
@@ -93,5 +93,5 @@ pro visao_circlesym, Line_cent, Cont_cent, msk=msk, clip=clip, rmax=rmax, flat=f
   endelse
 
 
-  stop
+if keyword_set(stp) then stop
 end

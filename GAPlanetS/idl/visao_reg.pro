@@ -28,7 +28,7 @@
 ;
 ;-
 
-pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=scl
+pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=scl, stp=stp
 
   visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, mag1=mag1
   ;;create aligned directory if doesn't already exist
@@ -196,5 +196,6 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
       endelse
     endif
 
-  stop
+if keyword_set(stp) then  stop
+
 end

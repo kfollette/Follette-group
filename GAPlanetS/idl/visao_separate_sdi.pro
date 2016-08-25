@@ -23,7 +23,7 @@
 ;
 ;-
 
-pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv
+pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=stp
 
   visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, mag1=mag1
   ;;create aligned directory if doesn't already exist
@@ -144,6 +144,6 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv
     writefits, 'rotoff_preproc.fits', rotoff
     writefits, 'exptime_preproc.fits', expt
 
-stop
+if keyword_set(stp) then stop
 
 end

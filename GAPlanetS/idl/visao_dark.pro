@@ -1,6 +1,6 @@
 pro visao_dark, dark_imlist, master_dark
 
-visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe
+visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, stp=stp
 
   dummy_im=readfits(dark_imlist[0])
   dim1=(size(dummy_im[*,*]))[1]
@@ -24,5 +24,6 @@ visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=
     writefits, 'master_dark.fits', master_dark, hdr
   endif else print, 'more than one exposure time in dark list - no dark created'
   
-  stop
+if keyword_set(stp) then  stop
+
 end

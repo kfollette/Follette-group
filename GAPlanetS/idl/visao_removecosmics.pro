@@ -25,7 +25,7 @@
 ;     Added all keyword and genericized to find and appy to any circsym cube
 ;-
 
-pro visao_removecosmics, fname, all=all, nantest=nantest
+pro visao_removecosmics, fname, all=all, nantest=nantest, stp=stp
 
   ;;read in image (should be SDI)
   im=readfits(string(fname)+'.fits')
@@ -89,6 +89,6 @@ pro visao_removecosmics, fname, all=all, nantest=nantest
     
   endif
 
-  stop
+if keyword_set(stp) then  stop
 
 end

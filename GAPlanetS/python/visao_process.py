@@ -1,3 +1,24 @@
+"""
+VISAO_PROCESS.PY
+
+Includes almost all the functions used in the MAGAO image reduction pipeline (does not include circsym.py,
+GenerateScale.sh, or pyKLIP) for processing images from raw individuals through exoplanet identification (well, maybe
+not that far). The helpers for some of these functions are included in visao_helpers.py.
+
+
+
+Includes:
+    visao_inventory()
+    visao_dark()
+    visao_separate_sdi()
+    visao_reg()
+    py_idl_compare()
+    cube_median()
+    remove_cosmics()
+    ds9_imselect()
+    visao_sdi()
+"""
+
 import glob
 from astropy.io import fits
 import numpy as np
@@ -10,8 +31,10 @@ import image_registration as imreg
 import scipy.ndimage.interpolation as sci
 import scipy.optimize as optimize
 from visao_helpers import *
+import pyds9.pyds9 as ds9
 
 """
+##################################################################################################################
 NAME: visao_inventory
 
 PURPOSE: Analyzes the images in a 'raw' folder in current directory and prints out number of science, dark, flat files,
@@ -159,6 +182,7 @@ def visao_inventory(sci_imlist=None, dark_imlist=None, flat_imlist=None, rotoff_
     return return_imLists
 
 """
+##################################################################################################################
 NAME: visao_dark
 
 PURPOSE: Create a master dark .fits file based on dark files in directory
@@ -233,6 +257,7 @@ def visao_dark(dark_imlist = [], master_dark = [], subdir=None, name=None, move=
     dark_imlist.clear()
 
 """
+##################################################################################################################
 NAME: visao_separate_sdi
 
 PURPOSE: Separates a series of images into the HA (line) emission and Continuum emission cubes
@@ -332,20 +357,20 @@ def visao_separate_sdi(*keywords, **keysMap):
     #writes image cube to files
     Line = np.array(Line)
     Cont = np.array(Cont)
-    if 'fits' in keywords:
-        if ('indiv' not in keywords) and ('flat' in keysMap):
-            fits.writeto('Line_flat_preproc.fits', Line, clobber = True)
-            fits.writeto('Cont_flat_preproc.fits', Cont, clobber = True)
-        else:
-            fits.writeto('Line_preproc.fits', Line, clobber = True)
-            fits.writeto('Cont_preproc.fits', Cont, clobber = True)
+    if ('indiv' not in keywords) and ('flat' in keysMap):
+        fits.writeto('Line_flat_preproc.fits', Line, clobber = True)
+        fits.writeto('Cont_flat_preproc.fits', Cont, clobber = True)
+    else:
+        fits.writeto('Line_preproc.fits', Line, clobber = True)
+        fits.writeto('Cont_preproc.fits', Cont, clobber = True)
 
-    fits.writeto('rotoff_preproc.fits', dataDict['rotoff'], clobber=True)
-    fits.writeto('avgwfe_preproc.fits', dataDict['avgwfe'], clobber=True)
+    fits.writeto('rotoff_preproc.fits', np.array(dataDict['rotoff']), clobber=True)
+    fits.writeto('avgwfe_preproc.fits', np.array(dataDict['avgwfe']), clobber=True)
 
     return dataDict
 
 """
+##################################################################################################################
 NAME: visao_reg
 
 PURPOSE: To perform a sub-pixel registration (centering) of both the continuum and line image cubes against a
@@ -513,6 +538,7 @@ def visao_reg(ref, *keywords, **keysMap):
 
 
 """
+##################################################################################################################
 NAME: py_idl_compare
 
 PURPOSE: Compares two cubes of images of the same shape (preferably IDL vs Python) to compare coding methods/outputs
@@ -551,6 +577,7 @@ def py_idl_compare(cube1, cube2, type):
 
 
 """
+##################################################################################################################
 NAME: cube_median
 
 PURPOSE/DESCRIPTION: Takes the median of a given cube and writes it to a fits image
@@ -570,18 +597,183 @@ def cube_median(image_cube, type):
     med = np.nanmedian(image_cube.data, axis=0)
     fits.writeto('im_cube_med_' + type + '.fits', med, clobber=True)
 
+
+
 """
+##################################################################################################################
 NAME: remove_cosmics
 
-PURPOSE:
+PURPOSE: Remove cosmic rays from a designated image cube and apply to other cubes in the same directory if needed
 
-DESCRIPTION
+DESCRIPTION: Opens an image cube and if nantest is specified makes values that are 2000 counts on either side of zero
+            NaNs. Then calls ds9_imselect which allows you to choose the good and bad images in each cube. This returns
+            an image cube of the good images and all the indices from the original image cube of the good images.
+            The new good image cube is written and if all is made True all the arrays (such as the rotation array)
+            and all the files made by circsym are processed so that they only include data from the good images.
 
 INPUTS:
+    imagecube:  3-dim cube of images for which to remove bad images
+    nantest:    boolean, automatically false - if True will mask pixels with 2000 counts above and below 0
+    all:        boolean, automatically false - if True will rewrite all other associated image cubes and arrays to
+                    contain images from only the good data
 
-OUTPUTS:
+OUTPUTS:    Many image cubes/arrays with the 'nocosmics' included in the file name
 
 HISTORY:
+    Created: 2016 by Kate Follette, kbf@stanford.edu
+        Modified: 2016-07 by Kate to read more generic set of image cubes
+                    -added 'all' keyword and generalized to and apply to any circsym cube
+    Py Trans:   2016-08 by Wyatt Mullen, wmullen1@stanford.edu
+"""
+def remove_cosmics(imageCube, nantest=False, all=False):
+    imCube = fits.open(imageCube)[0]
+    numIm = imCube.shape[0]
+
+    if nantest:
+        lowpix = np.where(imCube.data < -2000)
+        print('This cube contains ' + str(len(lowpix[0])) + ' pixels below -2000.')
+        hipix = np.where(imCube.data > 2000)
+        print('This cube contains ' + str(len(hipix[0])) + ' pixels above 2000.')
+        im[lowpix] = np.NaN
+        im[hipix] = np.NaN
+
+    nocosmic, index = ds9_imselect(imCube.data)
+
+    fits.writeto(imageCube[:-5] + '_nocosmics.fits', nocosmic, clobber=True)
+    if all:
+        rotoffs = fits.open('rotoff_preproc.fits')[0].data
+        wfe = fits.open('avgwfe_preproc.fits')[0].data
+
+        #rotoffs_noc = np.zeros((len(index[0])))
+        #wfe_noc = np.zeros((len(index[0])))
+
+        rotoffs_noc = rotoffs[index]
+        wfe_noc = wfe[index]
+
+        fits.writeto('rotoff_nocosmics.fits', rotoffs_noc, clobber=True)
+        fits.writeto('avgwfe_nocosmics.fits', wfe_noc, clobber=True)
+
+        #find all circsym processed cubes in directory
+        fnames = glob.glob('*circsym.fits')
+
+        for file in fnames:
+            img = fits.open(file)[0].data
+            out_im = img[index]
+            fits.writeto(file + '_nocosmics.fits', out_im, clobber=True)
 
 """
-def remove_cosmics():
+##################################################################################################################
+NAME: ds9_imselect
+
+PURPOSE: Display images sequentially and allow user to select good images from an image cube
+
+DESCRIPTION: Uses pyds9 to open numpy arrays from a fits image cube to allow users to remove images that are blurry or
+            have cosmic rays. The three dimensional cube is passed to the function already open and ready to use.
+            Then a ds9 object is created. Each image in the cube is looped through and a user after looking
+            at it in in ds9 can decide whether to keep (y or enter), discard (n), go back to the previous image (b),
+            or end the process (q). A list of good images indices is kept (1 for good, 0 for bad) and once the
+            process is complete an image cube of good images as well as the indices is returned.
+
+INPUTS:
+    ims:    an already open fits image cube with dimensions (numIms, y-dim, x-dim)
+
+OUTPUTS:
+    goodFinal:  a 3-dimensional image cube filled with good images
+    goodIndex:  a 1-d list of indices of good images from the original image cube
+
+HISTORY:
+    Created: 2013-11-10 by Jared Males (jrmales@email.arizona.edu)
+        Modified: 2016-02-24 by Kate Follette (kbf@stanford.edu) to include 'q' option to exit before processing entire
+            image list
+    Py Trans:   2016-08 by Wyatt Mullen, wmullen1@stanford.edu
+"""
+def ds9_imselect(ims):
+    nims, dimy, dimx = ims.shape
+
+    d = ds9.DS9()
+    goodims = np.zeros((nims))
+    #for i, im in enumerate(ims):
+    i = 0
+    while i < nims:
+        if i >= 0:
+            #im = fits.open(ims[i,:,:])[0].data
+            d.set_np2arr(ims[i,:,:])
+            response = input('Is image ' + str(i + 1) + '/' + str(nims) + ' a good image? [y/n/b/q] (y): ')
+            if response.lower() == 'n':
+                goodims[i] = 0
+                i += 1
+            elif response.lower() == 'b':
+                i -= 1
+            elif response.lower() == 'q':
+                break
+            else:
+                goodims[i] = 1
+                i += 1
+        else:
+            i += 1
+
+    goodIndex = np.where(goodims == 1)
+    goodFinal = ims[goodIndex,:,:]
+    return(goodFinal, goodIndex)
+
+"""
+##################################################################################################################
+NAME: visao_sdi
+
+PURPOSE: apply scalings (either individually or in bulk) and subtract continuum from line to create an SDI image
+
+DESCRIPTION: Opens cubes fitting 'Line*circsym*.fits' description and builds up the name for writing from the name
+            of the opened file so that unnecessary keywords don't need to be specified every time. If indiv is
+            specified then opens the file written by the scale factors function where each image has an individual
+            scale factor, otherwise uses the same scale factor for each image specified as a parameter. Then the
+            continuum multiplied by the scale factor is subtracted from each line image and the SDI cube is written
+            to a fits file.
+
+INPUTS:
+    'indiv':    string, if specified will use the numpy array written to scale_factors.fits
+     scale:     float, if specified will use the same one value to scale all images in the cube
+
+OUTPUTS:    does not return anything
+        'SDI_???_clip???_???_reg_circsym.fits':     sdi image cube
+
+HISTORY:
+    Created:    2016-07-26 by Kate Follette, kbf@stanford.edu
+    Py Trans:   2016-08-22 by Wyatt Mullen, wmullen1@stanford.edu
+"""
+def visao_sdi(*args, **kwargs):
+
+    LineFile = glob.glob('Line*circsym*.fits')[0] #uses first cube that fits this string, hopefully is cube you want
+    ContFile = glob.glob('Cont*circsym*.fits')[0]
+    Line = fits.open(LineFile)[0].data
+    Cont = fits.open(ContFile)[0].data
+    nims = Line.shape[0]
+
+
+    #getting file names so that don't need to specify 'clip' or 'flat'
+    clipInd = LineFile.find('clip')
+    if clipInd <= 1: clip = LineFile[clipInd - 1, clipInd + 7]
+    else: clip = '_'
+    if LineFile.find('flat'): flat = '_flat_'
+    else: flat = '_'
+
+    if 'indiv' in args:
+        scl = fits.open('RATIO_LIST.fits')[0].data
+        sdi = 'indiv'
+        print('Scaling continuum images by individually comptured ratios and subtracting.')
+    elif 'scale' in kwargs:
+        scl = np.zeros((nims))
+        scl = np.ndarray.fill(kwargs['scale'])
+        sdi = str('%.2f' % kwargs['scale'])
+        print('Scaling continuum image by ' + str(kwargs['scale']) + ' and subtracting.')
+    else:
+        raise RuntimeError('Either scale or indiv keyword must be set.')
+
+    print('Out of ' + str(nims) + ' images this many have finished:')
+    SDIim = np.zeros((Line.shape))
+    for i in range(0, nims):
+        print(str(i) + ', ', end='', flush=True)
+        SDIim[i,:,:] = Line[i,:,:] - (scl[i] * Cont[i,:,:]) #subtracing continuum from line
+
+    del Line #clearing the large files from memory
+    del Cont
+    fits.writeto('SDI_' + sdi + clip + flat + 'reg_circsym.fits', SDIim, clobber=True)

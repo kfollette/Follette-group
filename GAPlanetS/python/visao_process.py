@@ -171,7 +171,7 @@ def visao_inventory(sci_imlist=None, dark_imlist=None, flat_imlist=None, rotoff_
 
     return_imLists = {'sci_imlist': [], 'dark_imlist': [], 'flat_imlist': []}
     return_imLists['sci_imlist'] = [fnames[i] for i in sci_ims]
-    print(return_imLists['sci_imlist'])
+    #print(return_imLists['sci_imlist'])
     return_imLists['dark_imlist'] = [fnames[i] for i in dark_indices]
     return_imLists['flat_imlist'] = [fnames[i] for i in flat_indices]
     return_imLists['filt'] = filt

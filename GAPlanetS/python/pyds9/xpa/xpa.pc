@@ -1,0 +1,10 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: xpa
+Description: XPA messaging system for DS9 and other astro tools
+Version: 2.1.17
+Libs: -L${libdir} -lxpa  -lm
+Cflags: -I${includedir}

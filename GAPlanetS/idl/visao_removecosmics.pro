@@ -81,7 +81,7 @@ pro visao_removecosmics, fname, all=all, nantest=nantest, stp=stp
       if n_elements(idx) lt zdim then begin
         img_culled[*,*,i]=img[*,*,idx[i]]
         fstring=strsplit(fnames[i],'.',/extract)
-        writefits, string(fstring[0])+'_nocosmics.fits', img
+        writefits, string(fstring[0])+'_nocosmics.fits', img_culled
       endif else begin
         print, 'image', string(fnames[i]), 'has only', zdim, 'images in its cube.'
       endelse

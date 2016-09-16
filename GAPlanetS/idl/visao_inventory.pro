@@ -15,6 +15,7 @@ pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, 
   list=(intarr(4))
 
   exp_sort=exptime[sort(exptime)]
+  exp_sort=float(number_formatter(exp_sort[*],decimals=2))
   exp_use=exp_sort[uniq(exp_sort)]
   if n_elements(exp_use) gt 1 then print, 'Warning - more than one exposure time in this image set - separate before proceeding'
 
@@ -28,7 +29,7 @@ pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, 
 
     if((where(strmatch(vfw3posn,'*alpha*')))[0] ne -1) then begin
       Haims = where(strmatch(vfw3posn, '*alpha*') and ( imtypes eq 0 ) and ( aoloopst eq 1 ) and $
-        (exptime eq exp_use[l]) and (avgwfe lt wfemax) )
+        (number_formatter(exptime,decimals=2) eq exp_use[l]) and (avgwfe lt wfemax) )
       if Haims[0] ne -1 then print, 'Found ', n_elements(Haims), 'closed loop H alpha with exposure time', exp_use[l], $
         'and wfe<', wfemax
       list[0]=1
@@ -58,7 +59,7 @@ pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, 
 
 
   endfor
-
+;stop
   nfilt=where(list ne 0)
   if n_elements(nfilt) gt 1 then print, 'more than one SDI filter in this image set - separate before proceeding'
 

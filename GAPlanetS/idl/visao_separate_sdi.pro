@@ -70,6 +70,10 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
 
   ;;image loop
   for i=0,nims-1 do begin
+    if keyword_set(indiv) then typ='individually' else typ='in bulk'
+    status='processing image number'+string(i+1)+'  of'$
+           +string(nims)+'  '+string(typ)
+    statusline, status, 0
     if not keyword_set(indiv) then begin
       j=i
       raw[*,*,i]=readfits(sci_imlist[i], head, /silent)*1.
@@ -145,5 +149,7 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
     writefits, 'exptime_preproc.fits', expt
 
 if keyword_set(stp) then stop
+
+print, 'separate sdi complete'
 
 end

@@ -30,17 +30,6 @@
 
 pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=scl, stp=stp
 
-  visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, mag1=mag1
-  ;;create aligned directory if doesn't already exist
-
-  dummy_im=readfits(sci_imlist[0])
-  dim1=(size(dummy_im))[1]
-  dim2=(size(dummy_im))[2]
-  nims=n_elements(sci_imlist)
-
-  xcen=(dim1-1)/2.
-  ycen=(dim2/2-1)/2.
-  
   if keyword_set(flat) then namestr='_flat_' else namestr='_'
 
   ;; read in channel cubes from visao_separate_sdi, which are dark subtracted and flat fielded
@@ -51,17 +40,28 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
   ;;grab reference image to register against
   center_ref_line=Line[*,*,ref-1]
   center_ref_cont=Cont[*,*,ref-1]
-  print, 'regsitering against', sci_imlist[ref-1]
+  print, 'regsitering against image number', ref
   endif else begin
     center_ref_line=readfits('./indiv/Line'+string(namestr)+string(ref, format='(i04)')+'.fits')
     center_ref_cont=readfits('./indiv/Cont'+string(namestr)+string(ref, format='(i04)')+'.fits')
    print, 'regsitering against', './indiv/Line/Cont'+string(namestr)+string(ref, format='(i04)')+'.fits'
   endelse
 
+  dim1=(size(center_ref_line))[1]
+  dim2=(size(center_ref_line))[2]
+  if keyword_set(indiv) then begin
+   spawn, 'ls indiv/Line* | wc -l', nims
+   nims=long(nims[0])
+  endif else begin
+    nims=(size(Line))[3]
+  endelse
+  xcen=(dim1-1)/2.
+  ycen=(dim2-1)/2.
+
   ;create a gaussian at very center of dummy array  with FWHM~star FWHM (measure!) to register against
   ;;default FWHM is 10 unless set with keyword
   if not keyword_set(FWHM) then fwhm=10.
-  gauss_cen=psf_gaussian(npixel=[dim1, dim2/2], centroid=[xcen, ycen], FWHM=fwhm)
+  gauss_cen=psf_gaussian(npixel=[dim1, dim2], centroid=[xcen, ycen], FWHM=fwhm)
 
   ;smooth to avoid cosmic ray
   center_ref_line_smooth=gauss_smooth(center_ref_line, width=5.)*1.
@@ -84,8 +84,8 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     cubedim=1
   endelse
   
-  Line_smooth=dblarr(dim1, dim2/2, cubedim)
-  Cont_smooth=dblarr(dim1, dim2/2, cubedim)
+  Line_smooth=dblarr(dim1, dim2, cubedim)
+  Cont_smooth=dblarr(dim1, dim2, cubedim)
   Line_reg=dblarr(clip, clip, nims)
   Cont_reg=dblarr(clip,clip, nims)
   SDI_im=dblarr(clip, clip, nims)
@@ -94,7 +94,6 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
   expt=dblarr(nims)
   Line_shift_arr=dblarr(2,nims)
   Cont_shift_arr=dblarr(2,nims)
-
 
   ;;image loop
   for i=0, nims-1 do begin
@@ -135,9 +134,9 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     endif else begin
       Line_cropx=clip/2
     endelse
-    if dim2/4-abs(Line_shift[1]) lt clip/2 then begin
-      print, 'Line overshoots by', dim2/4-abs(Line_shift[0])-clip/2, 'pixels in y'
-      Line_cropy=floor(dim2/4-abs(Line_shift[1]))
+    if dim2/2-abs(Line_shift[1]) lt clip/2 then begin
+      print, 'Line overshoots by', dim2/2-abs(Line_shift[0])-clip/2, 'pixels in y'
+      Line_cropy=floor(dim2/2-abs(Line_shift[1]))
     endif else begin
       Line_cropy=clip/2
     endelse
@@ -149,9 +148,9 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     endif else begin
       Cont_cropx=clip/2
     endelse
-    if dim2/4-abs(Cont_shift[1]) lt clip/2 then begin
-      print, 'Cont overshoots by', dim2/4-abs(Line_shift[0])-clip/2, 'pixels in y'
-      Cont_cropy=floor(dim2/4-abs(Cont_shift[1]))
+    if dim2/2-abs(Cont_shift[1]) lt clip/2 then begin
+      print, 'Cont overshoots by', dim2/2-abs(Line_shift[0])-clip/2, 'pixels in y'
+      Cont_cropy=floor(dim2/2-abs(Cont_shift[1]))
     endif else begin
       Cont_cropy=clip/2
     endelse
@@ -170,11 +169,6 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
 
     print, 'processed image', i+1, '        of', nims
 
-    ;;1:1 subtraction of Ha and Cont images
-    if keyword_set(sdi) then begin
-      SDI_im[*,*,i]=Line_reg[*,*,i]-sdi*Cont_reg[*,*,i]
-      ;SDI_im2[*,*,i]=Line_reg[*,*,i]-Cont_reg[*,*,i]
-    endif
   endfor
 
 
@@ -197,5 +191,7 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     endif
 
 if keyword_set(stp) then  stop
+
+print, 'registration complete'
 
 end

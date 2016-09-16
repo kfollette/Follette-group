@@ -94,4 +94,9 @@ pro visao_circlesym, Line_cent, Cont_cent, msk=msk, clip=clip, rmax=rmax, flat=f
 
 
 if keyword_set(stp) then stop
+
+print, 'subpixel registration complete'
+print, 'Line image were shifted by', Line_shift 
+print, 'Continuum image were shifted by', Cont_shift 
+
 end

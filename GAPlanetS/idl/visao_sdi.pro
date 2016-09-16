@@ -60,7 +60,8 @@ pro visao_sdi, indiv=indiv, scale=scale, clip=clip, flat=flat, stp=stp
   SDIim=dblarr(clip, clip, n_elements(scl))
 
   for i =0, n_elements(scl) -1 do begin
-    print, i
+    status='image number'+string(i)+'  of'+string(n_elements(scl))
+    statusline, status, 0
     SDIim[*,*,i] = Line[*,*,i] - scl[i]*Cont[*,*,i]
   endfor
 
@@ -70,5 +71,7 @@ pro visao_sdi, indiv=indiv, scale=scale, clip=clip, flat=flat, stp=stp
   writefits, 'SDI_'+string(sdi)+'_clip'+string(clip,format='(i03)')+string(namestr)+'reg_circsym.fits', SDIim
 
 if keyword_set(stp) then stop
+
+print, 'done creating SDI image cube'
 
 end

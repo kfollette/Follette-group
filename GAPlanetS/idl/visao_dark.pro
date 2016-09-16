@@ -16,7 +16,7 @@ visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=
   endfor
 
 
-  if n_elements(uniq(expt)) eq 1 then begin
+  if n_elements(uniq(number_formatter(expt,decimals=2))) eq 1 then begin
     if n_elements(dark_imlist) eq 1 then master_dark=darks else master_dark=median(darks, dim=3)
       mkhdr, hdr, master_dark
       sxaddpar, hdr, 'EXPTIME', expt[0]

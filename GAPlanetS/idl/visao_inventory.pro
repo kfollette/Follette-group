@@ -1,4 +1,4 @@
-pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, mag1=mag1, stp=stp, totrot=totrot
+pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, sciims, wfe=wfe, mag1=mag1, stp=stp, totrot=totrot
 
   visao_getimtypes, fnames, imtypes, exptime=exptime, vfw3posn=vfw3posn, vfw2posn=vfw2posn, aoloopst=aoloopst, $
     rotoff=rotoff, avgwfe=avgwfe, region=region, am=am, subdir='raw'
@@ -28,7 +28,8 @@ pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, 
     ;;select only closed loop images with same filter and exposure time, and with wfe cutoff if /WFE keyword is set
 
     if((where(strmatch(vfw3posn,'*alpha*')))[0] ne -1) then begin
-      Haims = where(strmatch(vfw3posn, '*alpha*') and ( imtypes eq 0 ) and ( aoloopst eq 1 ) and $
+      Haims = where(strmatch(vfw3posn, '*alpha*') and ( imtypes eq 0 ) and $
+( aoloopst eq 1 ) and $
         (number_formatter(exptime,decimals=2) eq exp_use[l]) and (avgwfe lt wfemax) )
       if Haims[0] ne -1 then print, 'Found ', n_elements(Haims), 'closed loop H alpha with exposure time', exp_use[l], $
         'and wfe<', wfemax

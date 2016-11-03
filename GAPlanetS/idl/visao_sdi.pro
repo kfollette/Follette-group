@@ -21,24 +21,21 @@
 ;
 ; HISTORY:
 ;  Written 07-26-16 by Kate Follette, kbf@stanford.edu
-;
 ;-
 
-pro visao_sdi, indiv=indiv, scale=scale, clip=clip, flat=flat, stp=stp
+pro visao_sdi, lineim, contim, outim, indiv=indiv, scale=scale, stp=stp
 
-  if keyword_set(flat) then namestr='_flat_' else namestr='_'
+Line = readfits(lineim)
+Cont = readfits(contim)
 
-  if keyword_set(clip) then begin
-    Line=readfits('Line_clip'+string(clip,format='(i03)')+string(namestr)+'reg_circsym.fits')
-    Cont=readfits('Cont_clip'+string(clip,format='(i03)')+string(namestr)+'reg_circsym.fits')
-  endif else begin
-    Line=readfits('Line'+string(namestr)+'reg_circsym.fits')
-    Cont=readfits('Cont'+string(namestr)+'reg_circsym.fits')
-  endelse
+xdim = (size(Line))[1]
+ydim = (size(Line))[2]
+nims = (size(Line))[3]
 
   if keyword_set(indiv) then begin
     scl = readfits('scale_factors.fits')
     sdi = 'indiv'
+    if n_elements(scl) ne nims then print, 'WARNING: numbers of images and scale factors dont match'
   endif
 
   if keyword_set(scale) then begin
@@ -57,7 +54,7 @@ pro visao_sdi, indiv=indiv, scale=scale, clip=clip, flat=flat, stp=stp
     print, 'scaling continuum images by', scale, 'and subtracting'
   endelse
 
-  SDIim=dblarr(clip, clip, n_elements(scl))
+  SDIim=dblarr(xdim, ydim,  n_elements(scl))
 
   for i =0, n_elements(scl) -1 do begin
     status='image number'+string(i)+'  of'+string(n_elements(scl))
@@ -68,7 +65,7 @@ pro visao_sdi, indiv=indiv, scale=scale, clip=clip, flat=flat, stp=stp
   ;; release Line and continuum cubes from memory
   delvar, Line, Cont
 
-  writefits, 'SDI_'+string(sdi)+'_clip'+string(clip,format='(i03)')+string(namestr)+'reg_circsym.fits', SDIim
+  writefits, outim, SDIim
 
 if keyword_set(stp) then stop
 

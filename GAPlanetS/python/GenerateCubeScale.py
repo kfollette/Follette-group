@@ -38,8 +38,12 @@ medianPixelsCONT = []
 #Prompt for debug info
 def debug():
     global debug
+    global InnerRadius
+    global OuterRadius
     #debug = input("Run in debug mode? y/n ")
     debug = "y"
+    InnerRadius = int(input("Enter an inner radius (distance from center)"))
+    OuterRadius = int(input("Enter an outer radius (distance from center)"))
 
 #Establish the directory we want to work from
 def switchDirectories():
@@ -168,11 +172,40 @@ def median(dataCube, filetype):
         medianPixelsCONT = medianImage
         return medianImage
 
+
+def radarr(xdim,ydim):
+    '''
+    make an image of size xdim x ydim where every pixel has a value equal to its distance from the center of the array
+    '''
+    im = np.zeros((xdim, ydim))
+    xcen = (xdim - 1) / 2.
+    ycen = (ydim - 1) / 2.
+    for index1 in range(xdim):
+        for index2 in range(ydim):
+            im[index1, index2]=np.sqrt((xcen-index1)**2. + (ycen-index2)**2.)
+    return(im)
+
+ 
+
+ 
+def ctrlmask(xdim, ydim, rin, rout):
+    '''
+    makes a xdim x ydim mask where pixels with distances from center between rin and
+    rout have value 1, and everything else has been replaced by NaNs
+    '''
+    arr = radarr(xdim, ydim)
+    new = np.ones((xdim, ydim))
+    new[(arr <= rin) & (arr >= rout)] = np.nan
+    return(new)
+
+
 #Assumes halo radius of 100 pixels, returns the total value of center 31,415 pixels
 def calculateTotalStarlight(image, i):
     runningSum = 0
-    for y in range(125,325):
-        for x in range(125,325):
+    mask = ctrlmask(450, 450, InnerRadius, OuterRadius)
+    for y in range(0,450):
+        for x in range(0,450):
+            image[i][y][x] = image[i][y][x] * mask[y][x]
             if image[i][y][x] == image[i][y][x]:
                 runningSum = runningSum + image[i][y][x]
     print("Total starlight identified: " + str(runningSum))
@@ -318,7 +351,7 @@ def makeFitsOfRatios(data):
     print("[STEP 11 OF 14] Generating ratio list")
     hdu = fits.PrimaryHDU(data)
     hduList = fits.HDUList([hdu])
-    hduList.writeto("RATIO_LIST.fits")
+    hduList.writeto("scale_factors.fits", clobber=True)
 
 def SDICubeMR(scales, dataHA, dataCONT):
     dataSize = len(dataHA)
@@ -332,11 +365,11 @@ def SDICubeMR(scales, dataHA, dataCONT):
         print("[STEP 12 OF 14] Building image " + str(z) + " of " + str(dataSize) +  " in data cube")
     hdu = fits.PrimaryHDU(SDIImage)
     hduList = fits.HDUList([hdu])
-    hduList.writeto("SDI_CUBE_MR.fits")
+    hduList.writeto("SDI_CUBE_MR.fits", clobber=True)
 
 def plot1(errorData, medianScale):
     print("[STEP 13 OF 14] Producing ratio plot-- please close graph window to continue")
-    hdulist = fits.open("RATIO_LIST.fits")
+    hdulist = fits.open("scale_factors.fits")
     ratioData = hdulist[0].data
     medianData = []
     dataSize = len(errorData)

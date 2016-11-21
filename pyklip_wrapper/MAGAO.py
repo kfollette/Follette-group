@@ -103,6 +103,7 @@ class MAGAOData(object):
             self._wvs = None
             self._wcs = None
             self._IWA = None
+            self._OWA = None
             self.spot_flux = None #!
             self.star_flux = None
             self.contrast_scaling = None
@@ -155,6 +156,13 @@ class MAGAOData(object):
     @IWA.setter
     def IWA(self, newval):
         self._IWA = newval
+
+    @property
+    def OWA(self):
+        return self._OWA
+    @OWA.setter
+    def OWA(self, newval):
+        self._OWA = newval
     
     @property
     def output(self):
@@ -201,19 +209,15 @@ class MAGAOData(object):
             wcs_hdrs.append(astr_hdrs) #!
             prihdrs.append(prihdr)
             filenames.append([filepath for i in range(pa.shape[0])])
-            print("read " + str(runningSum) + " files")
-            
+                        
             
         #FILENUMS IS 1D LIST WITH LENGTH 68 AFTER FOR LOOP
         data = np.array(data)
         dims = data.shape
-        print("DIMS = " + str(dims))
         #data = data.reshape([dims[0] * dims[1], dims[2], dims[3]])
         dims2 = data.shape
-        print("DIMS2 = " + str(dims2))
         #DATA HAS SIZE (68, 450, 450)
         filenums = np.array(filenums)
-        print("LEN=" + str(len(filenums)))
         filenums.reshape([dims[0]])
         #filenums = np.array(filenums)
         filenames = np.array(filenames).reshape([dims[0]])
@@ -229,10 +233,8 @@ class MAGAOData(object):
         centers = np.zeros((dsize,2))
         for y in range(dsize):
             for x in range(2):
-                print("LINE 232 DEBUG: " + str(dims[1]/2))
                 centers[y][x] = dims[1]/2
                 #centers[y][x] = 224.5
-        print("SHAPE OF CENTERS IN MAGAO.py IS " + str(centers.shape))
         #centers = np.array(centers)
         #star_fluxes = np.array(star_fluxes).reshape([dims[0] * dims[1]])
         star_fluxes = np.array(star_fluxes)
@@ -243,8 +245,6 @@ class MAGAOData(object):
         self._centers = centers
         self._filenums = filenums
         self._filenames = filenames
-        print("Filenames associated with self")
-        print(self._filenames)
         self._PAs = rot_angles
         self._wvs = wvs
         self._wcs = None #wvs_hdrs
@@ -254,6 +254,7 @@ class MAGAOData(object):
         with open('iwa.txt') as f:
             line=f.readline()
         self.IWA = int(line)
+        self.OWA = 450
         self.star_flux = star_fluxes
         self.contrast_scaling = 1./star_fluxes
         self.prihdrs = prihdrs
@@ -276,7 +277,6 @@ class MAGAOData(object):
         Return:
             img: calibrated image of the same shape (this is the same object as the input!!!)
         """
-        print("Shape of img in calibrate_output: " + str(img.shape))
         if units == "contrast":
             if spectral:
                 # spectral cube, each slice needs it's own calibration
@@ -403,7 +403,6 @@ class MAGAOData(object):
 def _magao_process_file(filepath, filetype):
     #filetype == 0 --> HA
     #filetype == 1 --> CONT
-    print("Reading File: {0}".format(filepath))
     #hdulist = fits.open(filepath)
     #header = hdulist[0].header
     #angle = float(header['ROTOFF'])
@@ -439,7 +438,6 @@ def _magao_process_file(filepath, filetype):
         wvs = [1.0]
         #center = [[224.5,224.5]]
         datasize = cube.shape[1]
-        print("LINE 440 DEBUG: " + str(datasize/2))
         center = [[datasize/2, datasize/2]]
         
         dims = cube.shape
@@ -451,7 +449,6 @@ def _magao_process_file(filepath, filetype):
             
         #star_flux = calc_starflux(flipped_cube, center) #WRITE THIS FUNCTION
         star_flux = [[1]]
-        print("cube shape is " + str(cube.shape))
         #print("flipped_cube shape is " + str(flipped_cube.shape))
         #cube = flipped_cube.reshape([1, flipped_cube.shape[0], flipped_cube.shape[1]])
         cube.reshape([1, cube.shape[0], cube.shape[1]])
@@ -464,7 +461,6 @@ def _magao_process_file(filepath, filetype):
         #print("Closing file")
         #fits.close(filepath)
         
-    print(cube)
     return cube, center, parang, wvs, astr_hdrs, filt_band, fpm_band, ppm_band, star_flux, spot_fluxes, prihdr, exthdr
 
 

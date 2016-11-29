@@ -1,6 +1,6 @@
 #Written by Elijah Spiro
-#6/29/16 - 7/12/16
-#Takes in H-Alpha and continuous spectrum data cubes. Outputs a single value of scale that will best suit the data.              
+#6/29/16 - 11/29/16
+#Takes in H-Alpha and continuous spectrum data cubes. Outputs a file of scale values that will best suit the data.              
 #Works on data cube sets               
 
 
@@ -195,9 +195,14 @@ def ctrlmask(xdim, ydim, rin, rout):
     '''
     arr = radarr(xdim, ydim)
     new = np.ones((xdim, ydim))
-    new[(arr <= rin) & (arr >= rout)] = np.nan
+    for y in range(0,450):
+        for x in range(0,450):
+            if arr[y][x] <= rin:
+                new[y][x] = np.nan
+            elif arr[y][x] >= rout:
+                new[y][x] = np.nan
     return(new)
-
+    
 
 #Assumes halo radius of 100 pixels, returns the total value of center 31,415 pixels
 def calculateTotalStarlight(image, i):
@@ -351,7 +356,7 @@ def makeFitsOfRatios(data):
     print("[STEP 11 OF 14] Generating ratio list")
     hdu = fits.PrimaryHDU(data)
     hduList = fits.HDUList([hdu])
-    hduList.writeto("scale_factors.fits", clobber=True)
+    hduList.writeto("RATIO_LIST.fits")
 
 def SDICubeMR(scales, dataHA, dataCONT):
     dataSize = len(dataHA)
@@ -365,11 +370,11 @@ def SDICubeMR(scales, dataHA, dataCONT):
         print("[STEP 12 OF 14] Building image " + str(z) + " of " + str(dataSize) +  " in data cube")
     hdu = fits.PrimaryHDU(SDIImage)
     hduList = fits.HDUList([hdu])
-    hduList.writeto("SDI_CUBE_MR.fits", clobber=True)
+    hduList.writeto("SDI_CUBE_MR.fits")
 
 def plot1(errorData, medianScale):
     print("[STEP 13 OF 14] Producing ratio plot-- please close graph window to continue")
-    hdulist = fits.open("scale_factors.fits")
+    hdulist = fits.open("RATIO_LIST.fits")
     ratioData = hdulist[0].data
     medianData = []
     dataSize = len(errorData)

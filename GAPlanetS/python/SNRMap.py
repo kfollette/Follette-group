@@ -122,7 +122,9 @@ def generate_mask(radial_profile, z):
                 mask[y][x] = 1
             else:
                 mask[y][x] = np.nan
-    print("Generating mask " + str(z) + " of 225")
+    
+    sys.stdout.write("Generating mask %d of 225   \r" % (z) )
+    sys.stdout.flush()
     return mask
 
 def build_mask_cube(mask_cube):
@@ -202,7 +204,9 @@ def multiply_by_mask(mask_cube, z, indiv):
     for y in range(450):
         for x in range(450):
             newImage[y][x] = data[y][x] * mask_cube[z][y][x]
-    print("Generated multiplied image " + str(z) + " of 225")
+    #print("Generated multiplied image " + str(z) + " of 225")
+    sys.stdout.write("Generated multiplied image %d of 225   \r" % (z) )
+    sys.stdout.flush()
     return newImage
 
 def build_multiplied_cube(multiplied_cube):
@@ -263,7 +267,10 @@ def calculate_std(image, z):
             if not math.isnan(value):
                 values.append(value)
     std = np.nanstd(values)
-    print("Calculated standard deviation " + str(z) + " of 225") 
+    #print("Calculated standard deviation " + str(z) + " of 225") 
+    sys.stdout.write("Calculated standard deviation %d of 225   \r" % (z) )
+    sys.stdout.flush()
+    
     return std
 
 def graph_stds(stds):
@@ -311,7 +318,9 @@ def replacePixels(mask_cube, z, stds, reference, indiv):
                 new_values[y][x] = stds[z]
             else:
                 new_values[y][x] = reference[y][x]
-    print("Replaced pixels in " + str(z+1) + " out of 220 slices")
+    #print("Replaced pixels in " + str(z+1) + " out of 220 slices")
+    sys.stdout.write("Replaced pixels in %d out of 220 slices   \r" % (z) )
+    sys.stdout.flush()
     return new_values
 
 def build_noise_cube(noise_cube):
@@ -352,7 +361,7 @@ def read_noise_map():
     print("Read noise_map.fits back in to memory")
     return noise_map
 
-def create_signal_to_noise_map(noise_map, indiv, output_name):
+def create_signal_to_noise_map(noise_map, indiv, output_name, saveOutput = True):
     """
     This function divides the signal (original) image by the noise map at every pixel
 
@@ -372,10 +381,16 @@ def create_signal_to_noise_map(noise_map, indiv, output_name):
     for y in range(450):
         for x in range(450):
             snr_map[y][x] = data[y][x] / noise_map[y][x]
-    hdu = fits.PrimaryHDU(snr_map)
-    hdulist = fits.HDUList([hdu])
-    hdulist.writeto(output_name, overwrite=True)
-    print("Wrote "+output_name+" to " + os.getcwd())
+    
+    
+    if (saveOutput == True):
+        hdu = fits.PrimaryHDU(snr_map)
+        hdulist = fits.HDUList([hdu])
+        hdulist.writeto(output_name, overwrite=True)
+        print("Wrote "+output_name+" to " + os.getcwd())
+
+    
+    
     return snr_map
 
 def implant_custom_mask(theta1, theta2, r1, r2):
@@ -517,32 +532,3 @@ def SNRMap(filename, output_name, from_scratch, graph=False, mask=np.ones((450,4
     snr_map = create_signal_to_noise_map(noise_map, indiv, output_name)
     return snr_map
 
-############ MODULE TESTING #################
-#print2D(implant_custom_mask(45,90,150,200))
-#############################################
-
-#########################################################################################################################################################################################################
-###########################################################################       RUN PROGRAM        ####################################################################################################
-file = sys.argv[1]
-output = sys.argv[2]
-new = sys.argv[3]
-if new == 'True':
-    new = True
-elif new == 'False':
-    new = False
-graph = sys.argv[4]
-if graph == 'True':
-    graph = True
-elif graph == 'False':
-    graph = False
-if len(sys.argv) > 5:
-    theta1 = float(sys.argv[5])
-    theta2 = float(sys.argv[6])
-    r1 = float(sys.argv[7])
-    r2 = float(sys.argv[8])
-    mask = implant_custom_mask(theta1, theta2, r1, r2)
-    test = SNRMap(file, output, new, graph, mask)
-else:
-    test = SNRMap(file, output, new, graph)
-#med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits
-#########################################################################################################################################################################################################

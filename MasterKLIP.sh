@@ -5,7 +5,9 @@
 ulimit -n 4096
 
 #Launch GUI prompting for information
+javac GetParameters.java
 java GetParameters
+rm *.class
 
 #Determine whether to run single reduction of automated reduction
 if [ -f single_reduction_parameters.txt ]; then

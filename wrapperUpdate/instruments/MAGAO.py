@@ -251,10 +251,9 @@ class MAGAOData(object):
         self.spot_flux = spot_fluxes
         #self.IWA = MAGAOData.fpm_diam[fpm_band] / 2.0 #!
         #self.IWA = np.ones((68))
-        #with open('iwa.txt') as f:
-            #line=f.readline()
-        #self.IWA = int(line)
-        self.IWA = 1
+        with open('iwa.txt') as f:
+            line=f.readline()
+        self.IWA = int(line)
         self.OWA = 450
         self.star_flux = star_fluxes
         self.contrast_scaling = 1./star_fluxes

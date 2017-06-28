@@ -14,13 +14,16 @@ def readFitsCubeToArray(filename):
     global data
     hdulist = fits.open(filename)
     data = hdulist[0].data
+    hdulist.close()
+    print("read fits file into data")
     medianImage = np.nanmedian(data, axis=0)
     data = medianImage
+    print("created median")
 
 def findGhostSingleIm():
     global ghostX
     global ghostY
-    count = 0
+    #count = 0
     xGhost = 383
     yGhost = 217
     maxVal = 0
@@ -47,7 +50,7 @@ def makeSquare():
 def isolateGhostArray():
      center = []
      for x in range (0, 20):
-         value = data[10,x]
+         value = maskedArray[10,x]
          center.append(value)
      return center
 
@@ -72,15 +75,14 @@ def moffat(x, amp, cen, wid, pow):
 
 def makeMoffatGhost(array):
     try:
-        #an array of x values from 0 to 50
+        #an array of x values corresponding to the size of the array
         new_x = list(range(len(array)))
 
         #uses the ghost array as y values
-        new_y = new_y = array
+        new_y = array
 
-
-        # initial (dumb) guess for [amp, cen, wid] of gaussian
-        init_vals = [200, 25, 3, 2]
+        # initial (dumb) guess for [amp, cen, wid] of moffat
+        init_vals = [2, 10, 3, 2]
         #curvefit spits out two arrays - one with the fit parameters (best_vals) and one with the covariance matrix (covar1)
         best_vals1, covar1 = curve_fit(moffat, new_x, new_y, p0=init_vals)
         print(best_vals1)
@@ -106,7 +108,7 @@ def makeMoffatGhost(array):
         plt.figure(1)
         plt.errorbar(new_x, new_y, yerr=e, fmt='none', ecolor = 'r')
         #np.linspace?
-        xfine = np.linspace(0., 50., 30000)  # define values to plot the fit for
+        xfine = np.linspace(0., 20., 30000)  # define values to plot the fit for
         #plt.plot(xfine, gaussian(xfine, best_vals2[0], best_vals2[1], best_vals2[2]), 'r-')
         plt.plot(xfine, moffat(xfine, *best_vals2), 'c-')
         plt.xlabel('Pixel Number')
@@ -115,10 +117,11 @@ def makeMoffatGhost(array):
         #plt.title("%s %s ghost" %(name, date))
         print(str(best_vals2))
         #plt.savefig('%s_%s_ghost.png' %(name,date))
-    #   plt.clf()
+        #plt.clf()
 
         def moff(x):
             return moffat(x, *best_vals2)
+        
         area, areaErr = quad(moff, 0, 119)
         amp = best_vals2[0]
         ampErr = covar2[0,0]
@@ -136,8 +139,8 @@ def makeMoffatGhost(array):
             plt.xlabel('Pixel Number')
             plt.ylabel('Pixel Value')
             plt.legend(('moffat best fit', 'data'), loc='upper left')
-            plt.title("No Star Fit for %s %s" %(name, date))
-            plt.savefig('%s_%s_ghost.png' %(name,date))
+            #plt.title("No Star Fit for %s %s" %(name, date))
+            #plt.savefig('%s_%s_ghost.png' %(name,date))
 
             plt.clf()
 
@@ -154,15 +157,15 @@ def normalizeSquare():
             maskedArray[y][x] = maskedArray[y][x] / maxVal
 
 
-readFitsCubeToArray("Cont_clip450_flat_reg_circsym.fits")
-#readFitsCubeToArray("../../HD142527/8Apr14/revamped/Line_clip450_reg_circsym.fits")
+readFitsCubeToArray("Line_clip450_flat_reg_circsym_nocosmics.fits")
 findGhostSingleIm()
 makeSquare()
 normalizeSquare()
 #modifyDataSet()
-makeMoffatGhost(isolateGhostArray())
+amp, ampErr, wid, widErr, area, areaErr = makeMoffatGhost(isolateGhostArray())
 hdu = fits.PrimaryHDU(maskedArray)
-#hdu = fits.PrimaryHDU(data)
-#hdu = fits.PrimaryHDU(maskedArray)
 hduList = fits.HDUList([hdu])
-hduList.writeto("test.fits", clobber=True)
+hduList.writeto("test.fits", overwrite=True)
+with open("moffat.txt","w") as text_file:
+    text_file.write(str(amp) + " " + str(ampErr) + " " + str(wid) + " " + str(widErr) + " " + str(area) + " " + str(areaErr))
+    text_file.close()

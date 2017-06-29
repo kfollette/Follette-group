@@ -29,8 +29,8 @@ def findGhostSingleIm():
     maxVal = 0
     tempX = 0
     tempY = 0
-    for y in range(yGhost-10, yGhost+11):
-        for x in range(xGhost-10,xGhost+11):
+    for y in range(yGhost-15, yGhost+16):
+        for x in range(xGhost-15,xGhost+16):
             if data[y,x] > maxVal:
                 tempX = x
                 tempY = y
@@ -42,16 +42,17 @@ def findGhostSingleIm():
 
 def makeSquare():
     global maskedArray
-    maskedArray = np.zeros((21,21))
-    for y in range(-10,11):
-        for x in range(-10,11):
-            maskedArray[y+10][x+10] = data[ghostY+y][ghostX+x]
+    maskedArray = np.zeros((31,31))
+    for y in range(-15,16):
+        for x in range(-15,16):
+            maskedArray[y+15][x+15] = data[ghostY+y][ghostX+x]
 
 def isolateGhostArray():
      center = []
-     for x in range (0, 20):
-         value = maskedArray[10,x]
+     for x in range (0, 30):
+         value = maskedArray[15,x]
          center.append(value)
+     print(center)
      return center
 
 def modifyDataSet():
@@ -82,7 +83,7 @@ def makeMoffatGhost(array):
         new_y = array
 
         # initial (dumb) guess for [amp, cen, wid] of moffat
-        init_vals = [2, 10, 3, 2]
+        init_vals = [1, 15, 10, 0.5]
         #curvefit spits out two arrays - one with the fit parameters (best_vals) and one with the covariance matrix (covar1)
         best_vals1, covar1 = curve_fit(moffat, new_x, new_y, p0=init_vals)
         print(best_vals1)
@@ -108,7 +109,7 @@ def makeMoffatGhost(array):
         plt.figure(1)
         plt.errorbar(new_x, new_y, yerr=e, fmt='none', ecolor = 'r')
         #np.linspace?
-        xfine = np.linspace(0., 20., 30000)  # define values to plot the fit for
+        xfine = np.linspace(0., 30., 30000)  # define values to plot the fit for
         #plt.plot(xfine, gaussian(xfine, best_vals2[0], best_vals2[1], best_vals2[2]), 'r-')
         plt.plot(xfine, moffat(xfine, *best_vals2), 'c-')
         plt.xlabel('Pixel Number')
@@ -148,12 +149,12 @@ def makeMoffatGhost(array):
 
 def normalizeSquare():
     maxVal = 0
-    for y in range(21):
-        for x in range(21):
+    for y in range(31):
+        for x in range(31):
             if maskedArray[y][x] > maxVal:
                 maxVal = maskedArray[y][x]
-    for y in range(21):
-        for x in range(21):
+    for y in range(31):
+        for x in range(31):
             maskedArray[y][x] = maskedArray[y][x] / maxVal
 
 

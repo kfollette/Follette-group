@@ -17,6 +17,7 @@ import numpy as np
 ###INPUTS###
 hdulist = fits.open(sys.argv[1])
 Line_data = hdulist[0].data
+header_data = fits.getheader(sys.argv[1],0)
 hdulist.close()
 hdulist = fits.open(sys.argv[2])
 Cont_data = hdulist[0].data
@@ -33,7 +34,7 @@ for z in range(size):
     SL = Line_data[z]
     SC = Cont_data[z]
     NewSlice = np.vstack(([SL],[SC]))
-    hdu = fits.PrimaryHDU(NewSlice)
+    hdu = fits.PrimaryHDU(NewSlice, header_data)
     hdulist = fits.HDUList([hdu])
     hdulist.writeto("Cube_" + str(count) + ".fits", overwrite=True)
     count += 1

@@ -9,14 +9,16 @@ from scipy.optimize import curve_fit
 from scipy.integrate import quad
 import pandas as pd
 from numpy import sqrt
+import image_registration as ir
 
 def readFitsCubeToArray(filename):
     global data
+    global original
     hdulist = fits.open(filename)
-    data = hdulist[0].data
+    original = hdulist[0].data
     hdulist.close()
     print("read fits file into data")
-    medianImage = np.nanmedian(data, axis=0)
+    medianImage = np.nanmedian(original, axis=0)
     data = medianImage
     print("created median")
 
@@ -52,8 +54,14 @@ def isolateGhostArray():
      for x in range (0, 30):
          value = maskedArray[15,x]
          center.append(value)
-     print(center)
      return center
+ 
+def isolateGhostArray2():
+    center = []
+    for y in range (0, 30):
+        value = maskedArray[y,15]
+        center.append(value)
+    return center
 
 def modifyDataSet():
     y = data
@@ -75,6 +83,7 @@ def moffat(x, amp, cen, wid, pow):
     return (amp*(((x-cen)/wid)**(2)+1)**(-pow))
 
 def makeMoffatGhost(array):
+    global best_vals2
     try:
         #an array of x values corresponding to the size of the array
         new_x = list(range(len(array)))
@@ -86,7 +95,6 @@ def makeMoffatGhost(array):
         init_vals = [1, 15, 10, 0.5]
         #curvefit spits out two arrays - one with the fit parameters (best_vals) and one with the covariance matrix (covar1)
         best_vals1, covar1 = curve_fit(moffat, new_x, new_y, p0=init_vals)
-        print(best_vals1)
         
         #add noise
         #read noise
@@ -115,6 +123,8 @@ def makeMoffatGhost(array):
         plt.xlabel('Pixel Number')
         plt.ylabel('Pixel Value')
         plt.legend(('moffat best fit', 'data'), loc='upper left')
+        plt.show()
+        plt.close()
         #plt.title("%s %s ghost" %(name, date))
         print(str(best_vals2))
         #plt.savefig('%s_%s_ghost.png' %(name,date))
@@ -156,17 +166,39 @@ def normalizeSquare():
     for y in range(31):
         for x in range(31):
             maskedArray[y][x] = maskedArray[y][x] / maxVal
+            
+def shift(x,y):
+    size = original.shape[0]
+    for z in range(size):
+        shiftX, shiftY = x-15, y-15
+        shifted_image = ir.fft_tools.shift2d(original[z],-shiftX,-shiftY)
+        original[z] = shifted_image
+        if(z%100 == 0):
+            print("shift number " + str(z))    
 
+################
 
-readFitsCubeToArray("Line_clip450_flat_reg_circsym_nocosmics.fits")
+readFitsCubeToArray("HD142527_Line_clip450_flat_reg_circsym.fits")
 findGhostSingleIm()
 makeSquare()
+amp1, ampErr1, wid1, widErr1, area1, areaErr1 = makeMoffatGhost(isolateGhostArray())
+centerX = best_vals2[1]
+amp2, ampErr2, wid2, widErr2, area2, areaErr2 = makeMoffatGhost(isolateGhostArray2())
+centerY = best_vals2[1]
+
+shift(centerX,centerY)
+
+medianImage = np.nanmedian(original, axis=0)
+data = medianImage
+print("created median")
+makeSquare()
 normalizeSquare()
-#modifyDataSet()
-amp, ampErr, wid, widErr, area, areaErr = makeMoffatGhost(isolateGhostArray())
 hdu = fits.PrimaryHDU(maskedArray)
 hduList = fits.HDUList([hdu])
 hduList.writeto("test.fits", overwrite=True)
+
+'''
 with open("moffat.txt","w") as text_file:
     text_file.write(str(amp) + " " + str(ampErr) + " " + str(wid) + " " + str(widErr) + " " + str(area) + " " + str(areaErr))
     text_file.close()
+'''

@@ -5,7 +5,26 @@ from astropy.io import fits
 import matplotlib.pyplot as plt
 import os
 import sys
+import time 
 
+
+def nameOutput(filename, output):
+    
+    if (output == None):
+        
+        #if no output name is specified at runtime and input data is a fits file
+        if(isinstance(filename, str)):
+            outputName = filename[:-5] + "_SNRMap.fits"
+        
+        #if data type is not a string (file name), names output file after date and time 
+        else:
+            outputName = "SNRMap_"  +(time.strftime("%d-%m-%Y")) +"_" +(time.strftime("%H-%M-%S")) + ".fits"
+        
+    else: 
+        outputName = output
+        
+    return str(outputName)
+    
 
 def read_file(filename): 
     """
@@ -266,7 +285,7 @@ def stdevMap(indiv, planets):
 
 
 
-def create_map(filename, planets = None, saveOutput = False):
+def create_map(filename, planets = None, saveOutput = True, outputName = None):
     """
     creates signal to noise ratio map of image.
     
@@ -337,8 +356,9 @@ def create_map(filename, planets = None, saveOutput = False):
     if (saveOutput == True):
         hdu = fits.PrimaryHDU(indiv)
         hdulist = fits.HDUList([hdu])
-        hdulist.writeto('snrtest.fits', overwrite=True)
-        print("Wrote snrtest to " + os.getcwd())
+        newname = str(nameOutput(filename, outputName))
+        hdulist.writeto(newname, overwrite=True)
+        print("Wrote %s to "%newname + os.getcwd())
 
 
     #returns final SNR map            
@@ -370,7 +390,11 @@ np.set_printoptions(threshold=np.nan)
 
 planetData = [13,], [120,], [10, 15]
 
-map = create_map('med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits', planetData, saveOutput = True)
+data = read_file('med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits')
+
+map = create_map(data, planetData, saveOutput = True)
+
+#map = create_map('med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits', planetData, saveOutput = True)
 
 #create_map('med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits', saveOutput = True)
 

@@ -1,26 +1,11 @@
-"""
-Written by Elijah Spiro [espiro18@amherst.edu]
-
-This code is to be used as a metric for evaluating the goodness of a klipped image. It takes in a "final product" klipped image output by pyklip and produces a signal:noise ratio image. The higher the value of signal vs. noise, the better we can trust the image. 
-
-This code is meant to be made generic enough that it can be called repeatedly and its results categorized as one step in the chain of automating the process of determining ideal pyklip parameters for a given data set.
-
-Eventual program flow:
-1. Master code runs pyklip on a given data set with intial best guess parameters (movement, IWA, annuli, etc). 
-2. THIS CODE IS CALLED AND RUN ON THE OUTPUT OF PYKLIP, AND THE SNR MAP PRODUCED IS ANALYZED
-3. Master code runs pyklip again, varying parameters slightly in an MCMC algorithm to avoid local maxima and best explore parameter space
-4. THIS CODE IS CALLED AGAIN ON THE NEW KLIPPED IMAGE, OUTPUT IS AGAIN ANALYZED, AND WE DETERMINE IF THE CHANGES IMPROVED OR WORSENED THE QUALITY OF THE RESULT
-5. This process is repeated indefinitely until ideal parameters are found for the given data set, and the best possible quality pyklipped image has been produced 
-
-Modified starting 6/19/17 by Alex Watson [awatson18@amherst.edu]
-"""
-
-from astropy.io import fits
 import numpy as np
-import matplotlib.pyplot as plt
 import math
+import statistics as stat 
+from astropy.io import fits
+import matplotlib.pyplot as plt
 import os
 import sys
+
 
 def read_file(filename): 
     """
@@ -31,504 +16,368 @@ def read_file(filename):
     
     Example:
     read_file("med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits")
+    
+    Written by:
+    Elijah Spiro
 
     Last Modified:
     6/19/2017
     """ 
-    #os.chdir("../HD142527/8Apr14/revamped/")
-    
     hdulist = fits.open(filename)
     indivData = hdulist[0].data
     hdulist.close()
     print("Read " + filename  + " in to memory")
     return indivData
 
-def radial_profile(center, y, x):
+
+
+def convertAngle(theta):
     """
-    This function calculates every pixel's distance from the center, to begin the annuli construction for noise mapping
+    This function takes in an angle as input and converts it to be between 0 and 360 if necessary
     
-    Required Inputs:
-    1. 2-element array of [x][y] coordinates of center
-    2. y-value examined
-    3. x-value examined
-    
+    Reuired Inputs:
+    1. Angle to be converted
+            
     Example:
-    radial_profile(center, y, x)
-
-    Last Modified:
-    6/19/2017
-    """
-    r = np.sqrt((x - center[0])**2 + (y - center[1])**2)
-    r = r.astype(np.double)
-    return r
-
-def generate_radial_profile():
-    """          
-    This function calls for radial_profile for every pixel in a 2D image. Once the pixel distances are all determined, it constructs a new FITS file           
+    convertAngle(-30)
     
-    Required Inputs: none
-                                                                                                                                                                                                       
-    Last Modified: 
-    6/19/2017 
-    
-    """ 
-    rArray = np.zeros((450,450))
-    center = (225.00, 225.00)
-    for y in range(450):
-        for x in range(450):
-            rArray[y][x] = radial_profile(center, y, x)
-    hdu = fits.PrimaryHDU(rArray)
-    hdulist = fits.HDUList([hdu])
-    hdulist.writeto("radial_profile.fits", overwrite=True)
-    print("Wrote radial_profile.fits to " + os.getcwd())
-
-def read_radial_profile():
-    """
-    This function reads in a FITS image to memory, skipping the step of generating a radial profile if the FITS file is already in place
-    
-    Required Inputs:
-    None
-
-    Example:
-    radial_profile = read_radial_profile()
-
-    Last Modified:
-    2/26/2017
-    """
-    hdulist = fits.open("radial_profile.fits")
-    radial_profile = hdulist[0].data
-    hdulist.close()
-    print("Read radial_profile.fits back in to memory")
-    return radial_profile
-
-def generate_mask(radial_profile, z):
-    """
-    This function loops through every pixel in a 2D image and determines whether or not to mask its value
-
-    Required Inputs:
-    1. Radial profile image
-    2. Radius of annuli to mask
-
-    Example:
-    generate_mask(114)
-
-    Last Modified:
-    2/28/2017
-    """
-    mask = np.zeros((450,450))
-    for y in range(450):
-        for x in range(450):
-            if (radial_profile[y][x] >= z-.5 and radial_profile[y][x] <= z+.5):
-                mask[y][x] = 1
-            else:
-                mask[y][x] = np.nan
-    
-    sys.stdout.write("Generating mask %d of 225   \r" % (z) )
-    sys.stdout.flush()
-    return mask
-
-def build_mask_cube(mask_cube):
-    """
-    This function constructs a FITS image cube containing the mask cube generated
-    
-    Required inputs:
-    1. Mask cube data
-
-    Example:
-    build_mask_cube(mask_cube_data)
-
-    Last Modified:
-    2/26/2017
-    """
-    hdu = fits.PrimaryHDU(mask_cube)
-    hdulist = fits.HDUList([hdu])
-    hdulist.writeto("mask_cube.fits", overwrite=True)
-    print("Wrote mask_cube.fits to " + os.getcwd())
-
-def read_mask_cube():
-    """
-    This function reads in a FITS image to memory, skipping the step of generating a new mask if the FITS file is already in place
-                                                                                                                                                                                                         
-    Required Inputs:
-    None    
-    
-    Example: 
-    mask_cube = read_mask_cube() 
-     
-    Last Modified: 
-    2/2/2017 
-    """   
-    hdulist = fits.open("mask_cube.fits")
-    mask_cube = hdulist[0].data
-    hdulist.close()
-    print("Read mask_cube.fits back in to memory")
-    return mask_cube
-
-def multiply_by_noise_mask(mask, data):
-    """                                                                                                                                                                                                 
-    This function is used specifically to mask the planet candidate from the image before noise is calculated (using wedge mask from optional parameter)
-    
-    Required Inputs:
-    1. Mask 2D data
-    2. Original data image
-    
-    Example:                                                                                                                                                                                             
-    multiply_by_mask(mask_data, indiv)      
-
-    Last Modified:
-    2/28/2017
-    """
-    newImage = np.zeros((450,450))
-    for y in range(450):
-        for x in range(450):
-            newImage[y][x] = data[y][x] * mask[y][x]
-    return newImage
-
-def multiply_by_mask(mask_cube, z, indiv):
-    """
-    This function multiplies every pixel in a 2D image with the corresponding pixel in a mask image
-
-    Required Inputs:
-    1. Mask cube data
-    2. Radius to focus annuli
-    3. Original data image
-
-    Example:
-    multiply_by_mask(mask_data, 114)
-
-    Last Modified:
-    2/26/2017
-    """    
-    data = indiv
-    newImage = np.zeros((450,450))
-    for y in range(450):
-        for x in range(450):
-            newImage[y][x] = data[y][x] * mask_cube[z][y][x]
-    #print("Generated multiplied image " + str(z) + " of 225")
-    sys.stdout.write("Generated multiplied image %d of 225   \r" % (z) )
-    sys.stdout.flush()
-    return newImage
-
-def build_multiplied_cube(multiplied_cube):
-    """
-    This function constructs a FITS image cube containing the multiplied cube generated                                              
-
-    Required inputs:
-    1. Multiplied cube data  
-                                                                                                                                                                                                                                                                                                         
-    Example:                                                                                                                                                                                            
-    build_multiplied_cube(multiplied_cube_data)
-                                         
-    Last Modified:  
-    2/26/2017 
-    """
-    hdu = fits.PrimaryHDU(multiplied_cube)
-    hdulist = fits.HDUList([hdu])
-    hdulist.writeto("multiplied_cube.fits", overwrite=True)
-    print("Wrote multiplied_cube.fits to " + os.getcwd())
-
-def read_multiplied_cube():
-    """ 
-    This function reads in a FITS image to memory, skipping the step of generating a new multiplied cube if the FITS file is already in place                                              
-    
-    Required Inputs:
-    None                                                                                                                                                                                               
-                                
-    Example:                                                                                                                                                                                            
-    multiplied_cube = read_multiplied_cube()  
-    
-    Last Modified:  
-    2/2/2017 
-    """
-    hdulist = fits.open("multiplied_cube.fits")
-    multiplied_cube = hdulist[0].data
-    hdulist.close()
-    print("Read multiplied_cube.fits back in to memory")
-    return multiplied_cube
-
-def calculate_std(image, z):
-    """
-    This function calculates standard deviation for every pixel in an annulus of given radius z
-
-    Required Inputs:
-    1. A 2D image
-    2. A value of radius to examine
-
-    Example:
-    calculate_std(multiplied_cube[z], z)
-
-    Last Modified:
-    2/26/2017
-    """
-    values = []
-    for y in range(450):
-        for x in range(450):
-            value = image[y][x]
-            if not math.isnan(value):
-                values.append(value)
-    std = np.nanstd(values)
-    #print("Calculated standard deviation " + str(z) + " of 225") 
-    sys.stdout.write("Calculated standard deviation %d of 225   \r" % (z) )
-    sys.stdout.flush()
-    
-    return std
-
-def graph_stds(stds):
-    """
-    This is an optional function to display the graph of standard deviation as a function of radius during calculations
-    
-    Required Inputs:
-    1. An array of standard deviation values
-
-    Example:
-    graph_stds(std_data)
-
-    Last Modified:
-    2/26/2017
-    """
-    plt.title("Standard Deviation as a function of Radius")
-    plt.plot(stds, "b--")
-    plt.ylabel("Standard Deviation")
-    plt.xlabel("Radius")
-    plt.show()
-
-def replacePixels(mask_cube, z, stds, reference, indiv):
-    """
-    This function recursively replaces one annulus of pixels at a time, passing the next iteration its current form to maintain continuity in new image
-
-    Required Inputs:
-    1. Mask cube data
-    2. Radius of annuli to replace
-    3. Array of standard deviation data
-    4. Reference image --> the output of the previous iteration
-    5. The original image, for comparison 
-
-    Example:
-    replacePixels(mask_cube, z, stds, noise_cube[z-1], indiv)
-
-    Last Modified:
-    2/26/2017
-    """
-    data = indiv
-    new_values = np.zeros((450,450))
-    for y in range(450):
-        for x in range(450):    
-            value = data[y][x] * mask_cube[z][y][x] 
-            if not (math.isnan(value)):
-                new_values[y][x] = stds[z]
-            else:
-                new_values[y][x] = reference[y][x]
-    #print("Replaced pixels in " + str(z+1) + " out of 220 slices")
-    sys.stdout.write("Replaced pixels in %d out of 220 slices   \r" % (z) )
-    sys.stdout.flush()
-    return new_values
-
-def build_noise_cube(noise_cube):
-    """ 
-    This function constructs a FITS image cube containing the noise cube generated    
-                                                                                                                                                                                                         
-    Required inputs:
-    1. Noise cube data 
-                                                                                                                                                                                                                                                                                                                                                                              
-    Example:
-    build_noise_cube(noise_cube_data) 
+    Written by:
+    Clare Leonard
     
     Last Modified:
-    6/19/2017
+    6/28/2016
+    
     """
-    noise_map = noise_cube[219]
-    hdu = fits.PrimaryHDU(noise_map)
-    hdulist = fits.HDUList([hdu])
-    hdulist.writeto("noise_map.fits", overwrite=True)
-    print("Wrote noise_map.fits to " + os.getcwd())
+    #modifies angle measurement to fit on a scale from 0 to 360 if it doesn't already
+    
+    if (theta < 0):
+        theta = theta+360
+        
+    elif (theta >360):
+        theta = theta -360
+        
+    return theta
 
-def read_noise_map():
+
+
+def inWedge(theta, theta1, theta2):
+    
     """
-    This function reads in a FITS image to memory, skipping the step of generating a noise profile if the FITS file is already in place    
-                                                                 
-    Required Inputs: 
-    None     
-                                                                                                                                                                                                
-    Example:
-    noise_map = read_noise_map()                                                                                                                                                                   
-                                                                                                                                                                                                         
+    This function takes in three angles values (in degrees) and returns true if the first of these falls within a wedge starting at theta1 and ending at theta2.
+    
+    Reuired Inputs:
+    1. Position angle of point being tested
+    2. Start angle of wedge
+    3. End angle of wedge
+    
+    Examples:
+    inWedge(100, 70, 80)
+        *would return False
+    inWedge(100, 80, 70)    
+        *would return True
+    
+    Written by:
+    Clare Leonard
+    
     Last Modified:
-    6/19/2017
-    """
-    hdulist = fits.open("noise_map.fits")
-    noise_map = hdulist[0].data
-    hdulist.close()
-    print("Read noise_map.fits back in to memory")
-    return noise_map
-
-def create_signal_to_noise_map(noise_map, indiv, output_name, saveOutput = True):
-    """
-    This function divides the signal (original) image by the noise map at every pixel
-
-    Required Inputs:
-    1. Noise map data (2D image)
-    2. Original data (2D image)
-
-    Example:
-    create_signal_to_noise_map(noise_data, original_data)
-
-    Last Modified:
-    6/20/2017
-    """
-    data = indiv
-    snr_map = np.zeros((450,450))
-    print("Dividing images")
-    for y in range(450):
-        for x in range(450):
-            snr_map[y][x] = data[y][x] / noise_map[y][x]
+    6/27/2016
     
-    
-    if (saveOutput == True):
-        hdu = fits.PrimaryHDU(snr_map)
-        hdulist = fits.HDUList([hdu])
-        hdulist.writeto(output_name, overwrite=True)
-        print("Wrote "+output_name+" to " + os.getcwd())
-
-    
-    
-    return snr_map
-
-def implant_custom_mask(theta1, theta2, r1, r2):
     """
-    This function creates a custom wedge mask between two radii r1,r2 and in a range of angles theta1,theta2. Intended to mask planet in calculation of standard deviation
-
-    Required Inputs:
-    1. Inner angle (0-360 degrees, with 0=straight up) #Through testing, 0 is ACTUALLY straight right for both of these...
-    2. Outer angle (0-360 degrees, with 0=straight up) MUST BE BIGGER THAN THETA1
-    3. Inner radius
-    4. Outer radius
-
-    Example:
-    implant_custom_mask(100, 150, 60, 70)
-
-    Last Modified:
-    2/28/2017
-    """
-    theta1x = theta1-360
-    theta2x = theta2-360
-    use_thetaX = False
+    #checks to see if designated angle falls within masked region
     if (theta1 > theta2):
-        print("Theta1 must be smaller than Theta2")
-        return
-    if (theta1 < 90 and theta2 > 90):
-        use_thetaX = True
-    elif (theta1 >= 90 and theta2 > 90):
-        use_thetaX = True
-    theta1 = math.radians(theta1) + (math.pi/2)
-    theta2 = math.radians(theta2) + (math.pi/2)
-    if (use_thetaX == True):
-        theta1x = math.radians(theta1x) + (math.pi/2)
-        theta2x = math.radians(theta2x) + (math.pi/2)
-    
-    mask = np.ones((450,450))
-    for y in range(450):
-        for x in range(450):
-            a = x-225
-            if (a == 0):
-                a = .01
-            b = y-225
-            if (b == 0):
-                b = .01
-            r = math.sqrt(a**2 + b**2)
-            theta = np.arctan2(b,a)
-            #print("a = " + str(a) + " , b = " + str(b) + " , x = " + str(x) + " , y = " + str(y) + " , r = " + str(r) + " , theta = " + str(theta))
-            if (use_thetaX == False):
-                if (r > r1 and r < r2):
-                    if (theta > theta1 and theta < theta2):
-                        mask[y][x] = np.nan
-            elif (use_thetaX == True):
-                if (r > r1 and r < r2):
-                    if ((theta > theta1 and theta < theta2) or (theta > theta1x and theta < theta2x)):
-                        mask[y][x] = np.nan
-    
-    hdu = fits.PrimaryHDU(mask)
-    hdulist = fits.HDUList([hdu])
-    hdulist.writeto("custom_mask.fits", overwrite=True)
-    print("Wrote custom_mask.fits to " + os.getcwd())
-    
-    return mask
+        return (theta <= theta2 or theta >= theta1)
+    elif (theta2 > theta1):
+        return (theta <= theta2 and theta >= theta1)
+    elif (theta2 == theta1):
+        return (theta == theta1)
+    else: 
+        return (False)
 
-def print2D(array):
-    '''
-    function for debugging. will print a 450 by 450 array in 2D grid form but at size 45 by 45; useful for checking masks.
-    obviously most values are excluded; this is just to be able to quickly check if something is working.
-    
-    Required Inputs:
-    1. a 450 by 450 2D array
-    
-    Last modified:
-    6/19/17
-    '''
-    for y in range(450):
-        if(y%10==0):
-            for x in range(450):
-                if(x%10==0):
-                    if(math.isnan(array[x][y])):
-                        print('n', end=' ')
-                    else:
-                        print((array[x][y]).astype(np.int), end=' ')
 
-            print('')
-    return
 
-def SNRMap(filename, output_name, from_scratch, graph=False, mask=np.ones((450,450))):
+def isPlanet(radius, theta, planets):
+    
+    
     """
-    This function ties together all of the other functions in this file. Call it once with proper inputs and the rest of the program will run in the correct order
-
-    Required Inputs:
-    1. String containing filename of original klipped image
-    2. String containing filename for output file
-    3. Boolean (answer true/false) for whether it's the first time running on a given file (some steps may be skipped on multiple runs)
+    This function takes in the polar coordinates of a point to be tested and a touple containing lists of parameters for planets in the data to be masked.
     
-    Optional Inputs:
-    1. graph=Boolean (answer true/false) for whether to display the standard deviation vs. radius graph along the way (program will freeze until the graph is closed)
-    2. mask=Call to function to generate custom mask, if desired
-
+    Reuired Inputs:
+    1. Integer radius of point to be tested
+    2. Angle coordinate of point to be tested
+    3. Tuple containing the following lists:
+        a. List of radial coordinates of planets in data
+        b. List of corresponding position angles of planets in data (must be same length of a)
+        c. List containing radial thickness of deired mask on either side of the planet, followed by the disired angular thickness
+            
     Example:
-    SNRMap("med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits", False, graph=False, mask=implant_custom_mask(100,120,30,35))  
+    isPlanet(20, 70, planetData)
+        where  >>> planetData = [12, 20, 30, 50], [40, 100, 60, 150], [10, 5]
+    
+    Written by:
+    Clare Leonard
+    
+    Last Modified:
+    6/28/2016
+    
+    """
+
+    #returns False if there are no planets to mask, showing that the pixel of interest does not fall within any masked region
+    if (planets == None):
+        return False
+  
+    #stores lists found in 'planets' tuple as separate variables
+    rads, PAs, wid = planets
+    
+    #stores both arguements of 'wid' parameter in separate variables
+    r_wid, pa_wid = wid
+    
+    for x in range (len(rads)):
+       
+        #checks to see if point falls within masked radii
+        if ((radius < rads[x] + r_wid) and (radius > rads[x] - r_wid)):
+            
+            #converts position angle and upper and lower angle limits t fall between 0 and 360 degrees
+            PA = convertAngle(PAs[x])
+            theta1 = PA - pa_wid
+            theta2 = convertAngle(theta1)
+            theta2 = PA + pa_wid
+            theta2 = convertAngle(theta2)
+            
+            #returns true if the point falls within the bounds of the angle limits, as well as within specified radii
+            if(inWedge(theta, theta1, theta2)):
+                return True
+            
+    #returns false if point either doesnt fall between masked radii or masked angles        
+    return False
+    
+
+
+
+def toPolar(x, y, xCen, yCen):
+    
+    """
+    This function takes a set of pixel coordinates and a set of reference coordinates and transforms the pixel coordinates into polar coordinates.
+    
+    Reuired Inputs:
+    1. Integer x index of pixel
+    2. Integer y index of pixel
+    3. Integer x index of reference (center) pixel
+    4. Integer y index of reference (center) pixel
+    
+    Exmple:
+    toPolar(317, 12, 225, 225)
+    
+    Written by:
+    Clare Leonard
+    
+    Last Modified:
+    6/27/2016
+    
+    """
+    
+    #defines pixel radius as the distance from said pixel to the center pixel rounded to an integer
+    r = int(np.sqrt((x-xCen)**2+(y-yCen)**2))
+    #if (r-int(r)>=.5):
+        #r = int(r)+1
+    #elif (r-int(r)<.5): 
+        #r = int(r)
+    
+    #defines pixel angle 'theta' as the arctangent of the y distance from center divided by the x distance from center
+    theta = math.degrees(math.atan2((y-yCen),(x-xCen)))
+    
+    #indexing of the image requires reflecting calculated angle accross the y axis
+    theta = theta *-1
+    
+    #makes sure angle is between 0 and 360
+    if(theta<0): 
+         theta = theta + 360
+
+    #return calculated polar coordinates
+    return (r,theta)
+
+
+
+def stdevMap(indiv, planets):
+    
+    """
+    This function takes a filename and a list of parameters for objects to mask and outputs a dictionary object of integer value radii pointing to the standard deviation for pixel values in the image at that radius from the center.
+    
+    Reuired Inputs:
+    1. Numpy array containing all pixel values for an image
+    2. Touple containing the following lists:
+        a. List of radial coordinates of planets in data
+        b. List of corresponding position angles of planets in data (must be same length of a)
+        c. List containing radial thickness of deired mask on either side of the planet, followed by the disired angular thickness
+    
+    Example:
+    stdevMap(indiv, planetData)
+        where  >>> planetData = [12, 20, 30, 50], [40, 100, 60, 150], [10, 5]
+        and indiv is a numpy array of pixel values
+    
+    Written by:
+    Clare Leonard
+    
+    Last Modified:
+    6/28/2016
+    
+    """
+    #creates empty dictionary objects to store unmaked pixel values and radial standard deviations
+    stdevs_ = {}
+    radialProfs = {}
+    
+    #finds the size of the image
+    xDim, yDim = np.shape(indiv)
+    
+    #defines the coordinates of the center of the image
+    xCen = int(xDim/2)
+    yCen = int(yDim/2)
+  
+    
+    #loops through every pixel in the image
+    for x in range (xDim): 
+        for y in range (yDim):         
+            
+            #converts pixel values to polar coordinates
+            radius, angle = toPolar(x, y, xCen, yCen)  
+            
+            #adds pixel values to radial profile dictionary with the radius as key. ignores masked pixels. 
+            if(not isPlanet(radius, angle, planets) and not np.isnan(indiv[x][y])):
+                
+                #appends pixel value to list associated with radius if the key already exists, adds key and starts new list if not
+                if (radius in radialProfs):
+                    radialProfs[radius].append(indiv[x][y])
+                else:
+                    radialProfs[radius] = [indiv[x][y],]
+        
+                     
+    
+    #loops through each key in radial profile dictionary, and takes standard deviation of list of pixel values
+    #adds standard deviation to stdevs_ dictionary with radius as the key
+    #ignores data points if there are too few at a certain radius to take a standard deviation. These pixels will eventually become nans
+    for r in radialProfs.keys():
+        try: 
+            stdevs_[r]= np.nanstd(radialProfs[r])
+        except: 
+            pass
+        
+    #returns dictionary holding standard deviations
+    return stdevs_
+    
+
+
+
+def create_map(filename, planets = None, saveOutput = False):
+    """
+    creates signal to noise ratio map of image.
+    
+    Required Input:
+    1. String containing filename of original klipped image OR object containing data already taken from original klipped image
+
+    Optional Inputs:
+    1. Touple containing the following lists:
+        a. List of radial coordinates of planets in data
+        b. List of corresponding position angles of planets in data (must be same length of a)
+        c. List containing radial thickness of deired mask on either side of the planet, followed by the disired angular thickness
+        *default value: None*
+    2. Boolean designating whether or not to save the completed map to disk 
+         *default value: False*
+    
+    file input example, without mask, saving final map to disk:
+        SNRMap.create_map("med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits", saveOutput = True)
+    object input example, with mask, without saving final map to disk:
+        SNRMap.create_map(data, planets = planetData) 
+            (where  >>> planetData = [12, 20, 30, 50], [40, 100, 60, 150], [10, 5])
+            
+    Written by:
+    Clare Leonard
 
     Last Modified:
-    6/20/2017
+    6/28/2017
     """
+    
+    #checks data type of 'filename'
+    # if 'filename' is a string, assumes it is a filepath and reads in file
     if(isinstance(filename, str)):
         indiv = read_file(filename)
+        
+    #if data type is not a string, reads in python object holding data
     else:
         indiv = filename
-    wedge_masked_original = multiply_by_noise_mask(mask, indiv)
-    if (from_scratch == True):
-        generate_radial_profile()
-    radial_profile = read_radial_profile()
-    if (from_scratch == True):
-        mask_cube = np.zeros((225,450,450))
-        for z in range(1,225):
-            mask_cube[z] = generate_mask(radial_profile, z)
-        build_mask_cube(mask_cube)
-    mask_cube = read_mask_cube()
-    if (from_scratch == True):
-        multiplied_cube = np.zeros((225,450,450))
-        for z in range(1,225):
-            multiplied_cube[z] = multiply_by_mask(mask_cube, z, wedge_masked_original)
-        build_multiplied_cube(multiplied_cube)
-    multiplied_cube = read_multiplied_cube()
-    stds = []
-    for z in range(5, 225):
-        stds.append(calculate_std(multiplied_cube[z], z))
-    if (graph == True):
-        graph_stds(stds)
-    noise_cube = np.zeros((220,450,450))
-    for z in range(220):
-        if (z == 0):
-            noise_cube[z] = replacePixels(mask_cube, z, stds, indiv, indiv)
-        elif not (z == 0):
-            noise_cube[z] = replacePixels(mask_cube, z, stds, noise_cube[z-1], indiv)
-    if (from_scratch == True):
-        build_noise_cube(noise_cube)
-    noise_map = read_noise_map()
-    snr_map = create_signal_to_noise_map(noise_map, indiv, output_name)
-    return snr_map
+        
+    #creates dictionary holding the standard deviation of pixlel values at each radius 
+    stdMap = stdevMap(indiv, planets)
+  
+    #gets size of pixel value array
+    xDim, yDim = np.shape(indiv)  
+  
+    #loops through all pixels in array
+    for x in range (xDim): 
+        for y in range (yDim):
+            
+            #converts indeces to polar coordinates
+            radius, angle = toPolar(x,y, int(xDim/2), int(yDim/2))
+            
+            #use for debugging if you want to see where the mask is:
+            #if (isPlanet(radius, angle, planets)):
+                #indiv[x][y] = np.nan
+           
+            #if enough pixels have been found to calculate a standard deviation for this pixels radius, the pixel value is divided by the standard deviation of pixels at that radius
+            try:
+                indiv[x][y] = indiv[x][y]/stdMap[radius]
+                
+                #debugging step to show noise map:
+                #indiv[x][y] = stdMap[radius]
+     
+     
+            #if no standard deviation has been calculated, pixel is given a nan value
+            except:
+                indiv[x][y] = np.nan
+    
+    #saves output to disk if saveOutput designated True
+    if (saveOutput == True):
+        hdu = fits.PrimaryHDU(indiv)
+        hdulist = fits.HDUList([hdu])
+        hdulist.writeto('snrtest.fits', overwrite=True)
+        print("Wrote snrtest to " + os.getcwd())
+
+
+    #returns final SNR map            
+    return indiv
+    
+    
+
+
+
+def getPlanet(filename, x, y, _range):
+    
+    
+    stdMap = create_map(filename)
+    
+    planet = -100000000
+   
+    for i in range (x-_range, x+_range):
+        for j in range (y-_range, y+_range):
+            if (stdMap[i][j] > planet):
+                planet = stdMap[i][j]
+               
+                
+    return planet
+
+
+######main#######
+
+np.set_printoptions(threshold=np.nan)
+
+planetData = [13,], [120,], [10, 15]
+
+map = create_map('med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits', planetData, saveOutput = True)
+
+#create_map('med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits', saveOutput = True)
+
+
+#getPlanet('med_HD142527_8Apr14short_SDI_a7m3-5KLmodes.fits', 225, 225, 30)
+
+
+
+
 

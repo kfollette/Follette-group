@@ -293,13 +293,13 @@ def create_map(filename, planets = None, saveOutput = True, outputName = None):
     1. String containing filename of original klipped image OR object containing data already taken from original klipped image
 
     Optional Inputs:
-    1. Touple containing the following lists:
+    1. Tuple containing the following lists:
         a. List of radial coordinates of planets in data
         b. List of corresponding position angles of planets in data (must be same length of a)
         c. List containing radial thickness of deired mask on either side of the planet, followed by the disired angular thickness
-        *default value: None*
+         *default value: None*
     2. Boolean designating whether or not to save the completed map to disk 
-         *default value: False*
+         *default value: True*
     
     file input example, without mask, saving final map to disk:
         SNRMap.create_map("med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits", saveOutput = True)
@@ -368,38 +368,21 @@ def create_map(filename, planets = None, saveOutput = True, outputName = None):
 
 
 
-def getPlanet(filename, x, y, _range):
-    
-    
-    stdMap = create_map(filename)
-    
+def getPlanet(snrmap, x, y, _range):
+  
     planet = -100000000
    
     for i in range (x-_range, x+_range):
         for j in range (y-_range, y+_range):
-            if (stdMap[i][j] > planet):
-                planet = stdMap[i][j]
+            if (snrmap[i][j] > planet):
+                planet = snrmap[i][j]
                
                 
     return planet
 
 
-######main#######
 
-np.set_printoptions(threshold=np.nan)
-
-planetData = [13,], [120,], [10, 15]
-
-data = read_file('med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits')
-
-map = create_map(data, planetData, saveOutput = True)
-
-#map = create_map('med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits', planetData, saveOutput = True)
-
-#create_map('med_HD142527_8Apr14short_SDI_a7m3-10KLmodes.fits', saveOutput = True)
-
-
-#getPlanet('med_HD142527_8Apr14short_SDI_a7m3-5KLmodes.fits', 225, 225, 30)
+#print(getPlanet('med_HD142527_8Apr14short_SDI_a7m3-5KLmodes.fits', 220, 215, 10))
 
 
 

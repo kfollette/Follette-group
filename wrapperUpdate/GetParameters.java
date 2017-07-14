@@ -285,7 +285,7 @@ public class GetParameters{
 	final JCheckBox annuli = new JCheckBox("Annuli");
         annuli.setForeground(Color.white);
         annuli.setSize(140,40);
-        annuli.setLocation(5, 2);
+        annuli.setLocation(5, 2+15);
 	annuli.setFont(new Font("Serif", Font.BOLD, 20));
 	annuli.setSelected(true);
 	annuli.addItemListener(new ItemListener() {
@@ -306,7 +306,7 @@ public class GetParameters{
 	final JCheckBox movement = new JCheckBox("Movement");
         movement.setForeground(Color.white);
         movement.setSize(140,40);
-        movement.setLocation(5, 30+5);
+        movement.setLocation(5, 30+5+15);
         movement.setFont(new Font("Serif", Font.BOLD, 20));
         movement.setSelected(false);
 	movement.addItemListener(new ItemListener() {
@@ -328,7 +328,7 @@ public class GetParameters{
 	final JCheckBox subsections = new JCheckBox("Subsections");
         subsections.setForeground(Color.white);
         subsections.setSize(140,40);
-        subsections.setLocation(5, 58+10);
+        subsections.setLocation(5, 58+10+15);
         subsections.setFont(new Font("Serif", Font.BOLD, 20));
         subsections.setSelected(false);
 	subsections.addItemListener(new ItemListener() {
@@ -349,7 +349,7 @@ public class GetParameters{
 
 	JLabel divider = new JLabel("____________________________________________________________");
         divider.setSize(500,20);
-        divider.setLocation(0,280);
+        divider.setLocation(0,280+10);
         divider.setVisible(true);
         divider.setForeground(Color.blue);
 	
@@ -371,76 +371,92 @@ public class GetParameters{
                 }
             });
 
-	a1 = new JTextField("Start");
+	JLabel start = new JLabel("Start");
+        start.setForeground(Color.white);
+        start.setSize(100,50);
+        start.setLocation(178,-10);
+        
+    JLabel stop = new JLabel("Stop");
+        stop.setForeground(Color.white);
+        stop.setSize(100,50);
+        stop.setLocation(178+50,-10);
+        
+    JLabel inc = new JLabel("Increment");
+        inc.setForeground(Color.white);
+        inc.setSize(100,50);
+        inc.setLocation(178+100,-10);
+        
+        
+	a1 = new JTextField("0");
         a1.setBackground(Color.green);
         a1.setSize(50,30);
-        a1.setLocation(200-30,7);
+        a1.setLocation(200-30,7+17);
 
-	a2 = new JTextField("Stop");
+	a2 = new JTextField("9");
         a2.setBackground(Color.red);
         a2.setSize(50,30);
-        a2.setLocation(250-30,7);
+        a2.setLocation(250-30,7+17);
 
-	a3 = new JTextField("Increment");
+	a3 = new JTextField("1");
         a3.setBackground(Color.white);
         a3.setSize(100,30);
-        a3.setLocation(300-30,7);
+        a3.setLocation(300-30,7+17);
 
-	m1 = new JTextField("Start");
+	m1 = new JTextField("5");
         m1.setBackground(Color.green);
         m1.setSize(50,30);
-        m1.setLocation(200-30,35+5);
+        m1.setLocation(200-30,35+5+17);
 	m1.setEnabled(false);
 
-        m2 = new JTextField("Stop");
+        m2 = new JTextField("5");
         m2.setBackground(Color.red);
         m2.setSize(50,30);
-        m2.setLocation(250-30,35+5);
+        m2.setLocation(250-30,35+5+17);
 	m2.setEnabled(false);
 
-        m3 = new JTextField("Increment");
+        m3 = new JTextField("0");
         m3.setBackground(Color.white);
         m3.setSize(100,30);
-        m3.setLocation(300-30,35+5);
+        m3.setLocation(300-30,35+5+17);
 	m3.setEnabled(false);
 
-	s1 = new JTextField("Start");
+	s1 = new JTextField("1");
         s1.setBackground(Color.green);
         s1.setSize(50,30);
-        s1.setLocation(200-30,63+10);
+        s1.setLocation(200-30,63+10+17);
 	s1.setEnabled(false);
 
-        s2 = new JTextField("Stop");
+        s2 = new JTextField("1");
         s2.setBackground(Color.red);
         s2.setSize(50,30);
-        s2.setLocation(250-30,63+10);
+        s2.setLocation(250-30,63+10+17);
 	s2.setEnabled(false);
 
-        s3 = new JTextField("Increment");
+        s3 = new JTextField("0");
         s3.setBackground(Color.white);
         s3.setSize(100,30);
-        s3.setLocation(300-30,63+10);
+        s3.setLocation(300-30,63+10+17);
 	s3.setEnabled(false);
 
 	JLabel output1 = new JLabel("Output Filename");
         output1.setForeground(Color.white);
         output1.setSize(200,40);
-        output1.setLocation(200,170);
+        output1.setLocation(200,170+7);
 
         output2 = new JTextField("Parameter_Space_Map");
         output2.setBackground(Color.white);
         output2.setSize(180,30);
-        output2.setLocation(170,200);
+        output2.setLocation(170,200+7);
 
         JLabel filepath1 = new JLabel("Path to Desired Directory");
         filepath1.setForeground(Color.white);
         filepath1.setSize(200,40);
-        filepath1.setLocation(150,200+30);
+        filepath1.setLocation(150,200+30+7);
 
         filepath2 = new JTextField("example/star_name/date/sliced/");
         filepath2.setBackground(Color.white);
         filepath2.setSize(325,30);
-        filepath2.setLocation(70,230+30);
+        filepath2.setLocation(70,230+30+7);
 
         snr = new JCheckBox("SNR Analysis");
         snr.setLocation(135,235);
@@ -450,7 +466,7 @@ public class GetParameters{
 
         final JButton searcher = new JButton("!");
         searcher.setSize(20,20);
-        searcher.setLocation(30, 234+30);
+        searcher.setLocation(30, 234+30+7);
         searcher.setOpaque(true);
         searcher.setForeground(Color.blue);
         searcher.addActionListener(new ActionListener()
@@ -468,22 +484,22 @@ public class GetParameters{
 	JLabel IWA1 = new JLabel("IWA");
         IWA1.setForeground(Color.white);
         IWA1.setSize(100,40);
-        IWA1.setLocation(85,170);
+        IWA1.setLocation(85,170+7);
 
         IWA2 = new JTextField("10");
         IWA2.setBackground(Color.white);
         IWA2.setSize(50,30);
-        IWA2.setLocation(76,200);
+        IWA2.setLocation(76,200+7);
 
 	JLabel klmodes1 = new JLabel("KL Modes");
         klmodes1.setForeground(Color.white);
         klmodes1.setSize(100,40);
-        klmodes1.setLocation(160,110);
+        klmodes1.setLocation(160,110+7);
 
         klmodes2 = new JTextField("1,2,3,4,5,10,20,50,100");
         klmodes2.setBackground(Color.white);
         klmodes2.setSize(180,30);
-        klmodes2.setLocation(110,140);
+        klmodes2.setLocation(110,140+7);
 
 	JLabel eta = new JLabel("ETA: 0 mins");
         eta.setForeground(Color.white);
@@ -500,7 +516,7 @@ public class GetParameters{
 	    {
 		public void actionPerformed(ActionEvent e) {
 		    try{
-			PrintWriter writer = new PrintWriter("parameters.txt", "UTF-8");
+			PrintWriter writer = new PrintWriter("automation_parameters.txt", "UTF-8");
 			writer.println(filepath2.getText());
 			writer.println(IWA2.getText());
 			writer.println(klmodes2.getText());
@@ -543,6 +559,9 @@ public class GetParameters{
 	frame.getContentPane().add(s1);
         frame.getContentPane().add(s2);
         frame.getContentPane().add(s3);
+         frame.getContentPane().add(start);
+        frame.getContentPane().add(stop);
+        frame.getContentPane().add(inc);
 	frame.getContentPane().add(subsections);
 	frame.getContentPane().add(IWA1);
         frame.getContentPane().add(IWA2);

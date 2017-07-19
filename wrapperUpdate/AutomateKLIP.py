@@ -19,7 +19,7 @@ import SNRMap as snr
 import time
 
 
-# In[ ]:
+#get inputs 
 
 pathToFiles = sys.argv[1]
 print("File Path = " + pathToFiles)
@@ -91,46 +91,84 @@ dataset = MAGAO.MAGAOData(filelist)
 
 print()
 
-snrCube = np.zeros((5,1,1))
+snrCube = np.zeros((len(klmodes),int((annuli2_stop-annuli2_start)/annuli2_inc+1),int((movement2_stop-movement2_start)/movement2_inc+1)))
+
+
+
+
+
+
+
+
+
 
 
 #loop over annuli, movement, and subsection parameters
 
 print("running klip for parameters:")
+
+
+#keeps track of number of annuli values that have been tested, used for indexing
 acount = 0
-mcount = 0
 
 for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
+    
+    #keeps track of number of movement values that have been tested, used for indexing
+    mcount = 0
+    
     for m in range(movement2_start, movement2_stop+1, movement2_inc):
+        
         for s in range(subsections2_start, subsections2_stop+1, subsections2_inc):
-            sys.stdout.write("annuli = %d; movement = %d; subections = %d                                      \r" %(a, m,s))
+            print("annuli = %d; movement = %d; subections = %d" %(a, m,s))
             #sys.stdout.flush()
 
-            #run klip
+            #run klip for given parameters
             parallelized.klip_dataset(dataset, outputdir="", fileprefix=outputFileName, annuli=a, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI")
 
-            avgframe = np.nanmedian(dataset.output[1], axis=(0,1))
-            print("Shape of avgframe is " + str(avgframe.shape))
-            calib_frame = dataset.calibrate_output(avgframe)
+            
+            #avgframe = np.nanmedian(dataset.output[1], axis=(0,1))
+            #print("Shape of avgframe is " + str(avgframe.shape))
+            #calib_frame = dataset.calibrate_output(avgframe)
 
+            
+            #cube to hold median combinations of klipped images
             cube = np.zeros((5,450,450))
+            
+            #keeps track of number of KL mode values that have been tested, used for indexing
             kcount = 0
+            
+            #flips images
+            dataset.output = dataset.output[:,:,:,::-1]
+            
+            #iterates over kl modes
             for k in klmodes:
-                isolatedKL = dataset.output[0,:,:,:]
-                isolatedKL = nanmedian(isolatedKL, axis=0)
-                outputNameSNR = outputFileName + "a" + str(a) + "m" + str(m) + "KL" + str(k) + "_SNRMap.fits"
+                
+                #takes median combination of cube made with given number of KL modes
+                isolatedKL = dataset.output[kcount,:,:,:]
+                isolatedKL = np.nanmedian(isolatedKL, axis=0)
+                
+                #put together output name
+                outputNameSNR = outputFileName + "_a" + str(a) + "m" + str(m) + "KL" + str(k) + "_SNRMap.fits"
+                
+                #object to hold mask parameters for snr map 
                 mask = ([13,], [120,], [10, 15])
-                planetSNR = snr.getplanet(snr.create_map(isolatedKL, planets = mask, outputName = outputNameSNR))
-                cube[k,:,:] = isolatedKL
+                
+                #gets highest pixel value in snr map in the location of the planet 
+                planetSNR = snr.getPlanet(snr.create_map(isolatedKL, planets = mask, outputName = outputNameSNR), 220, 215, 10)
+                
+                #adds median image to cube 
+                cube[kcount,:,:] = isolatedKL
+                
+                #add planet snr value to snrCube
                 snrCube[kcount,acount,mcount] = planetSNR
                 kcount+=1
                                           
-            cube = cube[:,:,::-1]
-            
-            fits.writeto('med_'+ outputFileName + "a" + str(a) + "m" + str(m) + '-KLmodes-all.fits', cube, clobber=True)
+            #write median combination cube to disk 
+            fits.writeto('med_'+ outputFileName + "_a" + str(a) + "m" + str(m) + '-KLmodes-all.fits', cube, clobber=True)
         mcount+=1
     acount+=1
-            
-fits.writeto('med_'+ outputFileName + "a" + str(annuli2_start) + "-" + str(annul12_stop) + "x" + str(annuli2_inc) + "m" + str(annuli2_start) + "-" + str(annul12_stop) + "x" + str(annuli2_inc) + '-KLmodes-all_snrCube.fits', snrCube)     
+
+#write snr cube to disk 
+fits.writeto('med_'+ outputFileName + "_a" + str(annuli2_start) + "-" + str(annuli2_stop) + "x" + str(annuli2_inc) + "m" + str(movement2_start) + "-" + str(movement2_stop) + "x" + str(movement2_inc) + '-KLmodes-all_snrCube.fits', snrCube)     
             
 

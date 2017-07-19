@@ -107,11 +107,11 @@ fi
 mv $OUTPUTNAME".fits" $FILEPATH"/.."
 rm iwa.txt     
 if [ -f "single_reduction_parameters.txt" ]; then
-   rm single_reduction_parameters.txt
+   #rm single_reduction_parameters.txt
    rm single_reduction_parameters.txt~
 fi
-if [ -f "automation_parameters" ]; then
-   rm automation_parameters.txt
+if [ -f "automation_parameters.txt" ]; then
+   #rm automation_parameters.txt
    rm automation_parametetrs.txt~
 fi
 

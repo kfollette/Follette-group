@@ -1,10 +1,17 @@
 
 # coding: utf-8
 
-# In[ ]:
-
 #Clare Leonard                                                                
 #Version 1.0 - 6/21/17                                                          
+
+
+
+
+##################################################################
+#############                                        #############
+#############                 IMPORTS                #############
+#############                                        #############
+##################################################################
 
 import glob
 import inspect
@@ -19,18 +26,61 @@ import SNRMap as snr
 import time
 
 
-#get inputs 
+
+##################################################################
+#############                                        #############
+#############              NAME OUTPUTS              #############
+#############                                        #############
+################################################################## 
+
+def nameOutput(filepath):
+
+    dircount = 0
+    outputname = ""
+    
+    for x in range (len(filepath)):
+        if (filepath[-8-x] == '/'):
+            dircount += 1
+            if (dircount >= 3):
+                break
+            outputname = '_' + outputname
+        else: 
+            outputname = filepath[-8-x] + outputname
+   
+    return outputname
+
+
+
+
+
+
+
+##################################################################
+#############                                        #############
+#############               GET INPUTS               #############
+#############                                        #############
+################################################################## 
+
+#value adjusts argument numbering in case of white space in file path 
+argnum = 0
+
 
 pathToFiles = sys.argv[1]
+
+#if filepath doesnt end in slice, sontinues to add next arguements, helpful iin case of whitespace in file path
+while (not pathToFiles[-1] == 'd' and not pathToFiles[-1] == '"'):
+    argnum += 1
+    pathToFiles = pathToFiles + " " + sys.argv[1+argnum]
+    
 print("File Path = " + pathToFiles)
 
 print()
 
 print("Parameters to explore:")
 
-annuli2_start = int(sys.argv[5])
-annuli2_stop = int(sys.argv[6])
-annuli2_inc = int(sys.argv[7])
+annuli2_start = int(sys.argv[5+argnum])
+annuli2_stop = int(sys.argv[6+argnum])
+annuli2_inc = int(sys.argv[7+argnum])
 
 if(annuli2_start == annuli2_stop):
     annuli2_inc = 1;
@@ -41,9 +91,9 @@ else:
 
 
 
-movement2_start = int(sys.argv[8])
-movement2_stop = int(sys.argv[9])
-movement2_inc = int(sys.argv[10])
+movement2_start = int(sys.argv[8+argnum])
+movement2_stop = int(sys.argv[9+argnum])
+movement2_inc = int(sys.argv[10+argnum])
 
 
 if(movement2_start == movement2_stop):
@@ -54,9 +104,9 @@ else:
     print("Movement: start = %s; end = %s; increment = %s " %(str(movement2_start), str(movement2_stop), str(movement2_inc)))
 
 
-subsections2_start = int(sys.argv[11])
-subsections2_stop = int(sys.argv[12])
-subsections2_inc = int(sys.argv[13])
+subsections2_start = int(sys.argv[11+argnum])
+subsections2_stop = int(sys.argv[12+argnum])
+subsections2_inc = int(sys.argv[13+argnum])
 
 
 if(subsections2_start == subsections2_stop):
@@ -68,16 +118,17 @@ else:
 
 print()
     
-iwa = int(sys.argv[2])
+iwa = int(sys.argv[2+argnum])
 print("IWA = " + str(iwa))
 
 print()
 
-print("KL Modes = " + str(list(map(int, sys.argv[3].split(",")))))
-klmodes = list(map(int, sys.argv[3].split(",")))
+print("KL Modes = " + str(list(map(int, sys.argv[3+argnum].split(",")))))
+klmodes = list(map(int, sys.argv[3+argnum].split(",")))
 
-outputFileName = sys.argv[4]
-#print("Output FileName = " + outputFileName)
+#outputFileName = sys.argv[4+argnum]
+outputFileName = nameOutput(pathToFiles)
+print("Output FileName = " + outputFileName)
 
 
 print()
@@ -86,21 +137,30 @@ print("reading: " + pathToFiles + "/*.fits")
 
 print()
 
-filelist = glob.glob(pathToFiles + "/*.fits")
+
+
+
+
+
+
+
+
+
+##################################################################
+#############                                        #############
+#############            PERFORM AUTOMATION          #############
+#############                                        #############
+################################################################## 
+
+
+filelist = glob.glob(pathToFiles + '/*.fits')
 dataset = MAGAO.MAGAOData(filelist)
 
 print()
 
 snrCube = np.zeros((len(klmodes),int((annuli2_stop-annuli2_start)/annuli2_inc+1),int((movement2_stop-movement2_start)/movement2_inc+1)))
 
-
-
-
-
-
-
-
-
+snrMapCube5d = np.zeros((len(klmodes),int((annuli2_stop-annuli2_start)/annuli2_inc+1),int((movement2_stop-movement2_start)/movement2_inc+1), 450, 450))
 
 
 #loop over annuli, movement, and subsection parameters
@@ -126,11 +186,6 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
             parallelized.klip_dataset(dataset, outputdir="", fileprefix=outputFileName, annuli=a, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI")
 
             
-            #avgframe = np.nanmedian(dataset.output[1], axis=(0,1))
-            #print("Shape of avgframe is " + str(avgframe.shape))
-            #calib_frame = dataset.calibrate_output(avgframe)
-
-            
             #cube to hold median combinations of klipped images
             cube = np.zeros((5,450,450))
             
@@ -144,8 +199,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
             for k in klmodes:
                 
                 #takes median combination of cube made with given number of KL modes
-                isolatedKL = dataset.output[kcount,:,:,:]
-                isolatedKL = np.nanmedian(isolatedKL, axis=0)
+                isolatedKL = np.nanmedian(dataset.output[kcount,:,:,:], axis=0)
                 
                 #put together output name
                 outputNameSNR = outputFileName + "_a" + str(a) + "m" + str(m) + "KL" + str(k) + "_SNRMap.fits"
@@ -153,8 +207,13 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 #object to hold mask parameters for snr map 
                 mask = ([13,], [120,], [10, 15])
                 
+                #makes SNR map 
+                snrmap = snr.create_map(isolatedKL, planets = mask, saveOutput = False)
+                #adds SNR map to 5d cube 
+                snrMapCube5d[kcount,acount,mcount,:,:] = snrmap 
                 #gets highest pixel value in snr map in the location of the planet 
-                planetSNR = snr.getPlanet(snr.create_map(isolatedKL, planets = mask, outputName = outputNameSNR), 220, 215, 10)
+                planetSNR = snr.getPlanet(snrmap, 220, 215, 10)
+                
                 
                 #adds median image to cube 
                 cube[kcount,:,:] = isolatedKL
@@ -168,7 +227,12 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
         mcount+=1
     acount+=1
 
+#writes SNR maps to 4d cubes 
+for x in range (len(klmodes)):
+    snr4d = snrMapCube5d[x,:,:,:,:] 
+    fits.writeto(pathToFiles + '/../' + outputFileName + "_a" + str(annuli2_start) + "-" + str(annuli2_stop) + "x" + str(annuli2_inc) + "m" + str(movement2_start) + "-" + str(movement2_stop) + "x" + str(movement2_inc) + "_" + str(klmodes[x]) + 'KLmodes_SNRMaps.fits', snr4d)  
+    
 #write snr cube to disk 
-fits.writeto('med_'+ outputFileName + "_a" + str(annuli2_start) + "-" + str(annuli2_stop) + "x" + str(annuli2_inc) + "m" + str(movement2_start) + "-" + str(movement2_stop) + "x" + str(movement2_inc) + '-KLmodes-all_snrCube.fits', snrCube)     
+fits.writeto(pathToFiles + '/../' + outputFileName + "_paramexplore_a" + str(annuli2_start) + "-" + str(annuli2_stop) + "x" + str(annuli2_inc) + "m" + str(movement2_start) + "-" + str(movement2_stop) + "x" + str(movement2_inc) + '-KLmodes-all.fits', snrCube)     
             
 

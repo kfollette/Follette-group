@@ -438,7 +438,7 @@ def _magao_process_file(filepath, filetype):
         wvs = [1.0]
         #center = [[224.5,224.5]]
         datasize = cube.shape[1]
-        center = [[datasize/2, datasize/2]]
+        center = [[(datasize+1)/2, (datasize+1)/2]]
         
         dims = cube.shape
         x, y = np.meshgrid(np.arange(dims[1], dtype=np.float32), np.arange(dims[0], dtype=np.float32))

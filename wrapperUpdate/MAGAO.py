@@ -20,7 +20,7 @@ import configparser as ConfigParser
 
 from scipy.interpolate import interp1d
 
-class MAGAOData(object):
+class MagAOData(object):
     
     """
     A sequence of P1640 Data. Each P1640Data object has the following fields and functions 
@@ -55,7 +55,7 @@ class MAGAOData(object):
     ##########################
    ### Class Initialization ###
     ##########################
-    #Some static variables to define the MAGAO instrument
+    #Some static variables to define the MagAO instrument
     centralwave = {} #in microns
     fpm_diam = {} #in pixels
     flux_zeropt = {}
@@ -65,9 +65,9 @@ class MAGAOData(object):
     
     observatory_latitude = 0.0
 
-    #read in MAGAO configuration file and set these static variables
+    #read in MagAO configuration file and set these static variables
     package_directory = os.path.dirname(os.path.abspath(__file__))
-    configfile = package_directory + "/" + "MAGAO.ini"
+    configfile = package_directory + "/" + "MagAO.ini"
     config = ConfigParser.ConfigParser()
     try:
         config.read(configfile)
@@ -82,7 +82,7 @@ class MAGAOData(object):
             flux_zeropt[band] = float(config.get("instrument", "zero_pt_flux_{0}".format(band))) #!
         observatory_latitude = float(config.get("observatory", "observatory_lat"))
     except ConfigParser.Error as e:
-        print("Error reading MAGAO configuration file: {0}".format(e.message))
+        print("Error reading MagAO configuration file: {0}".format(e.message))
         raise e
     
     #########################
@@ -90,9 +90,9 @@ class MAGAOData(object):
     #########################
     def __init__(self, filepaths=None):
         """
-        Initialization code for MAGAOData
+        Initialization code for MagAOData
         """
-        super(MAGAOData, self).__init__()
+        super(MagAOData, self).__init__()
         self._output = None
         if filepaths is None:
             self._input = None
@@ -177,7 +177,7 @@ class MAGAOData(object):
         
     def readdata(self, filepaths):
         """
-        Method to open and read a list of MAGAO data
+        Method to open and read a list of MagAO data
         """
         if isinstance(filepaths, str):
             filepaths = [filepaths]
@@ -249,7 +249,7 @@ class MAGAOData(object):
         self._wvs = wvs
         self._wcs = None #wvs_hdrs
         self.spot_flux = spot_fluxes
-        #self.IWA = MAGAOData.fpm_diam[fpm_band] / 2.0 #!
+        #self.IWA = MagAOData.fpm_diam[fpm_band] / 2.0 #!
         #self.IWA = np.ones((68))
         with open('iwa.txt') as f:
             line=f.readline()

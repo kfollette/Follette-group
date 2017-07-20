@@ -8,7 +8,7 @@ import glob
 import inspect
 import os
 #import pyklip.instruments.MAGAO as MAGAO
-import MAGAO as MAGAO
+import MagAO as MAGAO
 #import pyklip.parallelized as parallelized
 import parallelized as parallelized
 import numpy as np
@@ -16,7 +16,6 @@ import sys
 #import pyklip.klip as klip
 import klip as klip
 from astropy.io import fits
-#import SNRMap as SNR
 
 
 ##################################################################
@@ -60,7 +59,7 @@ outputFileName = sys.argv[5+argnum]
 
 print("Reading: " + pathToFiles + "/*.fits")
 filelist = glob.glob(pathToFiles + '/*.fits')
-dataset = MAGAO.MAGAOData(filelist)
+dataset = MAGAO.MagAOData(filelist)
 
 print()
 

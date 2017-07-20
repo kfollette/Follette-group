@@ -16,7 +16,7 @@
 import glob
 import inspect
 import os                                      
-import MAGAO as MAGAO                                   
+import MagAO as MAGAO                                   
 import parallelized as parallelized
 import numpy as np
 import sys                                                   
@@ -145,7 +145,7 @@ print()
 
 
 filelist = glob.glob(pathToFiles + '/*.fits')
-dataset = MAGAO.MAGAOData(filelist)
+dataset = MAGAO.MagAOData(filelist)
 
 print()
 

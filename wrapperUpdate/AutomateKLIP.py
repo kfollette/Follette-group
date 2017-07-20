@@ -52,9 +52,6 @@ def nameOutput(filepath):
 
 
 
-
-
-
 ##################################################################
 #############                                        #############
 #############               GET INPUTS               #############
@@ -67,7 +64,7 @@ argnum = 0
 
 pathToFiles = sys.argv[1]
 
-#if filepath doesnt end in slice, sontinues to add next arguements, helpful iin case of whitespace in file path
+#if filepath doesnt end in sliced, sontinues to add next arguements, helpful iin case of whitespace in file path
 while (not pathToFiles[-1] == 'd' and not pathToFiles[-1] == '"'):
     argnum += 1
     pathToFiles = pathToFiles + " " + sys.argv[1+argnum]
@@ -126,8 +123,8 @@ print()
 print("KL Modes = " + str(list(map(int, sys.argv[3+argnum].split(",")))))
 klmodes = list(map(int, sys.argv[3+argnum].split(",")))
 
-#outputFileName = sys.argv[4+argnum]
-outputFileName = nameOutput(pathToFiles)
+outputFileName = sys.argv[4+argnum]
+#outputFileName = nameOutput(pathToFiles)
 print("Output FileName = " + outputFileName)
 
 
@@ -136,12 +133,6 @@ print()
 print("reading: " + pathToFiles + "/*.fits")
 
 print()
-
-
-
-
-
-
 
 
 

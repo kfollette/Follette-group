@@ -16,7 +16,7 @@
 import glob
 import inspect
 import os                                      
-import MagAO as MAGAO                                   
+import MagAO as MagAO                                   
 import parallelized as parallelized
 import numpy as np
 import sys                                                   
@@ -123,6 +123,20 @@ print()
 print("KL Modes = " + str(list(map(int, sys.argv[3+argnum].split(",")))))
 klmodes = list(map(int, sys.argv[3+argnum].split(",")))
 
+print()
+print('Planet mask parameters:')
+
+print("Radius = " + str(list(map(int, sys.argv[14+argnum].split(",")))))
+radius = list(map(int, sys.argv[14+argnum].split(",")))
+
+print("Position Angle = " + str(list(map(int, sys.argv[15+argnum].split(",")))))
+radius = list(map(int, sys.argv[15+argnum].split(",")))
+
+print("Mask width (radial, angular): = " + str(list(map(int, sys.argv[16+argnum].split(",")))))
+radius = list(map(int, sys.argv[16+argnum].split(",")))
+
+print()
+
 outputFileName = sys.argv[4+argnum]
 #outputFileName = nameOutput(pathToFiles)
 print("Output FileName = " + outputFileName)
@@ -145,7 +159,8 @@ print()
 
 
 filelist = glob.glob(pathToFiles + '/*.fits')
-dataset = MAGAO.MagAOData(filelist)
+dataset = MagAO.MagAOData(filelist)
+dataset.IWA = iwa
 
 print()
 

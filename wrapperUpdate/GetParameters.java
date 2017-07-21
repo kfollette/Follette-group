@@ -6,6 +6,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import javax.swing.ImageIcon;
+
 
 public class GetParameters{
     
@@ -26,7 +31,10 @@ public class GetParameters{
     static JTextField s1;
     static JTextField s2;
     static JTextField s3;
-
+    static JTextField wid;
+    static JTextField pa;
+    static JTextField rad;
+    
     public static void main(String[] args) throws FileNotFoundException{
 	
 	relaunchMain();
@@ -77,7 +85,8 @@ public class GetParameters{
         frame.setVisible(true);
     }
 
-
+     
+    
     public static void addFields1(final JFrame frame) throws FileNotFoundException{
     
 	JButton single = new JButton("Single Reduction");
@@ -282,80 +291,36 @@ public class GetParameters{
 
     public static void addFields3(final JFrame frame) throws FileNotFoundException{
 	
-	final JCheckBox annuli = new JCheckBox("Annuli");
+	final JLabel annuli = new JLabel("Annuli");
         annuli.setForeground(Color.white);
         annuli.setSize(140,40);
-        annuli.setLocation(5, 2+15);
+        annuli.setLocation(40, 2+15);
 	annuli.setFont(new Font("Serif", Font.BOLD, 20));
-	annuli.setSelected(true);
-	annuli.addItemListener(new ItemListener() {
-		public void itemStateChanged(ItemEvent itemEvent){
-		    if (annuli.isSelected()){
-			a1.setEnabled(true);
-			a2.setEnabled(true);
-			a3.setEnabled(true);
-		    }	
-		    else if (!annuli.isSelected()){
-			a1.setEnabled(false);
-                        a2.setEnabled(false);
-                        a3.setEnabled(false);
-		    }
-		}
-	    });
+	
 
-	final JCheckBox movement = new JCheckBox("Movement");
+	final JLabel movement = new JLabel("Movement");
         movement.setForeground(Color.white);
         movement.setSize(140,40);
-        movement.setLocation(5, 30+5+15);
+        movement.setLocation(40, 30+5+15);
         movement.setFont(new Font("Serif", Font.BOLD, 20));
-        movement.setSelected(false);
-	movement.addItemListener(new ItemListener() {
-                public void itemStateChanged(ItemEvent itemEvent){
-                    if (movement.isSelected()){
-                        m1.setEnabled(true);
-                        m2.setEnabled(true);
-                        m3.setEnabled(true);
-                    }
-                    else if (!movement.isSelected()){
-                        m1.setEnabled(false);
-                        m2.setEnabled(false);
-                        m3.setEnabled(false);
-                    }
-                }
-            });
+        
 
-
-	final JCheckBox subsections = new JCheckBox("Subsections");
+	final JLabel subsections = new JLabel("Subsections");
         subsections.setForeground(Color.white);
         subsections.setSize(140,40);
-        subsections.setLocation(5, 58+10+15);
+        subsections.setLocation(40, 58+10+15);
         subsections.setFont(new Font("Serif", Font.BOLD, 20));
-        subsections.setSelected(false);
-	subsections.addItemListener(new ItemListener() {
-                public void itemStateChanged(ItemEvent itemEvent){
-                    if (subsections.isSelected()){
-                        s1.setEnabled(true);
-                        s2.setEnabled(true);
-                        s3.setEnabled(true);
-                    }
-                    else if (!subsections.isSelected()){
-                        s1.setEnabled(false);
-                        s2.setEnabled(false);
-                        s3.setEnabled(false);
-                    }
-                }
-            });
 
 
 	JLabel divider = new JLabel("____________________________________________________________");
         divider.setSize(500,20);
-        divider.setLocation(0,280+10);
+        divider.setLocation(0,280+10+20);
         divider.setVisible(true);
         divider.setForeground(Color.blue);
 	
 	JButton back = new JButton("<--");
         back.setSize(50,30);
-        back.setLocation(20, 325);
+        back.setLocation(20, 325+12);
         back.setOpaque(true);
         back.setForeground(Color.red);
         back.addActionListener(new ActionListener()
@@ -387,76 +352,76 @@ public class GetParameters{
         inc.setLocation(178+100,-10);
         
         
-	a1 = new JTextField("0");
+	a1 = new JTextField("3");
         a1.setBackground(Color.green);
         a1.setSize(50,30);
-        a1.setLocation(200-30,7+17);
+        a1.setLocation(200-30-10,7+17);
 
-	a2 = new JTextField("9");
+	a2 = new JTextField("7");
         a2.setBackground(Color.red);
         a2.setSize(50,30);
-        a2.setLocation(250-30,7+17);
+        a2.setLocation(250-30-10,7+17);
 
 	a3 = new JTextField("1");
         a3.setBackground(Color.white);
         a3.setSize(100,30);
-        a3.setLocation(300-30,7+17);
+        a3.setLocation(300-30-10,7+17);
 
 	m1 = new JTextField("5");
         m1.setBackground(Color.green);
         m1.setSize(50,30);
-        m1.setLocation(200-30,35+5+17);
-	m1.setEnabled(false);
+        m1.setLocation(200-30-10,35+5+17);
+	
 
-        m2 = new JTextField("5");
+        m2 = new JTextField("7");
         m2.setBackground(Color.red);
         m2.setSize(50,30);
-        m2.setLocation(250-30,35+5+17);
-	m2.setEnabled(false);
+        m2.setLocation(250-30-10,35+5+17);
+	
 
-        m3 = new JTextField("0");
+        m3 = new JTextField("1");
         m3.setBackground(Color.white);
         m3.setSize(100,30);
-        m3.setLocation(300-30,35+5+17);
-	m3.setEnabled(false);
+        m3.setLocation(300-30-10,35+5+17);
+	
 
 	s1 = new JTextField("1");
         s1.setBackground(Color.green);
         s1.setSize(50,30);
-        s1.setLocation(200-30,63+10+17);
-	s1.setEnabled(false);
+        s1.setLocation(200-30-10,63+10+17);
+	
 
         s2 = new JTextField("1");
         s2.setBackground(Color.red);
         s2.setSize(50,30);
-        s2.setLocation(250-30,63+10+17);
-	s2.setEnabled(false);
+        s2.setLocation(250-30-10,63+10+17);
+	
 
-        s3 = new JTextField("0");
+        s3 = new JTextField("1");
         s3.setBackground(Color.white);
         s3.setSize(100,30);
-        s3.setLocation(300-30,63+10+17);
-	s3.setEnabled(false);
+        s3.setLocation(300-30-10,63+10+17);
+	
 
 	JLabel output1 = new JLabel("Output Filename");
         output1.setForeground(Color.white);
-        output1.setSize(200,40);
-        output1.setLocation(200,170+7);
+        output1.setSize(225,40);
+        output1.setLocation(230,173);
 
-        output2 = new JTextField("Parameter_Space_Map");
+        output2 = new JTextField("star_date_set");
         output2.setBackground(Color.white);
         output2.setSize(180,30);
-        output2.setLocation(170,200+7);
+        output2.setLocation(206,203);
 
         JLabel filepath1 = new JLabel("Path to Desired Directory");
         filepath1.setForeground(Color.white);
         filepath1.setSize(200,40);
-        filepath1.setLocation(150,200+30+7);
+        filepath1.setLocation(118,117);
 
         filepath2 = new JTextField("example/star_name/date/sliced/");
         filepath2.setBackground(Color.white);
         filepath2.setSize(325,30);
-        filepath2.setLocation(70,230+30+7);
+        filepath2.setLocation(58,147);
 
         snr = new JCheckBox("SNR Analysis");
         snr.setLocation(135,235);
@@ -466,7 +431,7 @@ public class GetParameters{
 
         final JButton searcher = new JButton("!");
         searcher.setSize(20,20);
-        searcher.setLocation(30, 234+30+7);
+        searcher.setLocation(25, 152);
         searcher.setOpaque(true);
         searcher.setForeground(Color.blue);
         searcher.addActionListener(new ActionListener()
@@ -480,36 +445,73 @@ public class GetParameters{
 		}
 	    });
 
+    wid = new JTextField("10,15");
+        wid.setBackground(Color.white);
+        wid.setSize(100,30);
+        wid.setLocation(300-30,281+2);
+        
+    pa = new JTextField("120");
+        pa.setBackground(Color.white);
+        pa.setSize(100,30);
+        pa.setLocation(147,281+2);
+        
+    rad = new JTextField("13");
+        rad.setBackground(Color.white);
+        rad.setSize(100,30);
+        rad.setLocation(25,281+2);
+        
+        
+    JLabel widL = new JLabel("Width");
+        widL.setForeground(Color.white);
+        widL.setSize(100,40);
+        widL.setLocation(300,254+2);
+
+    JLabel paL = new JLabel("Position Angle");
+        paL.setForeground(Color.white);
+        paL.setSize(100,40);
+        paL.setLocation(150,254+2);
+        
+    JLabel radL = new JLabel("Radius");
+        radL.setForeground(Color.white);
+        radL.setSize(100,40);
+        radL.setLocation(55,254+2);
+
 
 	JLabel IWA1 = new JLabel("IWA");
         IWA1.setForeground(Color.white);
         IWA1.setSize(100,40);
-        IWA1.setLocation(85,170+7);
+        IWA1.setLocation(27,173);
 
         IWA2 = new JTextField("10");
         IWA2.setBackground(Color.white);
         IWA2.setSize(50,30);
-        IWA2.setLocation(76,200+7);
+        IWA2.setLocation(15,203);
 
 	JLabel klmodes1 = new JLabel("KL Modes");
         klmodes1.setForeground(Color.white);
         klmodes1.setSize(100,40);
-        klmodes1.setLocation(160,110+7);
+        klmodes1.setLocation(100,173);
 
-        klmodes2 = new JTextField("1,2,3,4,5,10,20,50,100");
+        klmodes2 = new JTextField("1,5,10,50,100");
         klmodes2.setBackground(Color.white);
-        klmodes2.setSize(180,30);
-        klmodes2.setLocation(110,140+7);
+        klmodes2.setSize(130,30);
+        klmodes2.setLocation(71,203);
 
-	JLabel eta = new JLabel("ETA: 0 mins");
-        eta.setForeground(Color.white);
-        eta.setSize(140,40);
-        eta.setLocation(110,320);
-	eta.setFont(new Font("Serif", Font.BOLD, 20));
+	JLabel planets = new JLabel("Planet Locations:");
+        planets.setForeground(Color.white);
+        planets.setSize(190,30);
+        planets.setLocation(117,238);
+	planets.setFont(new Font("Serif", Font.BOLD, 20));
+        
+  
+   
+   
+    
 
+        
 	JButton launcher = new JButton("Run KLIP");
-        launcher.setSize(100,40);
-        launcher.setLocation(267,320);
+        launcher.setSize(80,35);
+        launcher.setLocation(290,335);
         launcher.setOpaque(true);
         launcher.setForeground(Color.blue);
         launcher.addActionListener(new ActionListener()
@@ -530,6 +532,9 @@ public class GetParameters{
 			writer.println(s1.getText());
 			writer.println(s2.getText());
 			writer.println(s3.getText());
+            writer.println(rad.getText());
+            writer.println(pa.getText());
+            writer.println(wid.getText());
 			writer.close();
 			System.exit(0);
 		    } catch (Exception e1){}
@@ -538,7 +543,7 @@ public class GetParameters{
 
        
 	frame.getContentPane().add(launcher);
-	frame.getContentPane().add(eta);
+	frame.getContentPane().add(planets);
 	frame.getContentPane().add(klmodes1);
 	frame.getContentPane().add(klmodes2);
 	frame.getContentPane().add(annuli);
@@ -559,6 +564,12 @@ public class GetParameters{
 	frame.getContentPane().add(s1);
         frame.getContentPane().add(s2);
         frame.getContentPane().add(s3);
+        frame.getContentPane().add(wid);
+        frame.getContentPane().add(widL);
+        frame.getContentPane().add(paL);
+        frame.getContentPane().add(radL);
+        frame.getContentPane().add(pa);
+        frame.getContentPane().add(rad);
          frame.getContentPane().add(start);
         frame.getContentPane().add(stop);
         frame.getContentPane().add(inc);

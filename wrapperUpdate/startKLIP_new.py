@@ -8,7 +8,7 @@ import glob
 import inspect
 import os
 #import pyklip.instruments.MAGAO as MAGAO
-import MagAO as MAGAO
+import MagAO as MagAO
 #import pyklip.parallelized as parallelized
 import parallelized as parallelized
 import numpy as np
@@ -59,7 +59,8 @@ outputFileName = sys.argv[5+argnum]
 
 print("Reading: " + pathToFiles + "/*.fits")
 filelist = glob.glob(pathToFiles + '/*.fits')
-dataset = MAGAO.MagAOData(filelist)
+dataset = MagAO.MagAOData(filelist)
+dataset.IWA = iwa
 
 print()
 

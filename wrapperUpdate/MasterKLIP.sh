@@ -68,8 +68,14 @@ else
             S1=$line
         elif [ $counter = 12 ]; then
             S2=$line
-	else
+	elif [ $counter = 13 ]; then
             S3=$line
+	elif [ $counter = 14 ]; then
+            ra=$line
+	elif [ $counter = 15 ]; then
+            pa=$line
+	elif [ $counter = 16 ]; then
+            wi=$line
         fi
     done < "automation_parameters.txt"
 fi
@@ -99,7 +105,7 @@ if [[ $RUNTYPE = 1 ]]; then
     fi
     rm temp_klip.fits
 else 
-    python AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3
+    python AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3 $ra $pa $wi
     #/home/anaconda3/bin/python3 AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3
 fi
 
@@ -111,6 +117,6 @@ if [ -f "single_reduction_parameters.txt" ]; then
    rm single_reduction_parameters.txt~
 fi
 if [ -f "automation_parameters.txt" ]; then
-   rm automation_parameters.txt
+   #rm automation_parameters.txt
    rm automation_parameters.txt~
 fi

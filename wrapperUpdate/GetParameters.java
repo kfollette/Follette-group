@@ -197,10 +197,16 @@ public class GetParameters{
         filepath2.setLocation(70,200);
 
 	snr = new JCheckBox("SNR Analysis");
-	snr.setLocation(135,235);
+	snr.setLocation(67,235);
 	snr.setSize(120,50);
 	snr.setVisible(true);
 	snr.setForeground(Color.white);
+        
+   	final JCheckBox save = new JCheckBox("Save 4D KLIP data");
+	save.setLocation(187,235);
+	save.setSize(170,50);
+	save.setVisible(true);
+	save.setForeground(Color.white);    
 
 	final JButton searcher = new JButton("!");
 	searcher.setSize(20,20);
@@ -255,6 +261,7 @@ public class GetParameters{
 		    writer.println(klmodes2.getText());
 		    writer.println(subsections2.getText());
 		    writer.println(snr.isSelected());
+            writer.println(save.isSelected());
 		    writer.close();
 		    System.exit(0);
 		} catch (Exception e1){}
@@ -285,6 +292,7 @@ public class GetParameters{
 	frame.getContentPane().add(filepath2);
 	frame.getContentPane().add(searcher);
 	frame.getContentPane().add(snr);
+    frame.getContentPane().add(save);
 	frame.getContentPane().add(back);
 	
     }    
@@ -504,14 +512,18 @@ public class GetParameters{
 	planets.setFont(new Font("Serif", Font.BOLD, 20));
         
   
-   
+   final JCheckBox save2 = new JCheckBox("Save 4D KLIP data");
+	save2.setLocation(115,328);
+	save2.setSize(170,50);
+	save2.setVisible(true);
+	save2.setForeground(Color.white);    
    
     
 
         
 	JButton launcher = new JButton("Run KLIP");
         launcher.setSize(80,35);
-        launcher.setLocation(290,335);
+        launcher.setLocation(298,335);
         launcher.setOpaque(true);
         launcher.setForeground(Color.blue);
         launcher.addActionListener(new ActionListener()
@@ -535,6 +547,7 @@ public class GetParameters{
             writer.println(rad.getText());
             writer.println(pa.getText());
             writer.println(wid.getText());
+            writer.println(save2.isSelected());
 			writer.close();
 			System.exit(0);
 		    } catch (Exception e1){}
@@ -576,6 +589,7 @@ public class GetParameters{
 	frame.getContentPane().add(subsections);
 	frame.getContentPane().add(IWA1);
         frame.getContentPane().add(IWA2);
+        frame.getContentPane().add(save2);
 
 
     }

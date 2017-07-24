@@ -342,7 +342,11 @@ def create_map(filename, planets = None, saveOutput = True, outputName = None):
            
             #if enough pixels have been found to calculate a standard deviation for this pixels radius, the pixel value is divided by the standard deviation of pixels at that radius
             try:
-                indiv[x][y] = indiv[x][y]/stdMap[radius]
+                #if statement prevents a divide by zero warning message
+                if (stdMap[radius] == 0):
+                    indiv[x][y] = np.nan
+                else:
+                    indiv[x][y] = indiv[x][y]/stdMap[radius]
                 
                 #debugging step to show noise map:
                 #indiv[x][y] = stdMap[radius]
@@ -368,8 +372,11 @@ def create_map(filename, planets = None, saveOutput = True, outputName = None):
 
 
 
-def getPlanet(snrmap, x, y, _range):
+def getPlanet(snrmap, rad, pa, _range):
   
+    x = int(rad*math.cos(pa))
+    y = int(rad*math.sin(pa))
+
     planet = -100000000
    
     for i in range (x-_range, x+_range):

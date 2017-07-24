@@ -5,7 +5,11 @@
 ulimit -n 4096
 
 #Launch GUI prompting for information
-javac GetParameters.java
+if  [ ! -f GetParameters.class ]; then
+  javac GetParameters.java
+fi
+
+#javac GetParameters.java
 java GetParameters
 rm *.class
 
@@ -37,8 +41,10 @@ if [[ $RUNTYPE = 1 ]]; then
 	    KLMODES=$line
 	elif [ $counter = 7 ]; then
 	    SUBSECTIONS=$line
-	else
+	elif [ $counter = 8 ]; then
 	    SNR=$line
+	elif [ $counter = 9 ]; then
+            SAVE1=$line
 	fi
     done < "single_reduction_parameters.txt"
 else
@@ -76,47 +82,43 @@ else
             pa=$line
 	elif [ $counter = 16 ]; then
             wi=$line
+	elif [ $counter = 17 ]; then
+            SAVE2=$line
         fi
     done < "automation_parameters.txt"
 fi
 
-#Access IWA information
-echo $IWA > "iwa.txt"
 
 #Run StartKLIP.py with command line arguments from these variables (if single reduction)
 if [[ $RUNTYPE = 1 ]]; then
-    python StartKLIP.py $FILEPATH $ANNULI $IWA $MOVEMENT $OUTPUTNAME $KLMODES $SUBSECTIONS $SNR
+    python startKLIP_new.py $FILEPATH $ANNULI $IWA $MOVEMENT $OUTPUTNAME $KLMODES $SUBSECTIONS $SNR $SAVE1
     #/home/anaconda3/bin/python3 StartKLIP.py $FILEPATH $ANNULI $IWA $MOVEMENT $OUTPUTNAME $KLMODES $SUBSECTIONS $SNR
     rm $OUTPUTNAME"-KLmodes-all.fits"
     cp "_"$OUTPUTNAME"-KLmodes-all.fits" $OUTPUTNAME".fits"
     rm "_"$OUTPUTNAME"-KLmodes-all.fits"
     cp $OUTPUTNAME".fits" "temp_klip.fits"
-    if [ $SNR ]; then
-	python SNRMap.py
-	#/home/anaconda3/bin/python3 SNRMap
-	python AppendFiles.py $OUTPUTNAME
-	#/home/anaconda3/bin/python3 AppendFiles
-	rm custom_mask.fits
-	rm mask_cube.fits
-	rm multiplied_cube.fits
-	rm nose_map.fits
-	rm radial_profile.fits
-	rm snr_map.fits
-    fi
     rm temp_klip.fits
 else 
-    python AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3 $ra $pa $wi
+    python AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3 $ra $pa $wi $SAVE2
     #/home/anaconda3/bin/python3 AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3
 fi
 
 #Ensure the correct file exists
-mv $OUTPUTNAME".fits" $FILEPATH"/.."
-rm iwa.txt     
+
+     
 if [ -f "single_reduction_parameters.txt" ]; then
    rm single_reduction_parameters.txt
+fi
+
+if [ -f "automation_parameters.txt" ]; then
+   rm automation_parameters.txt
+fi
+
+if [ -f "single_reduction_parameters.txt~" ]; then
    rm single_reduction_parameters.txt~
 fi
-if [ -f "automation_parameters.txt" ]; then
-   #rm automation_parameters.txt
+
+if [ -f "automation_parameters.txt~" ]; then
    rm automation_parameters.txt~
 fi
+

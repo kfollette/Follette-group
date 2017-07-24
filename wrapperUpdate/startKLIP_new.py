@@ -16,7 +16,10 @@ import sys
 #import pyklip.klip as klip
 import klip as klip
 from astropy.io import fits
+import warnings
+from astropy.utils.exceptions import AstropyWarning
 
+warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
 ##################################################################
 #############                                        #############
@@ -49,7 +52,16 @@ print("Movement = " + str(movement2))
 subsections2 = int(sys.argv[7+argnum])
 print("Subsections = " + str(subsections2))
 
-outputFileName = sys.argv[5+argnum]                                                                                                                                                                                                                                                                                                                                                                     
+outputFileName = sys.argv[5+argnum]     
+
+SNR = False
+if (sys.argv[8+argnum] == 'true' or sys.argv[8+argnum] == 'True'):
+    SNR = True
+    
+saveData = False
+if (sys.argv[9+argnum] == 'true' or sys.argv[9+argnum] == 'True'):
+    saveData = True    
+    
 ##################################################################
 #############                                        #############
 #############                 RUN KLIP               #############
@@ -63,16 +75,21 @@ dataset = MagAO.MagAOData(filelist)
 dataset.IWA = iwa
 
 print()
+print("Starting KLIP")
 
 #run klip for given parameters
-parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "/.."), fileprefix=outputFileName, annuli=annuli2, subsections=subsections, movement=movement2, numbasis=klmodes, calibrate_flux=True, mode="ADI")
+parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "/.."), fileprefix=outputFileName, annuli=annuli2, subsections=subsections2, movement=movement2, numbasis=klmodes, calibrate_flux=True, mode="ADI")
            
 #cube to hold median combinations of klipped images
 cube = np.zeros((5,450,450))
             
 #flips images
-print("Now flipping KLIPed images"
+print("Now flipping KLIPed images")
 dataset.output = dataset.output[:,:,:,::-1]
+      
+if (saveData):
+    fits.writeto(pathToFiles + '/../' + outputFileName + "_a" + str(annuli2) + "m" + str(int(movement2)) + "s" + str(subsections2) + "iwa" + str(iwa) +'-KLmodes-all_uncombined.fits', cube, clobber=True)
+
 
 #keeps track of number of KL mode values that have been tested, used for indexing
 kcount = 0                       
@@ -85,11 +102,11 @@ for k in klmodes:
     #adds median image to cube 
     cube[kcount,:,:] = isolatedKL
                 
-    kcount+=1
+    kcount += 1
        
         
 #write median combination cube to disk 
-fits.writeto('med_'+ outputFileName + "_a" + str(a) + "m" + str(m) + "s" str(subsections2) + iwa + str(iwa) + '_KLmodes-all.fits', cube, clobber=True)
+fits.writeto(pathToFiles + '/../med_' + outputFileName + "_a" + str(annuli2) + "m" + str(int(movement2)) + "s" + str(subsections2) + "iwa" + str(iwa) + '_KLmodes-all.fits', cube, clobber=True)
   
 
      

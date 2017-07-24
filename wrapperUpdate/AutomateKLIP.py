@@ -1,6 +1,4 @@
 
-# coding: utf-8
-
 #Clare Leonard                                                                
 #Version 1.0 - 6/21/17                                                          
 
@@ -24,31 +22,6 @@ import klip as klip
 from astropy.io import fits
 import SNRMap as snr   
 import time
-
-
-
-##################################################################
-#############                                        #############
-#############              NAME OUTPUTS              #############
-#############                                        #############
-################################################################## 
-
-def nameOutput(filepath):
-
-    dircount = 0
-    outputname = ""
-    
-    for x in range (len(filepath)):
-        if (filepath[-8-x] == '/'):
-            dircount += 1
-            if (dircount >= 3):
-                break
-            outputname = '_' + outputname
-        else: 
-            outputname = filepath[-8-x] + outputname
-   
-    return outputname
-
 
 
 
@@ -127,13 +100,13 @@ print()
 print('Planet mask parameters:')
 
 print("Radius = " + str(list(map(int, sys.argv[14+argnum].split(",")))))
-radius = list(map(int, sys.argv[14+argnum].split(",")))
+ra = list(map(int, sys.argv[14+argnum].split(",")))
 
 print("Position Angle = " + str(list(map(int, sys.argv[15+argnum].split(",")))))
-radius = list(map(int, sys.argv[15+argnum].split(",")))
+pa = list(map(int, sys.argv[15+argnum].split(",")))
 
 print("Mask width (radial, angular): = " + str(list(map(int, sys.argv[16+argnum].split(",")))))
-radius = list(map(int, sys.argv[16+argnum].split(",")))
+wid = list(map(int, sys.argv[16+argnum].split(",")))
 
 print()
 
@@ -142,11 +115,12 @@ outputFileName = sys.argv[4+argnum]
 print("Output FileName = " + outputFileName)
 
 
+saveData = False
+if (sys.argv[17+argnum] == 'true' or sys.argv[17+argnum] == 'True'):
+    saveData = True    
+
 print()
 
-print("reading: " + pathToFiles + "/*.fits")
-
-print()
 
 
 
@@ -157,12 +131,14 @@ print()
 #############                                        #############
 ################################################################## 
 
+print("reading: " + pathToFiles + "/*.fits")
+
+print()
 
 filelist = glob.glob(pathToFiles + '/*.fits')
 dataset = MagAO.MagAOData(filelist)
 dataset.IWA = iwa
 
-print()
 
 snrCube = np.zeros((len(klmodes),int((annuli2_stop-annuli2_start)/annuli2_inc+1),int((movement2_stop-movement2_start)/movement2_inc+1)))
 
@@ -201,6 +177,9 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
             #flips images
             dataset.output = dataset.output[:,:,:,::-1]
             
+            if (saveData):
+                fits.writeto(pathToFiles + '/../' + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(subsections2) + "iwa" + str(iwa) +'-KLmodes-all_uncombined.fits', cube, clobber=True)
+            
             #iterates over kl modes
             for k in klmodes:
                 
@@ -211,15 +190,20 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 outputNameSNR = outputFileName + "_a" + str(a) + "m" + str(m) + "KL" + str(k) + "_SNRMap.fits"
                 
                 #object to hold mask parameters for snr map 
-                mask = ([13,], [120,], [10, 15])
+                mask = (ra, pa, wid)
                 
                 #makes SNR map 
                 snrmap = snr.create_map(isolatedKL, planets = mask, saveOutput = False)
                 #adds SNR map to 5d cube 
                 snrMapCube5d[kcount,acount,mcount,:,:] = snrmap 
                 #gets highest pixel value in snr map in the location of the planet 
-                planetSNR = snr.getPlanet(snrmap, 220, 215, 10)
                 
+                planetSNRs = []
+                
+                for x in range (len(ra)):
+                    planetSNRs.append(snr.getPlanet(snrmap, ra[x], pa[x], wid[1]))
+                
+                planetSNR = np.mean(planetSNRs)
                 
                 #adds median image to cube 
                 cube[kcount,:,:] = isolatedKL
@@ -229,7 +213,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 kcount+=1
                                           
             #write median combination cube to disk 
-            fits.writeto('med_'+ outputFileName + "_a" + str(a) + "m" + str(m) + '-KLmodes-all.fits', cube, clobber=True)
+            fits.writeto(pathToFiles + '/../' + 'med_'+ outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(subsections2) + "iwa" + str(iwa) +'-KLmodes-all.fits', cube, clobber=True)
         mcount+=1
     acount+=1
 

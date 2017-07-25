@@ -178,7 +178,7 @@ def shift(x,y):
 
 ################
 
-readFitsCubeToArray("HD142527_Line_clip450_flat_reg_circsym.fits")
+readFitsCubeToArray("HD142527_8Apr14_Line_clip450_flat_reg_circsym.fits")
 findGhostSingleIm()
 makeSquare()
 amp1, ampErr1, wid1, widErr1, area1, areaErr1 = makeMoffatGhost(isolateGhostArray())

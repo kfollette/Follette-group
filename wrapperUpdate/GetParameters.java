@@ -4,6 +4,7 @@
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.Paint;
 import java.awt.event.*;
 import java.io.*;
 import javax.imageio.ImageIO;
@@ -34,6 +35,9 @@ public class GetParameters{
     static JTextField wid;
     static JTextField pa;
     static JTextField rad;
+    static JTextField wid2;
+    static JTextField pa2;
+    static JTextField rad2;
     
     public static void main(String[] args) throws FileNotFoundException{
 	
@@ -91,7 +95,7 @@ public class GetParameters{
     
 	JButton single = new JButton("Single Reduction");
         single.setSize(150,40);
-        single.setLocation(25,40);
+        single.setLocation(25,43);
         single.setOpaque(true);
         single.setForeground(Color.blue);
         single.addActionListener(new ActionListener()
@@ -106,7 +110,7 @@ public class GetParameters{
 
 	JButton automated = new JButton("Automate Parameters");
 	automated.setSize(150,40);
-        automated.setLocation(225,40);
+        automated.setLocation(225,43);
         automated.setOpaque(true);
         automated.setForeground(Color.blue);
         automated.addActionListener(new ActionListener()
@@ -129,88 +133,200 @@ public class GetParameters{
 	JLabel annuli1 = new JLabel("Annuli");
         annuli1.setForeground(Color.white);
         annuli1.setSize(100,40);
-        annuli1.setLocation(20,20);
+        annuli1.setLocation(90+40,20+73-8);
 
         annuli2 = new JTextField("9");
         annuli2.setBackground(Color.white);
-        annuli2.setSize(50,30);
-        annuli2.setLocation(16,50);
+        annuli2.setSize(80,30);
+        annuli2.setLocation(86+26,50+73-8);
 
 	JLabel IWA1 = new JLabel("IWA");
 	IWA1.setForeground(Color.white);
         IWA1.setSize(100,40);
-	IWA1.setLocation(85,20);
+	IWA1.setLocation(30+18,20+73-8);
 
 	IWA2 = new JTextField("10");
 	IWA2.setBackground(Color.white);
-	IWA2.setSize(50,30);
-        IWA2.setLocation(76,50);
+	IWA2.setSize(80,30);
+        IWA2.setLocation(20,50+73-8);
 
 	JLabel movement1 = new JLabel("Movement");
         movement1.setForeground(Color.white);
         movement1.setSize(100,40);
-        movement1.setLocation(132,20);
+        movement1.setLocation(132+79,20+73-8);
 
         movement2 = new JTextField("2.5");
         movement2.setBackground(Color.white);
-        movement2.setSize(50,30);
-        movement2.setLocation(135,50);
+        movement2.setSize(80,30);
+        movement2.setLocation(135+69,50+73-8);
 	
 	JLabel klmodes1 = new JLabel("KL Modes");
         klmodes1.setForeground(Color.white);
         klmodes1.setSize(100,40);
-        klmodes1.setLocation(250,20);
+        klmodes1.setLocation(74,90+59-9);
 
-        klmodes2 = new JTextField("1,2,3,4,5,10,20,50,100");
+        klmodes2 = new JTextField("1,5,10,20,50,100");
         klmodes2.setBackground(Color.white);
-        klmodes2.setSize(180,30);
-        klmodes2.setLocation(200,50);
+        klmodes2.setSize(130,30);
+        klmodes2.setLocation(37,120+59-9);
 
 	JLabel subsections1 = new JLabel("Subsections");
         subsections1.setForeground(Color.white);
         subsections1.setSize(100,40);
-        subsections1.setLocation(60,90);
+        subsections1.setLocation(299,93-8);
 
         subsections2 = new JTextField("1");
         subsections2.setBackground(Color.white);
-        subsections2.setSize(50,30);
-        subsections2.setLocation(67,120);
+        subsections2.setSize(80,30);
+        subsections2.setLocation(297,123-8);
 
 	JLabel output1 = new JLabel("Output Filename");
         output1.setForeground(Color.white);
         output1.setSize(200,40);
-        output1.setLocation(200,90);
+        output1.setLocation(200+16,90+59-9);
 
-        output2 = new JTextField("Klipped_Image");
+        output2 = new JTextField("star_date_set");
         output2.setBackground(Color.white);
         output2.setSize(180,30);
-        output2.setLocation(170,120);
+        output2.setLocation(170+10,120+59-9);
 
 	JLabel filepath1 = new JLabel("Path to Desired Directory");
         filepath1.setForeground(Color.white);
         filepath1.setSize(200,40);
-        filepath1.setLocation(150,170);
+        filepath1.setLocation(135,0);
 
         filepath2 = new JTextField("example/star_name/date/sliced/");
         filepath2.setBackground(Color.white);
-        filepath2.setSize(325,30);
-        filepath2.setLocation(70,200);
+        filepath2.setSize(300,30);
+        filepath2.setLocation(67,30);
+        
+        
+    wid2 = new JTextField("10,15");
+        wid2.setBackground(Color.white);
+        wid2.setSize(100,30);
+        wid2.setLocation(300-30,291);
+        wid2.setEnabled(false);
+        
+    pa2 = new JTextField("120");
+        pa2.setBackground(Color.white);
+        pa2.setSize(100,30);
+        pa2.setLocation(147,291);
+        pa2.setEnabled(false);
+        
+    rad2 = new JTextField("13");
+        rad2.setBackground(Color.white);
+        rad2.setSize(100,30);
+        rad2.setLocation(25,291);
+        rad2.setEnabled(false);
+        
+    JLabel widL = new JLabel("Width");
+        widL.setForeground(Color.white);
+        widL.setSize(100,40);
+        widL.setLocation(300,261);
 
-	snr = new JCheckBox("SNR Analysis");
-	snr.setLocation(67,235);
-	snr.setSize(120,50);
+    JLabel paL = new JLabel("Position Angle");
+        paL.setForeground(Color.white);
+        paL.setSize(100,40);
+        paL.setLocation(150,261);
+        
+    JLabel radL = new JLabel("Radius");
+        radL.setForeground(Color.white);
+        radL.setSize(100,40);
+        radL.setLocation(55,261);    
+
+	snr = new JCheckBox("Create SNR Map");
+	snr.setLocation(28,196);
+	snr.setSize(150,50);
 	snr.setVisible(true);
 	snr.setForeground(Color.white);
+        snr.addItemListener(new ItemListener() {
+		public void itemStateChanged(ItemEvent itemEvent){
+		    if (snr.isSelected()){
+                rad2.setEnabled(true);
+                pa2.setEnabled(true);
+                wid2.setEnabled(true);
+		    }	
+		    else if (!snr.isSelected()){
+                rad2.setEnabled(false);
+                pa2.setEnabled(false);
+                wid2.setEnabled(false);
+		    }
+		}
+	    });
+
         
-   	final JCheckBox save = new JCheckBox("Save 4D KLIP data");
-	save.setLocation(187,235);
-	save.setSize(170,50);
+   	final JCheckBox save = new JCheckBox("Save time series KLIP data");
+	save.setLocation(172,196);
+	save.setSize(200,50);
 	save.setVisible(true);
-	save.setForeground(Color.white);    
+	save.setForeground(Color.white); 
+        
+    JLabel params = new JLabel("KLIP Parameters:");
+        params.setForeground(Color.white);
+        params.setSize(190,31);
+        params.setLocation(117,72-7);
+	params.setFont(new Font("Serif", Font.BOLD, 20));
+        
+    final JCheckBox adi = new JCheckBox("ADI");
+	adi.setLocation(105,345);
+	adi.setSize(60,20);
+	adi.setVisible(true);
+	adi.setForeground(Color.white); 
+    
+    
+        
+        
+    final JCheckBox sdi = new JCheckBox("SDI");
+	sdi.setLocation(155,345);
+	sdi.setSize(60,20);
+	sdi.setVisible(true);
+	sdi.setForeground(Color.white);
+    
+    
+        
+   final JCheckBox both = new JCheckBox("ADI+SDI");
+	both.setLocation(205,345);
+	both.setSize(130,20);
+	both.setVisible(true);
+	both.setForeground(Color.white); 
+    both.addItemListener(new ItemListener() {
+		public void itemStateChanged(ItemEvent itemEvent){
+		    if (both.isSelected()){
+                sdi.setSelected(false);
+                adi.setSelected(false);
+		    }	
+		}
+	    }); 
+        
+        
+    adi.addItemListener(new ItemListener() {
+		public void itemStateChanged(ItemEvent itemEvent){
+		    if (adi.isSelected()){
+                sdi.setSelected(false);
+                both.setSelected(false);
+		    }	
+		}
+	    });    
+   
+        
+    sdi.addItemListener(new ItemListener() {
+		public void itemStateChanged(ItemEvent itemEvent){
+		    if (sdi.isSelected()){
+                adi.setSelected(false);
+                both.setSelected(false);
+		    }	
+		}
+	    });     
+        
+    JLabel planets2 = new JLabel("Planet Locations:");
+        planets2.setForeground(Color.white);
+        planets2.setSize(190,30);
+        planets2.setLocation(120,241);
+	planets2.setFont(new Font("Serif", Font.BOLD, 20));    
 
 	final JButton searcher = new JButton("!");
 	searcher.setSize(20,20);
-	searcher.setLocation(30, 204);
+	searcher.setLocation(37, 35);
 	searcher.setOpaque(true);
 	searcher.setForeground(Color.blue);
 	searcher.addActionListener(new ActionListener() 
@@ -224,9 +340,9 @@ public class GetParameters{
 	    }
 	});
 	
-	JButton back = new JButton("<--");
-        back.setSize(50,30);
-        back.setLocation(20, 325);
+	JButton back = new JButton("<----");
+        back.setSize(80,30);
+        back.setLocation(20, 340);
         back.setOpaque(true);
         back.setForeground(Color.red);
         back.addActionListener(new ActionListener()
@@ -242,12 +358,12 @@ public class GetParameters{
 		}
 	    });
 
-
+    final Color DARK_GREEN = new Color(0x00, 0xC0, 0x00);
 	JButton launcher = new JButton("Run KLIP");
-	launcher.setSize(100,40);
-	launcher.setLocation(150,320);
+	launcher.setSize(80,32);
+	launcher.setLocation(300,339);
 	launcher.setOpaque(true);
-	launcher.setForeground(Color.blue);
+	launcher.setForeground(DARK_GREEN);
 	launcher.addActionListener(new ActionListener()
 	{
 	    public void actionPerformed(ActionEvent e) {
@@ -270,7 +386,7 @@ public class GetParameters{
 
 	JLabel divider = new JLabel("____________________________________________________________");
 	divider.setSize(500,20);
-	divider.setLocation(0,280);
+	divider.setLocation(0,314);
 	divider.setVisible(true);
 	divider.setForeground(Color.blue);
 	
@@ -291,8 +407,19 @@ public class GetParameters{
 	frame.getContentPane().add(filepath1);
 	frame.getContentPane().add(filepath2);
 	frame.getContentPane().add(searcher);
+    frame.getContentPane().add(params);
+    frame.getContentPane().add(planets2);
 	frame.getContentPane().add(snr);
+    frame.getContentPane().add(wid2);
+    frame.getContentPane().add(widL);
+    frame.getContentPane().add(paL);
+    frame.getContentPane().add(radL);
+    frame.getContentPane().add(pa2);
+    frame.getContentPane().add(rad2);
     frame.getContentPane().add(save);
+    frame.getContentPane().add(adi);
+    frame.getContentPane().add(sdi);
+    frame.getContentPane().add(both);
 	frame.getContentPane().add(back);
 	
     }    
@@ -512,7 +639,7 @@ public class GetParameters{
 	planets.setFont(new Font("Serif", Font.BOLD, 20));
         
   
-   final JCheckBox save2 = new JCheckBox("Save 4D KLIP data");
+   final JCheckBox save2 = new JCheckBox("Write SNR maps");
 	save2.setLocation(115,328);
 	save2.setSize(170,50);
 	save2.setVisible(true);
@@ -520,12 +647,12 @@ public class GetParameters{
    
     
 
-        
+       final Color DARK_GREEN = new Color(0x00, 0xC0, 0x00); 
 	JButton launcher = new JButton("Run KLIP");
         launcher.setSize(80,35);
         launcher.setLocation(298,335);
         launcher.setOpaque(true);
-        launcher.setForeground(Color.blue);
+        launcher.setForeground(DARK_GREEN);
         launcher.addActionListener(new ActionListener()
 	    {
 		public void actionPerformed(ActionEvent e) {

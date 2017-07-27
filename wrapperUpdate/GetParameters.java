@@ -378,6 +378,11 @@ public class GetParameters{
 		    writer.println(subsections2.getText());
 		    writer.println(snr.isSelected());
             writer.println(save.isSelected());
+            if (snr.isSelected()){
+                writer.println(rad2.getText());
+                writer.println(pa2.getText());
+                writer.println(wid2.getText());
+            }
 		    writer.close();
 		    System.exit(0);
 		} catch (Exception e1){}

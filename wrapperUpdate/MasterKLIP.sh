@@ -45,6 +45,12 @@ if [[ $RUNTYPE = 1 ]]; then
 	    SNR=$line
 	elif [ $counter = 9 ]; then
             SAVE1=$line
+	elif [ $counter = 10 ]; then
+            RA2=$line
+	elif [ $counter = 11 ]; then
+            PA2=$line
+	elif [ $counter = 12 ]; then
+            WID2=$line
 	fi
     done < "single_reduction_parameters.txt"
 else
@@ -91,7 +97,7 @@ fi
 
 #Run StartKLIP.py with command line arguments from these variables (if single reduction)
 if [[ $RUNTYPE = 1 ]]; then
-    python startKLIP_new.py $FILEPATH $ANNULI $IWA $MOVEMENT $OUTPUTNAME $KLMODES $SUBSECTIONS $SNR $SAVE1
+    python startKLIP_new.py $FILEPATH $IWA $KLMODES $ANNULI $MOVEMENT $SUBSECTIONS $OUTPUTNAME $SNR $SAVE1 $RA2 $PA2 $WID2
     #/home/anaconda3/bin/python3 StartKLIP.py $FILEPATH $ANNULI $IWA $MOVEMENT $OUTPUTNAME $KLMODES $SUBSECTIONS $SNR
     rm $OUTPUTNAME"-KLmodes-all.fits"
     cp "_"$OUTPUTNAME"-KLmodes-all.fits" $OUTPUTNAME".fits"

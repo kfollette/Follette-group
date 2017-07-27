@@ -14,7 +14,7 @@
 import glob
 import inspect
 import os                                      
-import MagAO as MagAO                                   
+import instruments.MagAO as MagAO                                   
 import parallelized as parallelized
 import numpy as np
 import sys                                                   
@@ -115,9 +115,9 @@ outputFileName = sys.argv[4+argnum]
 print("Output FileName = " + outputFileName)
 
 
-saveData = False
+saveSNR = False
 if (sys.argv[17+argnum] == 'true' or sys.argv[17+argnum] == 'True'):
-    saveData = True    
+    saveSNR = True    
 
 print()
 
@@ -169,7 +169,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
 
             
             #cube to hold median combinations of klipped images
-            cube = np.zeros((5,450,450))
+            cube = np.zeros((len(klmodes),450,450))
             
             #keeps track of number of KL mode values that have been tested, used for indexing
             kcount = 0
@@ -177,8 +177,6 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
             #flips images
             dataset.output = dataset.output[:,:,:,::-1]
             
-            if (saveData):
-                fits.writeto(pathToFiles + '/../' + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(subsections2) + "iwa" + str(iwa) +'-KLmodes-all_uncombined.fits', cube, clobber=True)
             
             #iterates over kl modes
             for k in klmodes:
@@ -194,10 +192,12 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 
                 #makes SNR map 
                 snrmap = snr.create_map(isolatedKL, planets = mask, saveOutput = False)
-                #adds SNR map to 5d cube 
-                snrMapCube5d[kcount,acount,mcount,:,:] = snrmap 
-                #gets highest pixel value in snr map in the location of the planet 
                 
+                #adds SNR map to 5d cube 
+                if (saveSNR):
+                    snrMapCube5d[kcount,acount,mcount,:,:] = snrmap 
+                
+                #gets highest pixel value in snr map in the location of the planet 
                 planetSNRs = []
                 
                 for x in range (len(ra)):
@@ -217,10 +217,11 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
         mcount+=1
     acount+=1
 
-#writes SNR maps to 4d cubes 
-for x in range (len(klmodes)):
-    snr4d = snrMapCube5d[x,:,:,:,:] 
-    fits.writeto(pathToFiles + '/../' + outputFileName + "_a" + str(annuli2_start) + "-" + str(annuli2_stop) + "x" + str(annuli2_inc) + "m" + str(movement2_start) + "-" + str(movement2_stop) + "x" + str(movement2_inc) + "_" + str(klmodes[x]) + 'KLmodes_SNRMaps.fits', snr4d)  
+if (saveSNR):
+    #writes SNR maps to 4d cubes 
+    for x in range (len(klmodes)):
+        snr4d = snrMapCube5d[x,:,:,:,:] 
+        fits.writeto(pathToFiles + '/../' + outputFileName + "_a" + str(annuli2_start) + "-" + str(annuli2_stop) + "x" + str(annuli2_inc) + "m" + str(movement2_start) + "-" + str(movement2_stop) + "x" + str(movement2_inc) + "_" + str(klmodes[x]) + 'KLmodes_SNRMaps.fits', snr4d)  
     
 #write snr cube to disk 
 fits.writeto(pathToFiles + '/../' + outputFileName + "_paramexplore_a" + str(annuli2_start) + "-" + str(annuli2_stop) + "x" + str(annuli2_inc) + "m" + str(movement2_start) + "-" + str(movement2_stop) + "x" + str(movement2_inc) + '-KLmodes-all.fits', snrCube)     

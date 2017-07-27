@@ -22,6 +22,32 @@ import SNRMap as snr
 
 warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
+
+##################################################################
+#############                                        #############
+#############               SAVE FILES               #############
+#############                                        #############
+################################################################## 
+ 
+def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klmodes, mask = None, pre = '', suff = ""):    
+    hdu = fits.PrimaryHDU(indiv)
+    hdulist = fits.HDUList([hdu])
+    prihdr = hdulist[0].header
+    prihdr.set('annuli', str(annuli))
+    prihdr.set('movement', str(movement))
+    prihdr.set('subsctns', str(subsections))
+    prihdr.set('klmodes', str(klmodes))
+    prihdr.set('filepath', str(filepath))
+    if (not mask == None):
+        rad, pa, wid = mask 
+        prihdr.set('mask_rad', str(rad))
+        prihdr.set('mask_pa', str(pa))
+        prihdr.set('mask_wid', str(wid))
+    
+    hdulist.writeto(str(filepath) + "/../" + str(pre) + '_' + filename + "_a" + str(annuli) + "m" + str(int(movement)) + "s" + str(subsections) + "iwa" + str(iwa) + '_' + str(suff) + '_KLmodes-all.fits' + ".fits", clobber=True)
+
+    
+
 ##################################################################
 #############                                        #############
 #############               GET INPUTS               #############
@@ -32,11 +58,11 @@ warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 argnum = 0
 
 pathToFiles = sys.argv[1]
-print("File Path = " + pathToFiles)
 #if filepath doesnt end in sliced, sontinues to add next arguements, helpful iin case of whitespace in file path
 while (not pathToFiles[-6:] == 'sliced'):
     argnum += 1
     pathToFiles = pathToFiles + " " + sys.argv[1+argnum]
+print("File Path = " + pathToFiles)    
 
 klmodes = list(map(int, sys.argv[3+argnum].split(",")))
 print("KL Modes = " + str(list(map(int, sys.argv[3+argnum].split(",")))))
@@ -115,7 +141,8 @@ print("Now flipping KLIPed images")
 dataset.output = dataset.output[:,:,:,::-1]
       
 if (saveData):
-    fits.writeto(pathToFiles + '/../' + outputFileName + "_a" + str(annuli2) + "m" + str(int(movement2)) + "s" + str(subsections2) + "iwa" + str(iwa) +'-KLmodes-all_uncombined.fits', cube, clobber=True)
+    writeData(dataset.output, pathToFiles, outputFileName, annuli2, movement2, subsections2, iwa, klmodes, suff = "uncombined")
+    
 
 
 #keeps track of number of KL mode values that have been tested, used for indexing
@@ -136,11 +163,16 @@ for k in klmodes:
        
         
 #write median combination cube to disk 
-fits.writeto(pathToFiles + '/../med_' + outputFileName + "_a" + str(annuli2) + "m" + str(int(movement2)) + "s" + str(subsections2) + "iwa" + str(iwa) + '_KLmodes-all.fits', cube, clobber=True)
+writeData(cube, pathToFiles, outputFileName, annuli2, movement2, subsections2, iwa, klmodes, pre = "med")
+
   
 if (SNR):
-    #write SNR cube to disk 
-        fits.writeto(pathToFiles + '/../' + outputFileName + "_a" + str(annuli2) + "m" + str(int(movement2)) + "s" + str(subsections2) + "iwa" + str(iwa) + '_KLmodes-all_SNRMap.fits', SNRcube, clobber=True)
+    print("writing SNR data")
+    writeData(cube, pathToFiles, outputFileName, annuli2, movement2, subsections2, iwa, klmodes, mask = maskParams, pre = "SNRMap")
+
+        
+print("KLIP completed")        
+
   
      
             

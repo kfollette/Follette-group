@@ -152,6 +152,8 @@ for k in klmodes:
 
     #takes median combination of cube made with given number of KL modes
     isolatedKL = np.nanmedian(dataset.output[kcount,:,:,:], axis=0)
+    #adds median image to cube 
+    cube[kcount,:,:] = isolatedKL
     
     if (SNR):
         SNRcube[kcount,:,:] = snr.create_map(isolatedKL, planets = maskParams, saveOutput = False)

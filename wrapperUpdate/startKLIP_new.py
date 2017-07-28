@@ -168,7 +168,7 @@ writeData(cube, pathToFiles, outputFileName, annuli2, movement2, subsections2, i
   
 if (SNR):
     print("writing SNR data")
-    writeData(cube, pathToFiles, outputFileName, annuli2, movement2, subsections2, iwa, klmodes, mask = maskParams, pre = "SNRMap")
+    writeData(SNRcube, pathToFiles, outputFileName, annuli2, movement2, subsections2, iwa, klmodes, mask = maskParams, pre = "SNRMap")
 
         
 print("KLIP completed")        

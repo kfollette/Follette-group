@@ -78,7 +78,7 @@ def raw_flat_process(namestr, directory='raw', dark=None, blur=41):
             #raise FileNotFoundError('Please specify a master dark to use.')
         #else:
         vis.visao_dark(subdir=directory[:-3] + 'darks', name=namestr)
-        dark = fits.open('master_dark_' + namestr + '.fits')[0]
+        dark = fits.open('master_dark.fits')[0]
     else:
         dark = fits.open(dark)[0]
 
@@ -230,9 +230,9 @@ HISTORY:
     CREATED: 2016-07-20 by Wyatt Mullen, wmullen1@stanford.edu
     UPDATED: 2016-08-16 by WM -- added writing to file functionality and option to make a ones/NaN mask
 """
-def dust_mask(image, minval=0.98, rad=2, sem='', ones=False):
+def dust_mask(flat_namestr, minval=0.98, rad=2, ones=False):
     #masking all values below the minval
-    image = fits.open(image)[0] #added
+    image = fits.open(flat_namestr+'.fits')[0] #added
     nans = np.where(image.data < minval)
     data = np.where(image.data >= minval)
     dimy = image.shape[0]
@@ -256,8 +256,8 @@ def dust_mask(image, minval=0.98, rad=2, sem='', ones=False):
                         if 0 <= x + j and x+j < dimx and 0 <= y+i and y+i < dimy:
                             mask[y+i][x+j] = np.NaN
 
-    if sem != '': #create masked file if a semester is specified
-        fits.writeto(sem + '_mask_ones_' + str(minval) + '.fits', mask, clobber=True) #added
+#if sem != '': #create masked file if a semester is specified
+        fits.writeto(flat_namestr + '_dustmask_' + str(minval) + '_' + str(rad) + 'pix.fits', mask, clobber=True) #added
     return mask
 
 """

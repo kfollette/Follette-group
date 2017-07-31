@@ -31,7 +31,7 @@ import image_registration as imreg
 import scipy.ndimage.interpolation as sci
 import scipy.optimize as optimize
 from visao_helpers import *
-import pyds9.pyds9 as ds9
+#import pyds9.pyds9 as ds9
 
 """
 ##################################################################################################################

@@ -29,7 +29,7 @@ pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, 
 
     if((where(strmatch(vfw3posn,'*alpha*')))[0] ne -1) then begin
       Haims = where(strmatch(vfw3posn, '*alpha*') and ( imtypes eq 0 ) and $
-( aoloopst eq 1 ) and $
+        ( aoloopst eq 1 ) and $
         (number_formatter(exptime,decimals=2) eq exp_use[l]) and (avgwfe lt wfemax) )
       if Haims[0] ne -1 then print, 'Found ', n_elements(Haims), 'closed loop H alpha with exposure time', exp_use[l], $
         'and wfe<', wfemax
@@ -60,7 +60,7 @@ pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, 
 
 
   endfor
-;stop
+  ;stop
   nfilt=where(list ne 0)
   if n_elements(nfilt) gt 1 then print, 'more than one SDI filter in this image set - separate before proceeding'
 
@@ -73,20 +73,20 @@ pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, 
   if list[3] eq 1 then sciims=zpims
   if list[3] eq 1 then filt='zp'
   if n_elements(nfilt) gt 1 then sciims='NaN'
-;stop
-  rotoff_sciims=rotoff[sciims]
-  rotoff_cont=requad_angles(rotoff_sciims)
+  ;stop
+  if count1 ne 0 then begin
+    rotoff_sciims=rotoff[sciims]
+    rotoff_cont=requad_angles(rotoff_sciims)
+    totrot=max(rotoff_cont)-min(rotoff_cont)
+    print, 'total rotation of this dataset is   ', totrot, '   degrees'
+  endif
 
   if count1 ne 0 then sci_imlist=fnames[sciims]
   if count2 ne 0 then dark_imlist=fnames[ddx]
   if count3 ne 0 then flat_imlist=fnames[fdx]
-  
-  totrot=max(rotoff_cont)-min(rotoff_cont)
 
-  print, 'total rotation of this dataset is   ', totrot, '   degrees'  
-  
   if keyword_set(stp) then stop
-  
+
   return
-  
+
 end

@@ -47,14 +47,14 @@ def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klm
     
     #if program iterates over several parameter values, formats these for fits headers and file names
     if (isinstance(annuli, tuple)):
-        annuli = str(annuli[0]) + 'to' + str(annuli[1]) + 'by' + str(annuli[2])
-        annuli2 = "a" + str(annuli[0]) + '-' + str(annuli[1]) + 'x' + str(annuli[2])
+        annuli2 = "a" + str(annuli2[0]) + '-' + str(annuli2[1]) + 'x' + str(annuli2[2])
+        annuli = str(annuli[0]) + 'to' + str(annuli[1]) + 'by' + str(annuli[2])  
     if (isinstance(movement, tuple)):
+        movement2 = "m" + str(movement2[0]) + '-' + str(movement2[1]) + 'x' + str(movement2[2])
         movement = str(movement[0]) + 'to' + str(movement[1]) + 'by' + str(movement[2])
-        movement2 = "m" + str(movement[0]) + '-' + str(movement[1]) + 'x' + str(movement[2])
     if (isinstance(subsections, tuple)):
         subsections = str(subsections[0]) + 'to' + str(subsections[1]) + 'by' + str(subsections[2])
-        subsections2 = "s" + str(subsections[0]) + '-' + str(subsections[1]) + '-' + str(subsections[2])
+        subsections2 = "s" + str(subsections2[0]) + '-' + str(subsections2[1]) + '-' + str(subsections2[2])
     
     #shortens file path to bottom 4 directories so it will fit in fits header
     pathToFiles_short  = ''
@@ -79,7 +79,7 @@ def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klm
         prihdr.set('mask_wid', str(wid))
     
     #writes out files
-    hdulist.writeto(str(filepath) + "/../" + str(pre) + '_' + filename + "_a" + str(annuli2) + "m" + str(int(movement2)) + "s" + str(subsections2) + "iwa" + str(iwa) + '_' + str(suff) + '_KLmodes-all.fits', clobber=True)
+    hdulist.writeto(str(filepath) + "/../" + str(pre) + '_' + filename + "_a" + str(annuli2) + "m" + str(movement2) + "s" + str(subsections2) + "iwa" + str(iwa) + '_' + str(suff) + '_KLmodes-all.fits', clobber=True)
 
 
 

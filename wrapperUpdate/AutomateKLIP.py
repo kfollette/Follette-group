@@ -219,7 +219,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
     #keeps track of number of movement values that have been tested, used for indexing
     mcount = 0
     
-    for m in np.arrange(movement2_start, movement2_stop+1, movement2_inc):
+    for m in np.arange(movement2_start, movement2_stop+movement2_inc, movement2_inc):
         
         for s in range(subsections2_start, subsections2_stop+1, subsections2_inc):
             print("Starting KLIP for parameters:")

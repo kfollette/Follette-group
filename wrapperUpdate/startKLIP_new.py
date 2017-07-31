@@ -33,11 +33,21 @@ def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klm
     hdu = fits.PrimaryHDU(indiv)
     hdulist = fits.HDUList([hdu])
     prihdr = hdulist[0].header
+    
+    pathToFiles_short  = ''
+    numdir = 0
+    for n in range (len(filepath)):
+        pathToFiles_short = filepath[-1-n] + pathToFiles_short
+        if (filepath[-1-n] == '/'):
+            numdir += 1
+        if (numdir >=4 ):
+            break
+    
     prihdr.set('annuli', str(annuli))
     prihdr.set('movement', str(movement))
     prihdr.set('subsctns', str(subsections))
     prihdr.set('klmodes', str(klmodes))
-    prihdr.set('filepath', str(filepath))
+    prihdr.set('filepath', str(pathToFiles_short))
     if (not mask == None):
         rad, pa, wid = mask 
         prihdr.set('mask_rad', str(rad))
@@ -157,9 +167,6 @@ for k in klmodes:
     
     if (SNR):
         SNRcube[kcount,:,:] = snr.create_map(isolatedKL, planets = maskParams, saveOutput = False)
-            
-    #adds median image to cube 
-    cube[kcount,:,:] = isolatedKL
                 
     kcount += 1
        

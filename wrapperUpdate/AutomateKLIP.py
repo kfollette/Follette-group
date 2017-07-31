@@ -23,6 +23,47 @@ from astropy.io import fits
 import SNRMap as snr   
 import time
 
+##################################################################
+#############                                        #############
+#############               SAVE FILES               #############
+#############                                        #############
+################################################################## 
+ 
+def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klmodes, mask = None, pre = '', suff = ""):    
+    hdu = fits.PrimaryHDU(indiv)
+    hdulist = fits.HDUList([hdu])
+    prihdr = hdulist[0].header
+    
+    if (len(annuli == 3)):
+        annuli = str(annuli[0]) + 'to' + str(annuli[1]) + 'by' + str(annuli[3])
+    if (len(movement == 3)):
+        movement = str(movement[0]) + 'to' + str(movement[1]) + 'by' + str(movement[3])
+    if (len(subsections == 3)):
+        subsections = str(subsections[0]) + 'to' + str(subsections[1]) + 'by' + str(subsections[3])
+    
+    pathToFiles_short  = ''
+    numdir = 0
+    for n in range (len(filepath)):
+        pathToFiles_short = filepath[-1-n] + pathToFiles_short
+        if (filepath[-1-n] == '/'):
+            numdir += 1
+        if (numdir >=4 ):
+            break
+    
+    prihdr.set('annuli', str(annuli))
+    prihdr.set('movement', str(movement))
+    prihdr.set('subsctns', str(subsections))
+    prihdr.set('klmodes', str(klmodes))
+    prihdr.set('filepath', str(pathToFiles_short))
+    if (not mask == None):
+        rad, pa, wid = mask 
+        prihdr.set('mask_rad', str(rad))
+        prihdr.set('mask_pa', str(pa))
+        prihdr.set('mask_wid', str(wid))
+    
+    hdulist.writeto(str(filepath) + "/../" + str(pre) + '_' + filename + "_a" + str(annuli) + "m" + str(int(movement)) + "s" + str(subsections) + "iwa" + str(iwa) + '_' + str(suff) + '_KLmodes-all.fits' + ".fits", clobber=True)
+
+
 
 
 ##################################################################
@@ -44,6 +85,18 @@ while (not pathToFiles[-1] == 'd' and not pathToFiles[-1] == '"'):
     
 print("File Path = " + pathToFiles)
 
+pathToFiles_short  = ''
+numdir = 0
+for n in range (len(pathToFiles)):
+    pathToFiles_short = pathToFiles[-1-n] + pathToFiles_short
+    if (pathToFiles[-1-n] == '/'):
+        numdir += 1
+    if (numdir >=4 ):
+        break
+        
+print(pathToFiles_short)
+    
+
 print()
 
 print("Parameters to explore:")
@@ -52,8 +105,11 @@ annuli2_start = int(sys.argv[5+argnum])
 annuli2_stop = int(sys.argv[6+argnum])
 annuli2_inc = int(sys.argv[7+argnum])
 
+annuli = (annuli2_start, annuli2_stop, annuli2_inc)
+
 if(annuli2_start == annuli2_stop):
     annuli2_inc = 1;
+    annuli = annuli2_start
     print("Annuli = " +str(annuli2_start))
     
 else:
@@ -65,9 +121,11 @@ movement2_start = int(sys.argv[8+argnum])
 movement2_stop = int(sys.argv[9+argnum])
 movement2_inc = int(sys.argv[10+argnum])
 
+movement = (movement2_start, movement2_stop, movement2_inc)
 
 if(movement2_start == movement2_stop):
     movement2_inc = 1;
+    movement = movement2_start
     print("Movement = " +str(movement2_start))
     
 else:
@@ -78,9 +136,11 @@ subsections2_start = int(sys.argv[11+argnum])
 subsections2_stop = int(sys.argv[12+argnum])
 subsections2_inc = int(sys.argv[13+argnum])
 
+subsections = (subsections2_start, subsections2_stop, subsections2_inc)
 
 if(subsections2_start == subsections2_stop):
     subsections2_inc = 1;
+    subsections = subsections2_start
     print("Subsections = " +str(subsections2_start))
     
 else:

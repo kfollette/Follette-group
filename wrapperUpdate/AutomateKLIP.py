@@ -42,13 +42,13 @@ def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klm
     movement2 = movement
     subsections2 = subsections
     
-    if (len(annuli == 3)):
+    if (len(annuli) == 3):
         annuli = str(annuli[0]) + 'to' + str(annuli[1]) + 'by' + str(annuli[2])
         annuli2 = "a" + str(annuli[0]) + '-' + str(annuli[1]) + 'x' + str(annuli[2])
-    if (len(movement == 3)):
+    if (len(movement) == 3):
         movement = str(movement[0]) + 'to' + str(movement[1]) + 'by' + str(movement[2])
         movement2 = "m" + str(movement[0]) + '-' + str(movement[1]) + 'x' + str(movement[2])
-    if (len(subsections == 3)):
+    if (len(subsections) == 3):
         subsections = str(subsections[0]) + 'to' + str(subsections[1]) + 'by' + str(subsections[2])
         subsections2 = "s" + str(subsections[0]) + '-' + str(subsections[1]) + '-' + str(subsections[2])
     

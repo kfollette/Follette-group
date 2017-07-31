@@ -42,13 +42,13 @@ def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klm
     movement2 = movement
     subsections2 = subsections
     
-    if (len(annuli) == 3):
+    if (isinstance(annuli, list)):
         annuli = str(annuli[0]) + 'to' + str(annuli[1]) + 'by' + str(annuli[2])
         annuli2 = "a" + str(annuli[0]) + '-' + str(annuli[1]) + 'x' + str(annuli[2])
-    if (len(movement) == 3):
+    if (isinstance(movement, list)):
         movement = str(movement[0]) + 'to' + str(movement[1]) + 'by' + str(movement[2])
         movement2 = "m" + str(movement[0]) + '-' + str(movement[1]) + 'x' + str(movement[2])
-    if (len(subsections) == 3):
+    if (isinstance(subsections, list)):
         subsections = str(subsections[0]) + 'to' + str(subsections[1]) + 'by' + str(subsections[2])
         subsections2 = "s" + str(subsections[0]) + '-' + str(subsections[1]) + '-' + str(subsections[2])
     
@@ -270,7 +270,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 kcount+=1
                                           
             #write median combination cube to disk 
-            writeData(cube, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = None, pre = 'med')
+            writeData(cube, pathToFiles, outputFileName, a, m, s, iwa, klmodes, mask = None, pre = 'med')
             
             #fits.writeto(pathToFiles + '/../' + 'med_'+ outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(subsections2) + "iwa" + str(iwa) +'-KLmodes-all.fits', cube, clobber=True)
         mcount+=1

@@ -22,6 +22,10 @@ import klip as klip
 from astropy.io import fits
 import SNRMap as snr   
 import time
+import warnings
+from astropy.utils.exceptions import AstropyWarning
+
+warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
 ##################################################################
 #############                                        #############
@@ -90,19 +94,7 @@ while (not pathToFiles[-1] == 'd' and not pathToFiles[-1] == '"'):
     argnum += 1
     pathToFiles = pathToFiles + " " + sys.argv[1+argnum]
     
-print("File Path = " + pathToFiles)
-
-pathToFiles_short  = ''
-numdir = 0
-for n in range (len(pathToFiles)):
-    pathToFiles_short = pathToFiles[-1-n] + pathToFiles_short
-    if (pathToFiles[-1-n] == '/'):
-        numdir += 1
-    if (numdir >=4 ):
-        break
-        
-print(pathToFiles_short)
-    
+print("File Path = " + pathToFiles)   
 
 print()
 
@@ -175,6 +167,9 @@ pa = list(map(int, sys.argv[15+argnum].split(",")))
 print("Mask width (radial, angular): = " + str(list(map(int, sys.argv[16+argnum].split(",")))))
 wid = list(map(int, sys.argv[16+argnum].split(",")))
 
+#object to hold mask parameters for snr map 
+mask = (ra, pa, wid)
+                
 print()
 
 outputFileName = sys.argv[4+argnum]
@@ -254,8 +249,6 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 #adds median image to cube 
                 cube[kcount,:,:] = isolatedKL
                
-                #object to hold mask parameters for snr map 
-                mask = (ra, pa, wid)
                 
                 #makes SNR map 
                 snrmap = snr.create_map(isolatedKL, planets = mask, saveOutput = False)
@@ -277,7 +270,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 kcount+=1
                                           
             #write median combination cube to disk 
-            writeData(cube, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = maskParams, pre = 'med')
+            writeData(cube, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = None, pre = 'med')
             
             #fits.writeto(pathToFiles + '/../' + 'med_'+ outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(subsections2) + "iwa" + str(iwa) +'-KLmodes-all.fits', cube, clobber=True)
         mcount+=1
@@ -287,12 +280,12 @@ if (saveSNR):
     #writes SNR maps to 4d cubes 
     for x in range (len(klmodes)):
         snr4d = snrMapCube5d[x,:,:,:,:] 
-        writeData(snr4d, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = maskParams, pre = 'SNRCube')
+        writeData(snr4d, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'SNRCube')
         
         #fits.writeto(pathToFiles + '/../' + outputFileName + "_a" + str(annuli2_start) + "-" + str(annuli2_stop) + "x" + str(annuli2_inc) + "m" + str(movement2_start) + "-" + str(movement2_stop) + "x" + str(movement2_inc) + "_" + str(klmodes[x]) + 'KLmodes_SNRMaps.fits', snr4d)  
     
 #write snr cube to disk 
-writeData(snrCube, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = maskParams, pre = 'paramexplore')
+writeData(snrCube, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'paramexplore')
 
 #fits.writeto(pathToFiles + '/../' + outputFileName + "_paramexplore_a" + str(annuli2_start) + "-" + str(annuli2_stop) + "x" + str(annuli2_inc) + "m" + str(movement2_start) + "-" + str(movement2_stop) + "x" + str(movement2_inc) + '-KLmodes-all.fits', snrCube)     
             

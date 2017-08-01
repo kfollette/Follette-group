@@ -78,7 +78,7 @@ public class GetParameters{
     }
 
 
-    public static void addFields1(JFrame frame) throws FileNotFoundException{
+    public static void addFields1(final JFrame frame) throws FileNotFoundException{
     
 	JButton single = new JButton("Single Reduction");
         single.setSize(150,40);
@@ -115,7 +115,7 @@ public class GetParameters{
 	
     }
 
-    public static void addFields2(JFrame frame) throws FileNotFoundException{
+    public static void addFields2(final JFrame frame) throws FileNotFoundException{
 
 	JLabel annuli1 = new JLabel("Annuli");
         annuli1.setForeground(Color.white);
@@ -280,9 +280,9 @@ public class GetParameters{
 	
     }    
 
-    public static void addFields3(JFrame frame) throws FileNotFoundException{
+    public static void addFields3(final JFrame frame) throws FileNotFoundException{
 	
-	JCheckBox annuli = new JCheckBox("Annuli");
+	final JCheckBox annuli = new JCheckBox("Annuli");
         annuli.setForeground(Color.white);
         annuli.setSize(140,40);
         annuli.setLocation(5, 2);
@@ -303,7 +303,7 @@ public class GetParameters{
 		}
 	    });
 
-	JCheckBox movement = new JCheckBox("Movement");
+	final JCheckBox movement = new JCheckBox("Movement");
         movement.setForeground(Color.white);
         movement.setSize(140,40);
         movement.setLocation(5, 30+5);
@@ -325,7 +325,7 @@ public class GetParameters{
             });
 
 
-	JCheckBox subsections = new JCheckBox("Subsections");
+	final JCheckBox subsections = new JCheckBox("Subsections");
         subsections.setForeground(Color.white);
         subsections.setSize(140,40);
         subsections.setLocation(5, 58+10);

@@ -200,6 +200,7 @@ print()
 
 filelist = glob.glob(pathToFiles + '/*.fits')
 dataset = MagAO.MagAOData(filelist)
+#set iwa
 dataset.IWA = iwa
 
 #creates cube to eventually hold average SNR data
@@ -223,10 +224,10 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
         
         for s in range(subsections2_start, subsections2_stop+1, subsections2_inc):
             print("Starting KLIP for parameters:")
-            print("annuli = %d; movement = %d; subections = %d" %(a, m,s))
+            print("annuli = %d; movement = %s; subections = %d" %(a, m,s))
 
             #run klip for given parameters
-            parallelized.klip_dataset(dataset, outputdir="", fileprefix=outputFileName, annuli=a, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI")
+            parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "/.."), fileprefix=outputFileName, annuli=a, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI")
  
             #cube to hold median combinations of klipped images
             cube = np.zeros((len(klmodes),450,450))

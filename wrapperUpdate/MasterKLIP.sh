@@ -1,5 +1,6 @@
 #Elijah Spiro
 #Version 2.1 - 3/26/17
+#edited by Clare Leonard - 8/1/2017
 
 #Increase limit on maximum open files
 ulimit -n 4096
@@ -97,19 +98,17 @@ fi
 
 #Run StartKLIP.py with command line arguments from these variables (if single reduction)
 if [[ $RUNTYPE = 1 ]]; then
-    python startKLIP_new.py $FILEPATH $IWA $KLMODES $ANNULI $MOVEMENT $SUBSECTIONS $OUTPUTNAME $SNR $SAVE1 $RA2 $PA2 $WID2
+    python RunKLIP.py $FILEPATH $IWA $KLMODES $ANNULI $MOVEMENT $SUBSECTIONS $OUTPUTNAME $SNR $SAVE1 $RA2 $PA2 $WID2
     #/home/anaconda3/bin/python3 StartKLIP.py $FILEPATH $ANNULI $IWA $MOVEMENT $OUTPUTNAME $KLMODES $SUBSECTIONS $SNR
-    rm $OUTPUTNAME"-KLmodes-all.fits"
-    cp "_"$OUTPUTNAME"-KLmodes-all.fits" $OUTPUTNAME".fits"
-    rm "_"$OUTPUTNAME"-KLmodes-all.fits"
-    cp $OUTPUTNAME".fits" "temp_klip.fits"
-    rm temp_klip.fits
+    #rm $OUTPUTNAME"-KLmodes-all.fits"
+    #cp "_"$OUTPUTNAME"-KLmodes-all.fits" $OUTPUTNAME".fits"
+    #rm "_"$OUTPUTNAME"-KLmodes-all.fits"
+    #cp $OUTPUTNAME".fits" "temp_klip.fits"
+    #rm temp_klip.fits
 else 
     python AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3 $ra $pa $wi $SAVE2
-    #/home/anaconda3/bin/python3 AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3
 fi
 
-#Ensure the correct file exists
 
      
 if [ -f "single_reduction_parameters.txt" ]; then

@@ -79,7 +79,7 @@ def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klm
         prihdr.set('mask_wid', str(wid))
     
     #writes out files
-    hdulist.writeto(str(filepath) + "/../" + str(pre) + '_' + filename + "_a" + str(annuli2) + "m" + str(movement2) + "s" + str(subsections2) + "iwa" + str(iwa) + '_' + str(suff) + '_KLmodes-all.fits', clobber=True)
+    hdulist.writeto(str(filepath) + "/../" + str(pre) + '_' + filename + "_a" + str(annuli2) + "m" + str(movement2) + "s" + str(subsections2) + "iwa" + str(iwa) + "_" + str(suff) + '_KLmodes-all.fits', clobber=True)
 
 
 
@@ -223,30 +223,49 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
     for m in np.arange(movement2_start, movement2_stop+movement2_inc, movement2_inc):
         
         for s in range(subsections2_start, subsections2_stop+1, subsections2_inc):
-            print("Starting KLIP for parameters:")
-            print("annuli = %d; movement = %s; subections = %d" %(a, m,s))
-
-            #run klip for given parameters
-            parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "/.."), fileprefix=outputFileName, annuli=a, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI")
- 
+                  
             #cube to hold median combinations of klipped images
             cube = np.zeros((len(klmodes),450,450))
             
-            #flips images
-            dataset.output = dataset.output[:,:,:,::-1]
+            runKLIP = True
+            
+            if (os.path.isfile(str(pathToFiles) + "/../med_" + filename + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + "_" + '_KLmodes-all.fits')):
+                hdulist = fits.open(str(pathToFiles) + "/../med_" + filename + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + "_" + '_KLmodes-all.fits')
+                klmodes2 = hdulist[0].header['klmodes']
+                klmodes2 = list(map(int, klmodes.split(",")))
+                hasKL = True  
+                for k in klmodes:
+                    if (not (k in klmodes2)):
+                        hasKL = False
+                if (hasKL):
+                    runKLIP = False 
+                    index = 0
+                    for k in klmodes:
+                        cube[index,:,:] = hdulist[klmodes.index(k),:,:]
+            
+            output = 0
+            if (runKLIP):
+                print("Starting KLIP for parameters:")
+                print("annuli = %d; movement = %s; subections = %d" %(a, m,s))
+                #run klip for given parameters
+                parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "/.."), fileprefix=outputFileName, annuli=a, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
+                #flips images
+                output = dataset.output[:,:,:,::-1]
              
             #keeps track of number of KL mode values that have been tested, used for indexing
             kcount = 0
             
             #iterates over kl modes
             for k in klmodes:
-                
-                #takes median combination of cube made with given number of KL modes
-                isolatedKL = np.nanmedian(dataset.output[kcount,:,:,:], axis=0)
                                 
-                #adds median image to cube 
-                cube[kcount,:,:] = isolatedKL
-               
+                if (runKLIP):
+                    #takes median combination of cube made with given number of KL modes
+                    isolatedKL = np.nanmedian(dataset.output[kcount,:,:,:], axis=0)
+                    #adds median image to cube 
+                    cube[kcount,:,:] = isolatedKL
+                    
+                else:
+                    isolatedKL = cube[kcount,:,:]
                 
                 #makes SNR map 
                 snrmap = snr.create_map(isolatedKL, planets = mask, saveOutput = False)

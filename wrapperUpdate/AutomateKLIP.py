@@ -231,7 +231,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
             runKLIP = True
             
             if (os.path.isfile(str(pathToFiles) + "/../med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '_KLmodes-all.fits')):
-                hdulist = fits.open(str(pathToFiles) + "/../med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + "_" + '_KLmodes-all.fits')
+                hdulist = fits.open(str(pathToFiles) + "/../med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '_KLmodes-all.fits')
                 klmodes2 = hdulist[0].header['klmodes'][1:-1]
                 klmodes2 = list(map(int, klmodes2.split(",")))
                 hasKL = True  

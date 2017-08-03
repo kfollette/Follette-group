@@ -47,14 +47,14 @@ def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klm
     
     #if program iterates over several parameter values, formats these for fits headers and file names
     if (isinstance(annuli, tuple)):
-        annuli2 = str(annuli2[0]) + '-' + str(annuli2[1]) + 'x' + str(annuli2[2])
+        annuli2 = "a" + str(annuli2[0]) + '-' + str(annuli2[1]) + 'x' + str(annuli2[2])
         annuli = str(annuli[0]) + 'to' + str(annuli[1]) + 'by' + str(annuli[2])  
     if (isinstance(movement, tuple)):
-        movement2 = str(movement2[0]) + '-' + str(movement2[1]) + 'x' + str(movement2[2])
+        movement2 = "m" + str(movement2[0]) + '-' + str(movement2[1]) + 'x' + str(movement2[2])
         movement = str(movement[0]) + 'to' + str(movement[1]) + 'by' + str(movement[2])
     if (isinstance(subsections, tuple)):
         subsections = str(subsections[0]) + 'to' + str(subsections[1]) + 'by' + str(subsections[2])
-        subsections2 = str(subsections2[0]) + '-' + str(subsections2[1]) + '-' + str(subsections2[2])
+        subsections2 = "s" + str(subsections2[0]) + '-' + str(subsections2[1]) + '-' + str(subsections2[2])
     
     #shortens file path to bottom 4 directories so it will fit in fits header
     pathToFiles_short  = ''
@@ -79,7 +79,7 @@ def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klm
         prihdr.set('mask_wid', str(wid))
     
     #writes out files
-    hdulist.writeto(str(filepath) + "/../" + str(pre) + filename + "_a" + str(annuli2) + "m" + str(movement2) + "s" + str(subsections2) + "iwa" + str(iwa) + str(suff) + '_KLmodes-all.fits', clobber=True)
+    hdulist.writeto(str(filepath) + "/../" + str(pre) + '_' + filename + "_a" + str(annuli2) + "m" + str(movement2) + "s" + str(subsections2) + "iwa" + str(iwa) + "_" + str(suff) + '_KLmodes-all.fits', clobber=True)
 
 
 
@@ -96,10 +96,17 @@ argnum = 0
 
 pathToFiles = sys.argv[1]
 
-#if filepath doesnt end in sliced, sontinues to add next arguements, helpful in case of whitespace in file path
-while (not pathToFiles[-1] == 'd' and not pathToFiles[-1] == '"'):
-    argnum += 1
-    pathToFiles = pathToFiles + " " + sys.argv[1+argnum]
+#if the file path has white space in it, recognizes the end of the filepath by the phrase '%finish'
+#If the phrase '%finish' does not occur, leaves pathToFiles as the first argument
+try:
+    while (not pathToFiles[-7:] == '%finish'):
+        argnum += 1
+        pathToFiles = pathToFiles + " " + sys.argv[1+argnum]
+    pathToFiles = pathToFiles[:-7]
+        
+except:
+    pathToFiles = sys.argv[1]
+    argnum = 0
     
 print("File Path = " + pathToFiles)   
 print()
@@ -227,25 +234,21 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
             #cube to hold median combinations of klipped images
             cube = np.zeros((len(klmodes),450,450))
             
-            outputSuffix = ''
             runKLIP = True
             
-            if (os.path.isfile(str(pathToFiles) + "/../med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '_KLmodes-all.fits')):
-                hdulist = fits.open(str(pathToFiles) + "/../med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '_KLmodes-all.fits')
-                klmodes2 = hdulist[0].header['klmodes'][1:-1]
-                klmodes2 = list(map(int, klmodes2.split(",")))
+            if (os.path.isfile(str(pathToFiles) + "/../med_" + filename + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + "_" + '_KLmodes-all.fits')):
+                hdulist = fits.open(str(pathToFiles) + "/../med_" + filename + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + "_" + '_KLmodes-all.fits')
+                klmodes2 = hdulist[0].header['klmodes']
+                klmodes2 = list(map(int, klmodes.split(",")))
                 hasKL = True  
                 for k in klmodes:
                     if (not (k in klmodes2)):
                         hasKL = False
                 if (hasKL):
-                    runKLIP = False
-                    print("Median KLIPed data already saved to disk. Skipping KLIP step.")
-                    outputSuffix = "_" + str(len(glob.glob1(str(pathToFiles) + "/../", "med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '*'))+1)
+                    runKLIP = False 
                     index = 0
                     for k in klmodes:
-                        cube[index,:,:] = hdulist[0].data[klmodes2.index(k),:,:]
-                        index += 1
+                        cube[index,:,:] = hdulist[klmodes.index(k),:,:]
             
             output = 0
             if (runKLIP):
@@ -264,7 +267,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                                 
                 if (runKLIP):
                     #takes median combination of cube made with given number of KL modes
-                    isolatedKL = np.nanmedian(output[kcount,:,:,:], axis=0)
+                    isolatedKL = np.nanmedian(dataset.output[kcount,:,:,:], axis=0)
                     #adds median image to cube 
                     cube[kcount,:,:] = isolatedKL
                     
@@ -292,7 +295,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                                           
             #write median combination cube to disk 
             print("Writing median image combinations to " + pathToFiles + "/../")
-            writeData(cube, pathToFiles, outputFileName, a, m, s, iwa, klmodes, mask = None, pre = 'med_', suff = outputSuffix)
+            writeData(cube, pathToFiles, outputFileName, a, m, s, iwa, klmodes, mask = None, pre = 'med')
             print()
             
         mcount+=1
@@ -304,11 +307,11 @@ if (saveSNR):
     #writes SNR maps to 4d cubes 
     for x in range (len(klmodes)):
         snr4d = snrMapCube5d[x,:,:,:,:] 
-        writeData(snr4d, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'SNRCube_')
+        writeData(snr4d, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'SNRCube')
          
 print("Writing average SNR values to " + pathToFiles + "/../")    
 #write snr cube to disk 
-writeData(snrCube, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'paramexplore_')
+writeData(snrCube, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'paramexplore')
 
 print()
 print("KLIP automation complete")  

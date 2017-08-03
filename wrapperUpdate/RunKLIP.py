@@ -72,10 +72,19 @@ def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klm
 argnum = 0
 
 pathToFiles = sys.argv[1]
-#if filepath doesnt end in sliced, sontinues to add next arguements, helpful iin case of whitespace in file path
-while (not pathToFiles[-6:] == 'sliced'):
-    argnum += 1
-    pathToFiles = pathToFiles + " " + sys.argv[1+argnum]
+
+#if the file path has white space in it, recognizes the end of the filepath by the phrase '%finish'
+#If the phrase '%finish' does not occur, leaves pathToFiles as the first argument
+try:
+    while (not pathToFiles[-7:] == '%finish'):
+        argnum += 1
+        pathToFiles = pathToFiles + " " + sys.argv[1+argnum]
+    pathToFiles = pathToFiles[:-7]
+        
+except:
+    pathToFiles = sys.argv[1]
+    argnum = 0
+
 print("File Path = " + pathToFiles)    
 
 iwa = int(sys.argv[2+argnum])

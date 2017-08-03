@@ -195,7 +195,7 @@ public class GetParameters{
         filepath1.setSize(200,40);
         filepath1.setLocation(135,0);
 
-        filepath2 = new JTextField("example/star_name/date/sliced/");
+        filepath2 = new JTextField("example/star_name/date/sliced");
         filepath2.setBackground(Color.white);
         filepath2.setSize(300,30);
         filepath2.setLocation(67,30);
@@ -369,7 +369,7 @@ public class GetParameters{
 	    public void actionPerformed(ActionEvent e) {
 		try{
 		    PrintWriter writer = new PrintWriter("single_reduction_parameters.txt", "UTF-8");
-		    writer.println(filepath2.getText());
+		    writer.println(filepath2.getText() + "%finish");
 		    writer.println(annuli2.getText());
 		    writer.println(IWA2.getText());
 		    writer.println(movement2.getText());
@@ -558,7 +558,7 @@ public class GetParameters{
         filepath1.setSize(200,40);
         filepath1.setLocation(118,117);
 
-        filepath2 = new JTextField("example/star_name/date/sliced/");
+        filepath2 = new JTextField("example/star_name/date/sliced");
         filepath2.setBackground(Color.white);
         filepath2.setSize(325,30);
         filepath2.setLocation(58,147);
@@ -663,7 +663,7 @@ public class GetParameters{
 		public void actionPerformed(ActionEvent e) {
 		    try{
 			PrintWriter writer = new PrintWriter("automation_parameters.txt", "UTF-8");
-			writer.println(filepath2.getText());
+			writer.println(filepath2.getText() + "%finish");
 			writer.println(IWA2.getText());
 			writer.println(klmodes2.getText());
 			writer.println(output2.getText());

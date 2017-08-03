@@ -58,7 +58,7 @@ def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klm
         prihdr.set('mask_wid', str(wid))
     
     #write fits files
-    hdulist.writeto(str(filepath) + "/../" + str(pre) + '_' + filename + "_a" + str(annuli) + "m" + str(movement) + "s" + str(subsections) + "iwa" + str(iwa) + '_' + str(suff) + '_KLmodes-all.fits' , clobber=True)
+    hdulist.writeto(str(filepath) + "/../" + str(pre) + filename + "_a" + str(annuli) + "m" + str(movement) + "s" + str(subsections) + "iwa" + str(iwa) + str(suff) + '_KLmodes-all.fits' , clobber=True)
 
     
 
@@ -164,7 +164,7 @@ dataset.output = dataset.output[:,:,:,::-1]
       
 if (saveData):
     print("Writing KLIPed time series 4D cube to " + pathToFiles + "/../")
-    writeData(dataset.output, pathToFiles, outputFileName, annuli2, movement2, subsections2, iwa, klmodes, suff = "uncombined")
+    writeData(dataset.output, pathToFiles, outputFileName, annuli2, movement2, subsections2, iwa, klmodes, suff = "_uncombined")
     
 
 
@@ -187,12 +187,12 @@ for k in klmodes:
         
 #write median combination cube to disk 
 print("Writing median KLIPed images to " + pathToFiles + "/../")
-writeData(cube, pathToFiles, outputFileName, annuli2, movement2, subsections2, iwa, klmodes, pre = "med")
+writeData(cube, pathToFiles, outputFileName, annuli2, movement2, subsections2, iwa, klmodes, pre = "med_")
 
   
 if (SNR):
     print("Writing SNR maps to " + pathToFiles + "/../")
-    writeData(SNRcube, pathToFiles, outputFileName, annuli2, movement2, subsections2, iwa, klmodes, mask = maskParams, pre = "SNRMap")
+    writeData(SNRcube, pathToFiles, outputFileName, annuli2, movement2, subsections2, iwa, klmodes, mask = maskParams, pre = "SNRMap_")
 
         
 print("KLIP completed")        

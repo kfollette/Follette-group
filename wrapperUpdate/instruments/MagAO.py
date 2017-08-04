@@ -254,7 +254,7 @@ class MagAOData(object):
         #with open('iwa.txt') as f:
         #    line=f.readline()
         self.IWA = 10
-        self.OWA = 450
+        self.OWA = 225
         self.star_flux = star_fluxes
         self.contrast_scaling = 1./star_fluxes
         self.prihdrs = prihdrs

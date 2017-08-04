@@ -211,10 +211,7 @@ dataset = MagAO.MagAOData(filelist)
 dataset.IWA = iwa
 
 #creates cube to eventually hold average SNR data
-snrCube = np.zeros((len(klmodes),int((annuli2_stop-annuli2_start)/annuli2_inc+1),int((movement2_stop-movement2_start)/movement2_inc+1)))
-
-#creates cube to hold all snr maps 
-snrMapCube5d = np.zeros((len(klmodes),int((annuli2_stop-annuli2_start)/annuli2_inc+1),int((movement2_stop-movement2_start)/movement2_inc+1), 450, 450))
+snrCube = np.zeros((len(klmodes),int((subsections2_stop-subsections2_start)/subsections2_inc+1), int((annuli2_stop-annuli2_start)/annuli2_inc+1),int((movement2_stop-movement2_start)/movement2_inc+1)))
 
 
 #loop over annuli, movement, and subsection parameters
@@ -229,10 +226,15 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
     
     for m in np.arange(movement2_start, movement2_stop+movement2_inc, movement2_inc):
         
+        scount = 0
+        
         for s in range(subsections2_start, subsections2_stop+1, subsections2_inc):
                   
             #cube to hold median combinations of klipped images
             cube = np.zeros((len(klmodes),450,450))
+            #creates cube to hold snr maps 
+            snrMapCube = np.zeros((len(klmodes),450,450))
+
             
             runKLIP = True
             outSuff = ""
@@ -283,7 +285,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 
                 #adds SNR map to 5d cube 
                 if (saveSNR):
-                    snrMapCube5d[kcount,acount,mcount,:,:] = snrmap 
+                    snrMapCube[kcount,:,:] = snrmap 
                 
                 #gets highest pixel value in snr map in the location of the planet 
                 planetSNRs = []
@@ -294,24 +296,21 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 planetSNR = np.mean(planetSNRs)
                 
                 #add planet snr value to snrCube
-                snrCube[kcount,acount,mcount] = planetSNR
+                snrCube[kcount,scount,acount,mcount] = planetSNR
                 kcount+=1
                                           
             #write median combination cube to disk 
             print("Writing median image combinations to " + pathToFiles + "/../")
             writeData(cube, pathToFiles, outputFileName, a, m, s, iwa, klmodes, mask = None, pre = 'med_', suff = outSuff)
             print()
-            
+            if (saveSNR):
+                print("Writing SNR maps to " + pathToFiles + "/../")
+                writeData(snrMapCube, pathToFiles, outputFileName, a, m, s, iwa, klmodes, mask = mask, pre = 'SNRMap_')
+            scount+=1
         mcount+=1
     acount+=1
 
-if (saveSNR):
-    print("Writing 4d SNR data to " + pathToFiles + "/../")
-    print()
-    #writes SNR maps to 4d cubes 
-    for x in range (len(klmodes)):
-        snr4d = snrMapCube5d[x,:,:,:,:] 
-        writeData(snr4d, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'SNRCube_')
+
          
 print("Writing average SNR values to " + pathToFiles + "/../")    
 #write snr cube to disk 

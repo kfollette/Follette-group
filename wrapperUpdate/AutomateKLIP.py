@@ -294,7 +294,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 planetSNRs = []
                 
                 for x in range (len(ra)):
-                    planetSNRs.append(snr.getPlanet(snrmap, ra[x], pa[x], wid[1]))
+                    planetSNRs.append(snr.getPlanet(snrmap, ra[x], pa[x], wid[0]))
                 
                 planetSNR = np.mean(planetSNRs)
                 

@@ -7,6 +7,8 @@ import os
 import sys
 import time 
 
+XCenter = 224.5
+YCenter = 224.5
 
 def nameOutput(filename, output):
     
@@ -328,7 +330,12 @@ def create_map(filename, planets = None, saveOutput = True, outputName = None):
   
     #gets size of pixel value array
     xDim, yDim = np.shape(indiv)  
-  
+    global XCenter
+    global YCenter 
+
+    XCenter = (xDim-1)/2
+    YCenter = (yDim-1)/2
+
     #loops through all pixels in array
     for x in range (xDim): 
         for y in range (yDim):
@@ -373,9 +380,15 @@ def create_map(filename, planets = None, saveOutput = True, outputName = None):
 
 
 def getPlanet(snrmap, rad, pa, _range):
-  
-    x = int(rad*math.cos(pa))
-    y = int(rad*math.sin(pa))
+    
+    #global XCenter = (xDim-1)/2
+    #global YCenter = (yDim-1)/2  
+
+    x = int(rad*math.cos(math.radians(pa+90))+XCenter)
+    y = int(rad*math.sin(math.radians(pa+90))+YCenter)
+    print(x)
+    print(y)
+
 
     planet = -100000000
    
@@ -383,8 +396,7 @@ def getPlanet(snrmap, rad, pa, _range):
         for j in range (y-_range, y+_range):
             if (snrmap[i][j] > planet):
                 planet = snrmap[i][j]
-               
-                
+            
     return planet
 
 

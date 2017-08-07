@@ -174,7 +174,7 @@ def isPlanet(radius, theta, planets):
 
 
 
-def toPolar(x, y, xCen, yCen):
+def toPolar(x, y):
     
     """
     This function takes a set of pixel coordinates and a set of reference coordinates and transforms the pixel coordinates into polar coordinates.
@@ -197,14 +197,14 @@ def toPolar(x, y, xCen, yCen):
     """
     
     #defines pixel radius as the distance from said pixel to the center pixel rounded to an integer
-    r = int(np.sqrt((x-xCen)**2+(y-yCen)**2))
+    r = int(np.sqrt((x-XCenter)**2+(y-YCenter)**2))
     #if (r-int(r)>=.5):
         #r = int(r)+1
     #elif (r-int(r)<.5): 
         #r = int(r)
     
     #defines pixel angle 'theta' as the arctangent of the y distance from center divided by the x distance from center
-    theta = math.degrees(math.atan2((y-yCen),(x-xCen)))
+    theta = math.degrees(math.atan2((y-YCenter),(x-XCenter)))
     
     #indexing of the image requires reflecting calculated angle accross the y axis
     theta = theta *-1
@@ -248,10 +248,7 @@ def stdevMap(indiv, planets):
     
     #finds the size of the image
     xDim, yDim = np.shape(indiv)
-    
-    #defines the coordinates of the center of the image
-    xCen = (xDim-1)/2
-    yCen = (yDim-1)/2
+
   
     
     #loops through every pixel in the image
@@ -259,7 +256,7 @@ def stdevMap(indiv, planets):
         for y in range (yDim):         
             
             #converts pixel values to polar coordinates
-            radius, angle = toPolar(x, y, xCen, yCen)  
+            radius, angle = toPolar(x, y)  
             
             #adds pixel values to radial profile dictionary with the radius as key. ignores masked pixels. 
             if(not isPlanet(radius, angle, planets) and not np.isnan(indiv[x][y])):
@@ -332,7 +329,6 @@ def create_map(filename, planets = None, saveOutput = True, outputName = None):
     xDim, yDim = np.shape(indiv)  
     global XCenter
     global YCenter 
-
     XCenter = (xDim-1)/2
     YCenter = (yDim-1)/2
 
@@ -381,8 +377,11 @@ def create_map(filename, planets = None, saveOutput = True, outputName = None):
 
 def getPlanet(snrmap, rad, pa, _range):
     
-    #global XCenter = (xDim-1)/2
-    #global YCenter = (yDim-1)/2  
+    xDim, yDim = np.shape(snrmap)
+    global XCenter
+    global YCenter
+    XCenter = (xDim-1)/2
+    YCenter = (yDim-1)/2  
 
     x = int(rad*math.cos(math.radians(pa+90))+XCenter)
     y = int(rad*math.sin(math.radians(pa+90))+YCenter)

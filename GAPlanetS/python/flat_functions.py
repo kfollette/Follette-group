@@ -559,3 +559,26 @@ def batch_compare(imList, name):
         im.close()
 
     fits.writeto('spot_propagation_' + name + '.fits', outArr, clobber = True)
+
+##############################################################################################################
+def flat_masked(flat,dust,outfile):
+    '''
+        NAME: flat_masked
+        
+        PURPOSE: This function combines dustmasked and flatfielded images into one fits file.
+        
+        INPUT/OUTPUT: Takes a flatfield and a dustmasked .fits file, outputs their product, outfile
+        
+        HISTORY: Created by Ray Nzaba on 2016-08-03.
+        '''
+    #Load data from fits file
+    flat = fits.open(flat)[0]
+    dust = fits.open(dust)[0]
+    
+    #Go through each pixel in both images and multiply them
+    product = flat.data*dust.data
+    
+    #Write to fits file
+    fits.writeto(outfile,product, clobber=True)
+    return
+

@@ -31,7 +31,7 @@ import image_registration as imreg
 import scipy.ndimage.interpolation as sci
 import scipy.optimize as optimize
 from visao_helpers import *
-#import pyds9.pyds9 as ds9
+#import pyds9.pyds9 as ds9
 
 """
 ##################################################################################################################
@@ -217,7 +217,7 @@ def visao_dark(dark_imlist = [], master_dark = [], subdir=None, name=None, move=
 
     if len(dark_imlist) == 0:
         #raise RuntimeError('Cannot create dark frame because no dark images.')
-        print('Cannot create dark frame ' + name + ' because no dark images.')
+        print('Cannot create dark frame ' + str(name) + ' because no dark images.')
         return
 
     for dark in dark_imlist:
@@ -233,11 +233,11 @@ def visao_dark(dark_imlist = [], master_dark = [], subdir=None, name=None, move=
     if len(uniq_exp) == 1:
         if len(dark_imlist) == 1:
             master_dark = darks
-            fits.writeto('master_dark_' + name + '.fits', master_dark, clobber = True)
+            fits.writeto('master_dark_' + str(name) + '.fits', master_dark, overwrite = True)
         else:
             master_dark = np.median(darks, axis=2)
-            fits.writeto('master_dark_' + name + '.fits', master_dark, clobber = True)
-            f = fits.open('master_dark_' + name + '.fits', mode = 'update')
+            fits.writeto('master_dark_' + str(name) + '.fits', master_dark, overwrite = True)
+            f = fits.open('master_dark_' + str(name) + '.fits', mode = 'update')
             dark_changes = f[0].header
             dark_changes['DATE'] = (time.strftime('%Y-%m-%d'), 'Creation UTC (CCCC-MM-DD) date of FITS header')
             dark_changes['EXPTIME'] = exp_time[0]
@@ -252,7 +252,7 @@ def visao_dark(dark_imlist = [], master_dark = [], subdir=None, name=None, move=
     if move:
         os.mkdir('darks')
         for file in dark_imlist:
-            os.rename(file, subdir + '/darks' + file.replace(subdir, ''))
+            os.rename(file, str(subdir) + '/darks' + file.replace(subdir, ''))
 
     dark_imlist.clear()
 
@@ -312,11 +312,11 @@ def visao_separate_sdi(*keywords, **keysMap):
         #splits images in half with one half going to the line emission cube, and one half to continuum emission
         dim1, dim2 = raw_im.shape
         if imLists['filt'] == 'Ha':
-            line_im = raw_im[0:dim1/2, 0:dim2]
-            cont_im = raw_im[dim1/2:dim1, 0:dim2]
+            line_im = raw_im[0:int(dim1/2), 0:dim2]
+            cont_im = raw_im[int(dim1/2):dim1, 0:dim2]
         else:
-            cont_im = raw_im[0:dim1/2, 0:dim2]
-            line_im = raw_im[dim1/2:dim1, 0:dim2]
+            cont_im = raw_im[0:int(dim1/2), 0:dim2]
+            line_im = raw_im[int(dim1/2):dim1, 0:dim2]
         Line.append(line_im)
         Cont.append(cont_im)
 

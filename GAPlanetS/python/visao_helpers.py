@@ -77,7 +77,7 @@ def visao_getimtypes(fnames=None, imtypes=None, *keywords, **keysMap):
         keysMap['usefnames'] = 0
         if not 'prefix' in keysMap:
             keysMap['prefix'] = 'V47_'
-        srchstr = (keysMap['subdir'] + '/' + keysMap['prefix'] + '*.fits')
+        srchstr = (str(keysMap['subdir']) + '/' + str(keysMap['prefix']) + '*.fits')
         srchstr = srchstr.strip()
         #searches for the files
         files = glob.glob(srchstr)

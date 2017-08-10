@@ -1,8 +1,6 @@
-GAPlanetS/python/__pycache__/flat_functions.cpython-36.pyc
-GAPlanetS/python/__pycache__/visao_helpers.cpython-36.pyc
-GAPlanetS/python/__pycache__/visao_process.cpython-36.pyc
-GAPlanetS/python/pyds9/pyds9/__pycache__/__init__.cpython-36.pyc
-GAPlanetS/python/pyds9/pyds9/__pycache__/_astropy_init.cpython-36.pyc
-GAPlanetS/python/pyds9/pyds9/__pycache__/pyds9.cpython-36.pyc
-GAPlanetS/python/pyds9/pyds9/__pycache__/version.cpython-36.pyc
-GAPlanetS/python/pyds9/pyds9/__pycache__/xpa.cpython-36.pyc
+#ignore all .pyc files
+*.pyc
+
+
+
+

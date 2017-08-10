@@ -47,14 +47,14 @@ def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klm
     
     #if program iterates over several parameter values, formats these for fits headers and file names
     if (isinstance(annuli, tuple)):
-        annuli2 = "a" + str(annuli2[0]) + '-' + str(annuli2[1]) + 'x' + str(annuli2[2])
+        annuli2 = str(annuli2[0]) + '-' + str(annuli2[1]) + 'x' + str(annuli2[2])
         annuli = str(annuli[0]) + 'to' + str(annuli[1]) + 'by' + str(annuli[2])  
     if (isinstance(movement, tuple)):
-        movement2 = "m" + str(movement2[0]) + '-' + str(movement2[1]) + 'x' + str(movement2[2])
+        movement2 = str(movement2[0]) + '-' + str(movement2[1]) + 'x' + str(movement2[2])
         movement = str(movement[0]) + 'to' + str(movement[1]) + 'by' + str(movement[2])
     if (isinstance(subsections, tuple)):
         subsections = str(subsections[0]) + 'to' + str(subsections[1]) + 'by' + str(subsections[2])
-        subsections2 = "s" + str(subsections2[0]) + '-' + str(subsections2[1]) + '-' + str(subsections2[2])
+        subsections2 = str(subsections2[0]) + '-' + str(subsections2[1]) + '-' + str(subsections2[2])
     
     #shortens file path to bottom 4 directories so it will fit in fits header
     pathToFiles_short  = ''
@@ -79,7 +79,7 @@ def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klm
         prihdr.set('mask_wid', str(wid))
     
     #writes out files
-    hdulist.writeto(str(filepath) + "/../" + str(pre) + '_' + filename + "_a" + str(annuli2) + "m" + str(movement2) + "s" + str(subsections2) + "iwa" + str(iwa) + '_' + str(suff) + '_KLmodes-all.fits', clobber=True)
+    hdulist.writeto(str(filepath) + "_KLIP/" + str(pre)  + filename + "_a" + str(annuli2) + "m" + str(movement2) + "s" + str(subsections2) + "iwa" + str(iwa)  + str(suff) + '_KLmodes-all.fits', clobber=True)
 
 
 
@@ -96,13 +96,23 @@ argnum = 0
 
 pathToFiles = sys.argv[1]
 
-#if filepath doesnt end in sliced, sontinues to add next arguements, helpful in case of whitespace in file path
-while (not pathToFiles[-1] == 'd' and not pathToFiles[-1] == '"'):
-    argnum += 1
-    pathToFiles = pathToFiles + " " + sys.argv[1+argnum]
+#if the file path has white space in it, recognizes the end of the filepath by the phrase '%finish'
+#If the phrase '%finish' does not occur, leaves pathToFiles as the first argument
+try:
+    while (not pathToFiles[-7:] == '%finish'):
+        argnum += 1
+        pathToFiles = pathToFiles + " " + sys.argv[1+argnum]
+    pathToFiles = pathToFiles[:-7]
+        
+except:
+    pathToFiles = sys.argv[1]
+    argnum = 0
     
 print("File Path = " + pathToFiles)   
 print()
+
+if not os.path.exists(pathToFiles + "_KLIP"):
+    os.makedirs(pathToFiles + "_KLIP")
  
 print("Parameters to explore:")
 
@@ -200,13 +210,11 @@ print()
 
 filelist = glob.glob(pathToFiles + '/*.fits')
 dataset = MagAO.MagAOData(filelist)
+#set iwa
 dataset.IWA = iwa
 
 #creates cube to eventually hold average SNR data
-snrCube = np.zeros((len(klmodes),int((annuli2_stop-annuli2_start)/annuli2_inc+1),int((movement2_stop-movement2_start)/movement2_inc+1)))
-
-#creates cube to hold all snr maps 
-snrMapCube5d = np.zeros((len(klmodes),int((annuli2_stop-annuli2_start)/annuli2_inc+1),int((movement2_stop-movement2_start)/movement2_inc+1), 450, 450))
+snrCube = np.zeros((len(klmodes),int((subsections2_stop-subsections2_start)/subsections2_inc+1), int((annuli2_stop-annuli2_start)/annuli2_inc+1),int((movement2_stop-movement2_start)/movement2_inc+1)))
 
 
 #loop over annuli, movement, and subsection parameters
@@ -221,70 +229,95 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
     
     for m in np.arange(movement2_start, movement2_stop+movement2_inc, movement2_inc):
         
+        scount = 0
+        
         for s in range(subsections2_start, subsections2_stop+1, subsections2_inc):
-            print("Starting KLIP for parameters:")
-            print("annuli = %d; movement = %d; subections = %d" %(a, m,s))
-
-            #run klip for given parameters
-            parallelized.klip_dataset(dataset, outputdir="", fileprefix=outputFileName, annuli=a, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI")
- 
+                  
             #cube to hold median combinations of klipped images
             cube = np.zeros((len(klmodes),450,450))
+            #creates cube to hold snr maps 
+            snrMapCube = np.zeros((len(klmodes),450,450))
+
             
-            #flips images
-            dataset.output = dataset.output[:,:,:,::-1]
+            runKLIP = True
+            outSuff = ""
+            
+            if (os.path.isfile(str(pathToFiles) + "_KLIP/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '_KLmodes-all.fits')):
+                hdulist = fits.open(str(pathToFiles) + "_KLIP/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '_KLmodes-all.fits')
+                klmodes2 = hdulist[0].header['klmodes'][1:-1]
+                klmodes2 = list(map(int, klmodes2.split(",")))
+                hasKL = True  
+                for k in klmodes:
+                    if (not (k in klmodes2)):
+                        hasKL = False
+                if (hasKL):
+                    print("Found KLIP processed images for same parameters saved to disk. Reading in data.")
+                    runKLIP = False 
+                    outSuff = "_" + str(len(glob.glob1(pathToFiles + "_KLIP/", "med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '_KLmodes-all*'))+1)
+                    index = 0
+                    for k in klmodes:
+                        cube[index,:,:] = hdulist[0].data[klmodes2.index(k),:,:]
+                        index += 1
+
+            output = 0
+            if (runKLIP):
+                print("Starting KLIP for parameters:")
+                print("annuli = %d; movement = %s; subections = %d" %(a, m,s))
+                #run klip for given parameters
+                parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_KLIP/"), fileprefix=outputFileName, annuli=a, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
+                #flips images
+                output = dataset.output[:,:,:,::-1]
              
             #keeps track of number of KL mode values that have been tested, used for indexing
             kcount = 0
             
             #iterates over kl modes
             for k in klmodes:
-                
-                #takes median combination of cube made with given number of KL modes
-                isolatedKL = np.nanmedian(dataset.output[kcount,:,:,:], axis=0)
                                 
-                #adds median image to cube 
-                cube[kcount,:,:] = isolatedKL
-               
+                if (runKLIP):
+                    #takes median combination of cube made with given number of KL modes
+                    isolatedKL = np.nanmedian(output[kcount,:,:,:], axis=0)
+                    #adds median image to cube 
+                    cube[kcount,:,:] = isolatedKL
+                    
+                else:
+                    isolatedKL = cube[kcount,:,:]
                 
                 #makes SNR map 
                 snrmap = snr.create_map(isolatedKL, planets = mask, saveOutput = False)
                 
                 #adds SNR map to 5d cube 
                 if (saveSNR):
-                    snrMapCube5d[kcount,acount,mcount,:,:] = snrmap 
+                    snrMapCube[kcount,:,:] = snrmap 
                 
                 #gets highest pixel value in snr map in the location of the planet 
                 planetSNRs = []
                 
                 for x in range (len(ra)):
-                    planetSNRs.append(snr.getPlanet(snrmap, ra[x], pa[x], wid[1]))
+                    planetSNRs.append(snr.getPlanet(snrmap, ra[x], pa[x], wid[0]))
                 
                 planetSNR = np.mean(planetSNRs)
                 
                 #add planet snr value to snrCube
-                snrCube[kcount,acount,mcount] = planetSNR
+                snrCube[kcount,scount,acount,mcount] = planetSNR
                 kcount+=1
                                           
             #write median combination cube to disk 
-            print("Writing median image combinations to " + pathToFiles + "/../")
-            writeData(cube, pathToFiles, outputFileName, a, m, s, iwa, klmodes, mask = None, pre = 'med')
+            print("Writing median image combinations to " + pathToFiles + "_KLIP/")
+            writeData(cube, pathToFiles, outputFileName, a, m, s, iwa, klmodes, mask = None, pre = 'med_', suff = outSuff)
             print()
-            
+            if (saveSNR):
+                print("Writing SNR maps to " + pathToFiles + "_KLIP/")
+                writeData(snrMapCube, pathToFiles, outputFileName, a, m, s, iwa, klmodes, mask = mask, pre = 'SNRMap_')
+            scount+=1
         mcount+=1
     acount+=1
 
-if (saveSNR):
-    print("Writing 4d SNR data to " + pathToFiles + "/../")
-    print()
-    #writes SNR maps to 4d cubes 
-    for x in range (len(klmodes)):
-        snr4d = snrMapCube5d[x,:,:,:,:] 
-        writeData(snr4d, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'SNRCube')
+
          
-print("Writing average SNR values to " + pathToFiles + "/../")    
+print("Writing average SNR values to " + pathToFiles + "_KLIP/")    
 #write snr cube to disk 
-writeData(snrCube, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'paramexplore')
+writeData(snrCube, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'paramexplore_')
 
 print()
 print("KLIP automation complete")  

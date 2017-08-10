@@ -24,7 +24,7 @@ dataset = MAGAO.MAGAOData(filelist)
 
 outputFileName = str(name)
 
-parallelized.klip_dataset(dataset, outputdir="", fileprefix=outputFileName, annuli=int(annuli2), subsections=1, movement=int(movement2), numbasis=[1,5,10,50], calibrate_flux=True, mode="ADI")
+parallelized.klip_dataset(dataset, outputdir="", fileprefix=outputFileName, annuli=annuli2, subsections=1, movement=movement2, numbasis=[1,2,3,4,5,10,20,50,100], calibrate_flux=True, mode="ADI")
 
 print("Shape of dataset.output is " + str(dataset.output.shape))
 print("Shape of dataset.output[1] is " + str(dataset.output[1].shape))
@@ -46,53 +46,7 @@ for i in range(len(cube)):
     newCube.append(cube[len(cube)-i-1])
 """
 hdulist = fits.PrimaryHDU(cube)
-hdulist.writeto(outputFileName+"-KLmodes-all.fits", clobber=True)
-
-
-cubetwo = dataset.output[0,:,:,:]
-cubetwo = cubetwo[:,:,::-1]
-med=np.nanmedian(cubetwo, axis=0)
-fits.writeto('med_'+ outputFileName + '-1KLmodes.fits', med, clobber=True)
-
-#cubethree = dataset.output[1,:,:,:]
-#cubethree = cubethree[:,:,::-1]
-#med=np.nanmedian(cubethree, axis=0)
-#fits.writeto('med_'+ outputFileName + '-2KLmodes.fits', med, clobber=True)
-
-#cubefour = dataset.output[2,:,:,:]
-#cubefour = cubefour[:,:,::-1]
-#med=np.nanmedian(cubefour, axis=0)
-#fits.writeto('med_'+ outputFileName + '-3KLmodes.fits', med, clobber=True)
-
-#cubefive = dataset.output[3,:,:,:]
-#cubefive = cubefive[:,:,::-1]
-#med=np.nanmedian(cubefive, axis=0)
-#fits.writeto('med_'+ outputFileName + '-4KLmodes.fits', med, clobber=True)
-
-cubesix = dataset.output[1,:,:,:]
-cubesix = cubesix[:,:,::-1]
-med=np.nanmedian(cubesix, axis=0)
-fits.writeto('med_'+ outputFileName + '-5KLmodes.fits', med, clobber=True)
-
-cubeseven = dataset.output[2,:,:,:]
-cubeseven = cubeseven[:,:,::-1]
-med=np.nanmedian(cubeseven, axis=0)
-fits.writeto('med_'+ outputFileName + '-10KLmodes.fits', med, clobber=True)
-
-#cubeeight = dataset.output[6,:,:,:]
-#cubeeight = cubeeight[:,:,::-1]
-#med=np.nanmedian(cubeeight, axis=0)
-#fits.writeto('med_'+ outputFileName + '-20KLmodes.fits', med, clobber=True)
-
-cubenine = dataset.output[3,:,:,:]
-cubenine = cubenine[:,:,::-1]
-med=np.nanmedian(cubenine, axis=0)
-fits.writeto('med_'+ outputFileName + '-50KLmodes.fits', med, clobber=True)
-
-#cubeten = dataset.output[3,:,:,:]
-#cubeten = cubeten[:,:,::-1]
-#med=np.nanmedian(cubeten, axis=0)
-#fits.writeto('med_'+ outputFileName + '-100KLmodes.fits', med, clobber=True)
+hdulist.writeto("_"+outputFileName+"-KLmodes-all.fits")
 
 
 print("Complete")

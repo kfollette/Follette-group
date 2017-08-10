@@ -1,7 +1,6 @@
 language: python
 
 python:
-    - 2.6
     - 2.7
     - 3.3
     - 3.4
@@ -62,8 +61,6 @@ matrix:
           env: ASTROPY_VERSION=development SETUP_CMD='test'
 
         # Try all python versions with the latest numpy
-        - python: 2.6
-          env: SETUP_CMD='test'
         - python: 2.7
           env: SETUP_CMD='test'
         #- python: 3.3
@@ -74,11 +71,9 @@ matrix:
           # astropy-stable has py.test incompatible with 3.5
           env: ASTROPY_VERSION=development SETUP_CMD='test'
 
-        # Try older numpy versions
+        # Try older numpy versions (>=1.7)
         - python: 2.7
           env: NUMPY_VERSION=1.7 SETUP_CMD='test'
-        - python: 2.7
-          env: NUMPY_VERSION=1.6 SETUP_CMD='test'
 
 before_install:
 
@@ -120,4 +115,4 @@ after_success:
     # If coveralls.io is set up for this package, uncomment the line
     # below and replace "packagename" with the name of your package.
     # The coveragerc file may be customized as needed for your package.
-    - if [[ $SETUP_CMD == 'test --coverage' ]]; then coveralls --rcfile='image-registration/tests/coveragerc'; fi
+    - if [[ $SETUP_CMD == 'test --coverage' ]]; then coveralls --rcfile='image_registration/tests/coveragerc'; fi

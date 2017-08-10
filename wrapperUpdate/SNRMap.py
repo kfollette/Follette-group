@@ -337,7 +337,7 @@ def create_map(filename, planets = None, saveOutput = True, outputName = None):
         for y in range (yDim):
             
             #converts indeces to polar coordinates
-            radius, angle = toPolar(x,y, (xDim-1)/2, (yDim-1)/2)
+            radius, angle = toPolar(x,y,)
             
             #use for debugging if you want to see where the mask is:
             #if (isPlanet(radius, angle, planets)):

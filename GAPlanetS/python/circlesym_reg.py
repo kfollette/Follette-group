@@ -20,7 +20,7 @@ def register(file,rmax,clip):
     
     hdulist = fits.open(file)
     original = hdulist[0].data
-    #original = original[0:10]
+    original = original[0:10]
     header_data = fits.getheader(file,0)
     hdulist.close()
     centerX = int(original.shape[2]/2. - 0.5)
@@ -82,6 +82,7 @@ def clip_all(cube, centerX, centerY, clip):
 def sym_center(image,rmax):
     global xMax
     global yMax
+    '''
     xMax = 0
     yMax = 0
     max_val = 0
@@ -91,6 +92,8 @@ def sym_center(image,rmax):
                 xMax = x
                 yMax = y
                 max_val = image[y][x]
+    '''
+    xMax, yMax = fit_gaussian(-1*image,int(image.shape[1]/2),int(image.shape[0]/2))
     grid = np.zeros((21,21))          
     for y in range(21):
         print("starting row " + str(y))

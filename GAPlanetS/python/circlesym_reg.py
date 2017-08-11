@@ -5,6 +5,7 @@ from astropy.convolution import convolve
 from astropy.modeling import models, fitting
 from matplotlib import pyplot as plt
 import math
+import astropy.convolution as conv
 
 def register(file,rmax,clip):
     
@@ -20,7 +21,7 @@ def register(file,rmax,clip):
     
     hdulist = fits.open(file)
     original = hdulist[0].data
-    original = original[0:10]
+    #original = original[0:2]
     header_data = fits.getheader(file,0)
     hdulist.close()
     centerX = int(original.shape[2]/2. - 0.5)
@@ -36,11 +37,6 @@ def register(file,rmax,clip):
         original[z] = temp
     shifted_cube = original
     print("shifted cube")
-    
-    print("writing to fits file")
-    hdu = fits.PrimaryHDU(shifted_cube, header_data)
-    hdulist = fits.HDUList([hdu])
-    hdulist.writeto("temp_cube.fits", overwrite=True)
     
     clip_cube = clip_all(shifted_cube, centerX, centerY, clip)
     
@@ -82,18 +78,21 @@ def clip_all(cube, centerX, centerY, clip):
 def sym_center(image,rmax):
     global xMax
     global yMax
-    '''
+    
+    gauss = conv.Gaussian2DKernel(stddev=6)
+    new_im = conv.convolve(image, gauss)
+
     xMax = 0
     yMax = 0
     max_val = 0
     for y in range(centerY-200,centerY+200):
         for x in range(centerX-200,centerX+200):
-            if image[y][x] > max_val:
+            if new_im[y][x] > max_val:
                 xMax = x
                 yMax = y
-                max_val = image[y][x]
-    '''
-    xMax, yMax = fit_gaussian(-1*image,int(image.shape[1]/2),int(image.shape[0]/2))
+                max_val = new_im[y][x]
+
+    #xMax, yMax = fit_gaussian(-1*image,int(image.shape[1]/2),int(image.shape[0]/2))
     grid = np.zeros((21,21))          
     for y in range(21):
         print("starting row " + str(y))
@@ -149,7 +148,7 @@ def fit_gaussian(image, xcen, ycen):
     min_guess = np.min(image)
     image = image-min_guess
     
-    max_guess = image[xcen][ycen]
+    max_guess = image[ycen][xcen]
     g_init = models.Gaussian2D(amplitude=max_guess, x_mean=xcen, y_mean=ycen, x_stddev=5, y_stddev=5)
     fit_g = fitting.LevMarLSQFitter()
     y,x = np.mgrid[:image.shape[0],:image.shape[1]]

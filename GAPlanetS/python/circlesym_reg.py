@@ -46,7 +46,7 @@ def register(file,rmax,clip):
     
     hdulist = fits.open(file)
     original = hdulist[0].data
-    #original = original[212:215]
+    #original = original[0:5]
     header_data = fits.getheader(file,0)
     hdulist.close()
     centerX = int(original.shape[2]/2. - 0.5)
@@ -57,9 +57,14 @@ def register(file,rmax,clip):
     
     for z in range(size):
         print(z)
+        nanlist = find_nans(original[z])
         xc, yc = sym_center(original[z],rmax)
         temp = ir.fft_tools.shift2d(original[z], centerX-xc, centerY-yc)
         original[z] = temp
+        for y in range(nanlist.shape[0]):
+            for x in range(nanlist.shape[1]):
+                if (np.isnan(nanlist[y][x]) and y+centerY-int(yc)>0 and y+centerY-int(yc)<original[z].shape[0] and x+centerX-int(xc)>0 and x+centerX-int(xc)<original[z].shape[1]):
+                    original[z][y+centerY-int(yc)][x+centerX-int(xc)] = np.nan
     shifted_cube = original
     print("shifted cube")
     
@@ -71,6 +76,14 @@ def register(file,rmax,clip):
     hdulist.writeto(str(namestring)+"clip"+str(clip)+"_flat_reg_circsym.fits", overwrite=True)
     
     return clip_cube
+
+def find_nans(image):
+    nans = np.zeros((image.shape[0],image.shape[1]))
+    for y in range (1,image.shape[0]-1):
+        for x in range (1,image.shape[1]-1):
+            if (np.isnan(image[y][x]) or np.isnan(image[y+1][x]) or np.isnan(image[y-1][x]) or np.isnan(image[y][x+1]) or np.isnan(image[y][x-1])):
+                nans[y][x] = np.nan
+    return nans
     
 def clip_all(cube, centerX, centerY, clip):
     """

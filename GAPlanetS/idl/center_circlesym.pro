@@ -12,13 +12,14 @@ pro center_circlesym, im, xr, yr, rmax, xc, yc, grid, mask=mask
 ;-
 
    get_cubedims, im, dim1, dim2
+   print, dim1, dim2
    
    grid = fltarr(n_elements(xr), n_elements(yr))
    for i=0,n_elements(xr)-1 do begin
-    print, i, format='((x, I0),$)'
       for j=0,n_elements(yr)-1 do begin
-
-         r = rarr(dim1, dim2, xc=xr[i], yc=yr[j], /pix)
+         ;print, i, j, format='((x, I0),$)'
+         if dim1 ne dim2 then r = rarr(dim1, dim2, xc=xr[i], yc=yr[j]/2, /pix) else r = rarr(dim1, dim2, xc=xr[i], yc=yr[j], /pix)
+         ;stop
          for k=0,rmax do begin
           status = string(i) + ' /' + string(n_elements(xr)) + $
             string(j) + ' /' + string(n_elements(yr)) + $

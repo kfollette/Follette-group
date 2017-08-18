@@ -30,11 +30,13 @@ os.chdir(str(outdir))
 if len(cube) != len(rotoffs):
     print("the specified rotoff cube is not the same length as the z dimension of the image cube")
 
+dim = Cube.shape[1]
+
 else:
     for z in range(len(rotoffs)):
-        newFITS = np.zeros((450,450))
-        for y in range(450):
-            for x in range(450):
+        newFITS = np.zeros(dim, dim)
+        for y in range(dim):
+            for x in range(dim):
                 newFITS[y][x] = cube[z][y][x]
         hdu = fits.PrimaryHDU(newFITS)
         hdulist = fits.HDUList([hdu])

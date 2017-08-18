@@ -33,7 +33,7 @@ if len(cube) != len(rotoffs):
 
 else:
     for z in range(len(rotoffs)):
-        newFITS = np.zeros(dim, dim)
+        newFITS = np.zeros((dim, dim))
         for y in range(dim):
             for x in range(dim):
                 newFITS[y][x] = cube[z][y][x]

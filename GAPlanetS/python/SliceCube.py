@@ -18,7 +18,7 @@ os.chdir(str(dir))
 hdulist = fits.open(str(fname))
 cube = hdulist[0].data
 hdulist.close()
-dim = Cube.shape[1]
+dim = cube.shape[1]
 
 hdulist = fits.open(str(rotname))
 rotoffs = hdulist[0].data

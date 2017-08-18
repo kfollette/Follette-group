@@ -18,6 +18,7 @@ os.chdir(str(dir))
 hdulist = fits.open(str(fname))
 cube = hdulist[0].data
 hdulist.close()
+dim = Cube.shape[1]
 
 hdulist = fits.open(str(rotname))
 rotoffs = hdulist[0].data
@@ -29,8 +30,6 @@ if not os.path.exists(str(outdir)):
 os.chdir(str(outdir))
 if len(cube) != len(rotoffs):
     print("the specified rotoff cube is not the same length as the z dimension of the image cube")
-
-dim = Cube.shape[1]
 
 else:
     for z in range(len(rotoffs)):

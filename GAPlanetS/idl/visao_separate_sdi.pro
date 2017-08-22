@@ -136,11 +136,12 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   if n_elements(uniq(vfw3)) ne 1 then print, 'WARNING - more than one SDI filter in this cube'
 
   ;; add parameters to header
+  mkhdr, head_new, Line
   sxaddpar, head_new, 'FLAT', flat
-  sxaddpar, head_new, 'EXPTIME', uniq(expt)
+  sxaddpar, head_new, 'EXPTIME', expt[uniq(expt)]
   sxaddpar, head_new, 'MED_WFE', median(avgwfe)
-  sxaddpar, head_new, 'OBJECT', uniq(object)
-  sxaddpar, head_new, 'VFW3POSN', uniq(vfw3posn) 
+  sxaddpar, head_new, 'OBJECT', object[uniq(object)]
+  sxaddpar, head_new, 'VFW3POSN', vfw3posn[uniq(vfw3posn)] 
 
 
     if not keyword_set(indiv) then begin

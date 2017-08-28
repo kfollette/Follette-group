@@ -204,6 +204,7 @@ pro visao_reg_circsym, ref, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=sc
   ;;add parameters to header
   sxaddpar, head, 'REG_SLICE', ref
   sxaddpar, head, 'CLIP', clip
+  if not keyword_set(scl) then scl=1
   sxaddpar, head, 'CONT_SCALE', scl 
 
  ;; write files

@@ -2,12 +2,13 @@
 #6/29/16 - 11/29/16
 #Takes in H-Alpha and continuous spectrum data cubes. Outputs a file of scale values that will best suit the data.              
 #Works on data cube sets               
-
+#Modified Aug 2017 by KBF to accomodate arbitrary image size, add overwrite=True to fits output, remove masking (made obsolete by specification of zones with arbitrary radii), rename some files
 
 #TODO:
-#Incorporate auto-masking
+#first plot includes a bunch of things that are not showing up
+#way too many print functions to terminal. should be removed or relaces with statuslines.
+#debug and radii should be required input to function call rather than user-prompted input
 #Add wavefront error to ratio plot (plot1())
-#Make data size generic
 
 print("NOW RUNNING 'GenerateCubeScale.py'")
 
@@ -40,8 +41,8 @@ def debug():
     global debug
     global InnerRadius
     global OuterRadius
-    #debug = input("Run in debug mode? y/n ")
-    debug = "y"
+    debug = input("Run in debug mode? y/n ")
+    #debug = "y"
     InnerRadius = int(input("Enter an inner radius (distance from center)"))
     OuterRadius = int(input("Enter an outer radius (distance from center)"))
 
@@ -49,9 +50,6 @@ def debug():
 def switchDirectories():
     print("Starting in directory: " + os.getcwd())
     os.chdir(str(sys.argv[1]))
-    #os.chdir("../HD100546/12Apr14A/")
-    #os.chdir("../HD142527/HD142527/8Apr14/MERGED_long_sets/")
-    #os.chdir("../HD142527/HD142527/15May15/")
     print("Switched into working directory: " + os.getcwd())
     printDivider()
 
@@ -59,21 +57,25 @@ def switchDirectories():
 def printDivider():
     print("--------------------------------------------------------------------------------")
 
+"""
+#Made obsolete by specification of arbitrary radii
 #Requires the existence of file "mask.fits" in working directory
 def applyMask(preMaskDataCube):
     cubeSize = len(preMaskDataCube)
-    maskedArray = np.zeros((cubeSize,450,450))
+    dim = preMaskDataCube.shape[1]
+    maskedArray = np.zeros((cubeSize,dim,dim))
     hdulist = fits.open("CUBE_MASK.fits")
     maskData = hdulist[0].data
     for z in range(0, len(preMaskDataCube)):
     #for z in range(0,10):
-        for y in range(0, len(preMaskDataCube[0])):
-            for x in range(0, len(preMaskDataCube[0][0])):
+        for y in range(0, dim):
+            for x in range(0, dim):
                 #print("preMaskDataCube[" + str(x) + "][" +str(y) + "][" + str(z) + "] = " + str(preMaskDataCube[x][y][z])  +  "     |     maskData[" + str(x) + "][" + str(y) + "] = " + str(maskData[x][y]))
                 maskedArray[z][y][x] = preMaskDataCube[z][y][x] * maskData[z][y][x]
         if debug == "y":
             print("Applying mask to image " + str(z) + " of " + str(len(preMaskDataCube)))
     return maskedArray
+"""
 
 #Create 3D array from fits file cube
 def readFitsCubeToArray(filename, filetype):
@@ -101,10 +103,11 @@ def findMaxPixel(data, filetype):
         maxVal = 0
         tempX = 0
         tempY = 0
+        dim=data.shape[1]
         if debug == "y":
             print("Scanning image " + str(z))
-        for y in range(450):
-            for x in range(450):
+        for y in range(dim):
+            for x in range(dim):
                 if data[z][y][x] > maxVal:
                     tempX = x
                     tempY = y
@@ -144,7 +147,8 @@ def plotPeakValues():
 
 def scaleBySinglePixelRatio(scaleArray):
     #scaledArray is the maxStarValuesCONT array scaled UP to "match" HA values
-    scaledArray = np.zeros((450,450,1758))
+    dim=dataCONT.shape[1]
+    scaledArray = np.zeros((dim,dim,1758))
     try:
         for z in range(0, len(dataCONT)):
             for y in range(0, len(dataCONT[z])):
@@ -183,43 +187,46 @@ def radarr(xdim,ydim):
     for index1 in range(xdim):
         for index2 in range(ydim):
             im[index1, index2]=np.sqrt((xcen-index1)**2. + (ycen-index2)**2.)
+    #hdu=fits.PrimaryHDU(im)
+    #hduList = fits.HDUList([hdu])
+    #hduList.writeto('radarr_test.fits', overwrite=True)        
     return(im)
 
  
-
- 
-def ctrlmask(xdim, ydim, rin, rout):
+def annularmask(xdim, ydim, rin, rout):
     '''
     makes a xdim x ydim mask where pixels with distances from center between rin and
     rout have value 1, and everything else has been replaced by NaNs
     '''
     arr = radarr(xdim, ydim)
     new = np.ones((xdim, ydim))
-    for y in range(0,450):
-        for x in range(0,450):
+    for y in range(0,ydim):
+        for x in range(0,xdim):
             if arr[y][x] <= rin:
                 new[y][x] = np.nan
             elif arr[y][x] >= rout:
                 new[y][x] = np.nan
+    #hdu=fits.PrimaryHDU(new)
+    #hduList = fits.HDUList([hdu])
+    #hduList.writeto('ctrlmask_test.fits', overwrite=True)
     return(new)
     
 
 #Assumes halo radius of 100 pixels, returns the total value of center 31,415 pixels
 def calculateTotalStarlight(image, i):
-    runningSum = 0
-    mask = ctrlmask(450, 450, InnerRadius, OuterRadius)
-    for y in range(0,450):
-        for x in range(0,450):
-            image[i][y][x] = image[i][y][x] * mask[y][x]
-            if image[i][y][x] == image[i][y][x]:
-                runningSum = runningSum + image[i][y][x]
-    print("Total starlight identified: " + str(runningSum))
-    return runningSum
+    dim=image.shape[1]
+    mask = annularmask(dim, dim, InnerRadius, OuterRadius)
+    maskedim = image[i]*mask
+    sum = np.nansum(maskedim)
+    print("Total starlight identified: ", sum)
+    return sum
 
 def calculateTotalStarlightSquared(image, i, cube):
     runningSum = 0
-    for y in range(125,325):
-        for x in range(125,325):
+    dim=image.shape[1]
+    cen = int((dim-1)/2)
+    for y in range(cen-100,cen+100):
+        for x in range(cen-100,cen+100):
             value = 0
             if cube == True:
                 if image[i][y][x] == image[i][y][x]:
@@ -235,18 +242,21 @@ def calculateTotalStarlightSquared(image, i, cube):
              
 #Takes 2D array and ratio, scales every pixel
 def multiplyByRatio(array, ratio, i):
-    scaledArray = np.zeros((450,450))
+    dim=array.shape[1]
+    scaledArray = np.zeros((dim,dim))
     ratio = ratio
-    for y in range(0,450):
-        for x in range(0,450):
+    for y in range(0,dim):
+        for x in range(0,dim):
             scaledArray[y][x] = (array[i][y][x] * ratio)
     return scaledArray
                      
 #Takes H-Alpha and Continuous spectrum 2D arrays, subtracts each pixel between the two     
 def subtractImage(HAlpha, Cont, i):
+    dim=HAlpha.shape[1]
+    print('test', HAlpha.shape[1])
     subtractedArray = []
-    for y in range(0,450):
-        for x in range(0,450):
+    for y in range(0,dim):
+        for x in range(0,dim):
             subtractedArray.append(HAlpha[i][y][x] - Cont[y][x])
     return subtractedArray
 
@@ -296,10 +306,10 @@ def plotResults(dataX, dataY, idealRatio, idealStarlight):
 
 #Recursive function to generate best guess of scaling ratio. Parameters described below:
 #guess: previous ratio used                                                    
-#result: previous result obtained                                                                                                                                                                          
-#amountToStep: amount to increment by (used in form: newRatio = oldRatio * (1 - amountToStep))                                                                                                             
+#result: previous result obtained
+#amountToStep: amount to increment by (used in form: newRatio = oldRatio * (1 - amountToStep))
 #medianImHA + medianImCONT: initial data files passed along to be reused each step in ratio testing                    
-#wrongTries: keeps track of how many times the program has overstepped to shut off after 10 consecutive bad guesses                                                                                        
+#wrongTries: keeps track of how many times the program has overstepped to shut off after 10 consecutive bad guesses
 #dataX + dataY: arrays of data points to produce final plot                                                                                                                       
 def step(guess, result, amountToStep,  medianImHA, medianImCONT, wrongTries, dataX, dataY, firstCall, flipped, i):
     if debug == "y":
@@ -356,25 +366,26 @@ def makeFitsOfRatios(data):
     print("[STEP 11 OF 14] Generating ratio list")
     hdu = fits.PrimaryHDU(data)
     hduList = fits.HDUList([hdu])
-    hduList.writeto("RATIO_LIST.fits")
+    hduList.writeto("scale_factors.fits", overwrite=True)
 
 def SDICubeMR(scales, dataHA, dataCONT):
     dataSize = len(dataHA)
-    SDIImage = np.zeros((dataSize,450,450)) #Z,Y,X                                                                                                                                                         
+    dim=dataHA.shape[1]
+    SDIImage = np.zeros((dataSize,dim,dim)) #Z,Y,X                                                                                                                                                         
     for z in range(len(SDIImage)):
-        for y in range(450):
-            for x in range(450):
+        for y in range(dim):
+            for x in range(dim):
                 scaledCONT = dataCONT[z][y][x] * scales[z]
                 subtractedValue = dataHA[z][y][x] - scaledCONT
                 SDIImage[z][y][x] = subtractedValue
         print("[STEP 12 OF 14] Building image " + str(z) + " of " + str(dataSize) +  " in data cube")
     hdu = fits.PrimaryHDU(SDIImage)
     hduList = fits.HDUList([hdu])
-    hduList.writeto("SDI_CUBE_MR.fits")
+    hduList.writeto("SDI_CUBE_INDIVRATIOS.fits", overwrite=True)
 
 def plot1(errorData, medianScale):
     print("[STEP 13 OF 14] Producing ratio plot-- please close graph window to continue")
-    hdulist = fits.open("RATIO_LIST.fits")
+    hdulist = fits.open("scale_factors.fits")
     ratioData = hdulist[0].data
     medianData = []
     dataSize = len(errorData)
@@ -386,7 +397,7 @@ def plot1(errorData, medianScale):
     plt.plot(medianData, 'r-', linewidth=2.0)
     plt.plot(errorData, 'y-')
     plt.legend(['Individual Ratios', 'Median Data Ratio', 'Wavefront Error'], loc='upper left')
-    fig.set_axis_bgcolor('black')
+    fig.set_facecolor('black')
     plt.ylabel("Scale Factor")
     plt.xlabel("Image Number")
     plt.title("Ratio Plot")
@@ -394,11 +405,11 @@ def plot1(errorData, medianScale):
 
 def plot2():
     print("[STEP 14 OF 14] Producing starlight plot-- please close graph window to finish program execution")
-    hdulist = fits.open("SDI_CUBE_MR.fits")
+    hdulist = fits.open("SDI_CUBE_INDIVRATIOS.fits")
     ratioCubeMR = hdulist[0].data
-    hdulist = fits.open("SDI_CUBE_SR.fits")
+    hdulist = fits.open("SDI_CUBE_FIXEDSCL.fits")
     ratioCubeSR = hdulist[0].data
-    hdulist = fits.open("SDI_MEDIAN_SR.fits")
+    hdulist = fits.open("SDI_MEDIAN_FIXEDSCL.fits")
     ratioMedianSR = hdulist[0].data
     array1 = []
     array2 = []
@@ -414,8 +425,8 @@ def plot2():
     plt.plot(array1, 'b-')
     plt.plot(array2, 'y-')
     plt.plot(array3, 'r-', linewidth=2.0)
-    plt.legend(['SDI_CUBE_MR', 'SDI_CUBE_SR', 'SDI_MEDIAN_SR'], loc='upper left')
-    fig.set_axis_bgcolor('black')
+    plt.legend(['SDI_CUBE_MR', 'Cube median scale', 'Median image scale'], loc='upper left')
+    fig.set_facecolor('black')
     plt.ylabel("Starlight Remaining (Counts)")
     plt.xlabel("Image Number")
     plt.title("Starlight Plot")
@@ -439,7 +450,7 @@ def getWaveFrontErrors():
     return errors
 
 def getMedianScale():
-    hdulist = fits.open("SDI_MEDIAN_SR.fits")
+    hdulist = fits.open("SDI_MEDIAN_FIXEDSCL.fits")
     scale = hdulist[0].header['MEDSCL']
     return scale
 
@@ -450,8 +461,6 @@ def getMedianScale():
 #Prepare for calculations
 debug() #Prompts user whether or not to display progress as program runs
 switchDirectories() #Navigates to the proper working directory (NOTE you'll have to change this function to fit your machine)
-#readFitsCubeToArray("Line_clip450_reg.fits", 1) #Data is stored in dataHA
-#readFitsCubeToArray("Cont_clip450_reg.fits", 2) #Data is stored in dataCONT
 readFitsCubeToArray(str(sys.argv[2]), 1)
 readFitsCubeToArray(str(sys.argv[3]), 2)
 
@@ -471,13 +480,14 @@ print("Applying mask to Continuum data")
 dataCONT = applyMask(dataCONT)
 print("Finished masking Continuum data")
 printDivider()
-"""
 
-print("[STEP 9 OF 14] Reading in masked data files")
-hdulist = fits.open("MASKED_DATA_HA.fits")
-dataHA = hdulist[0].data
-hdulist = fits.open("MASKED_DATA_CONT.fits")
-dataCONT = hdulist[0].data
+#print("[STEP 9 OF 14] Reading in masked data files")
+#hdulist = fits.open("MASKED_DATA_HA.fits")
+#dataHA = hdulist[0].data
+##hdulist.writeto('test.fits', overwrite=True)
+#hdulist = fits.open("MASKED_DATA_CONT.fits")
+#dataCONT = hdulist[0].data
+"""
 
 finalRatios = []
 dataSize = len(dataHA)

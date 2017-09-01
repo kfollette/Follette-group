@@ -2,6 +2,7 @@
 #6/29/16 - 7/12/16
 #Takes in H-Alpha and continuous spectrum data cubes. Outputs a single value of scale that will best suit the data.              
 #Works on median data sets
+#Modified Aug. 2017 by KBF to accomodate arbitrary image size, clean up filenames, add overwrite=True so doesn't fail when files already exist, remove obsolete masking (now specify radii)
 
 print("NOW RUNNING 'GenerateMedianScale.py'")
                
@@ -32,16 +33,13 @@ medianPixelsCONT = []
 #Prompt for debug info
 def debug():
     global debug
-    #debug = input("Run in debug mode? y/n ")
-    debug = "y"
+    debug = input("Run in debug mode? y/n ")
+    #debug = "y"
 
 #Establish the directory we want to work from
 def switchDirectories():
     print("Starting in directory: " + os.getcwd())
     os.chdir(str(sys.argv[1]))
-    #os.chdir("../HD100546/12Apr14A/")
-    #os.chdir("../HD142527/HD142527/8Apr14/MERGED_long_sets/")
-    #os.chdir("../HD142527/HD142527/15May15/")
     print("Switched into working directory: " + os.getcwd())
     printDivider()
 
@@ -52,19 +50,21 @@ def printDivider():
 #Requires the existence of file "mask.fits" in working directory
 def applyMask(preMaskData):
     print("[STEP 3 OF 14] Masking median images")
-    maskedArray = np.zeros((450,450))
-    hdulist = fits.open("MEDIAN_MASK.fits")
+    dim = preMaskData.shape[1]
+    maskedArray = np.zeros((dim,dim))
+    hdulist = fits.open("MEDIAN_MASK.fits", )
     maskData = hdulist[0].data
-    for y in range(450):
-        for x in range(450):
+    for y in range(dim):
+        for x in range(dim):
             maskedArray[x][y] = preMaskData[x][y] * maskData[x][y]
             #print (str(x) + " " + str(y) + " " + str(maskedArray[x][y]))
     return maskedArray
 
 def applyMaskCube(preMaskDataCube, filetype):
     dataSize = len(preMaskDataCube)
-    maskedArray = np.zeros((dataSize,450,450))
-    hdulist = fits.open("CUBE_MASK.fits")
+    dim = preMaskDataCube.shape[1]
+    maskedArray = np.zeros((dataSize,dim,dim))
+    hdulist = fits.open("CUBE_MASK.fits", overwrite=True)
     maskData = hdulist[0].data
     for z in range(0, len(preMaskDataCube)):
     #for z in range(0,10):                                                                                                                                                                                  
@@ -79,9 +79,9 @@ def applyMaskCube(preMaskDataCube, filetype):
     hdu = fits.PrimaryHDU(maskedArray)
     hduList = fits.HDUList([hdu])
     if filetype == 1:
-        hduList.writeto("MASKED_DATA_HA.fits")
+        hduList.writeto("MASKED_DATA_HA.fits", overwrite=True)
     elif filetype == 2:
-        hduList.writeto("MASKED_DATA_CONT.fits")
+        hduList.writeto("MASKED_DATA_CONT.fits", overwrite=True)
     return maskedArray
 
 
@@ -89,11 +89,17 @@ def applyMaskCube(preMaskDataCube, filetype):
 def readFitsCubeToArray(filename, filetype):
     global dataHA
     global dataCONT
+    global dim
+    global cen
+    global intcen
     print("Now reading in data cube \'"+str(filename)+"\'")
     hdulist = fits.open(filename)
     hdulist.info()
     if filetype == 1:
         dataHA = hdulist[0].data
+        dim=dataHA.shape[1]
+        cen=(dim-1)/2.
+        intcen=int((dim-1)/2.)
     elif filetype == 2:
         dataCONT = hdulist[0].data
     printDivider()
@@ -102,6 +108,7 @@ def readFitsCubeToArray(filename, filetype):
 #Identifies the maximum value pixel in every file within a data cube
 def findMaxPixel(data, filetype):
     numFiles = 10
+    dim = data.shape[1]
     if filetype == 1:
         print("Scanning " + str(numFiles)  +  " images in Hydrogen-Alpha image cube to evaluate brightest pixels")
     elif filetype == 2:
@@ -113,8 +120,8 @@ def findMaxPixel(data, filetype):
         tempY = 0
         if debug == "y":
             print("Scanning image " + str(z))
-        for y in range(450):
-            for x in range(450):
+        for y in range(dim):
+            for x in range(dim):
                 if data[z][y][x] > maxVal:
                     tempX = x
                     tempY = y
@@ -154,7 +161,8 @@ def plotPeakValues():
 
 def scaleBySinglePixelRatio(scaleArray):
     #scaledArray is the maxStarValuesCONT array scaled UP to "match" HA values
-    scaledArray = np.zeros((450,450,1758))
+    dim = scaleArray.shape[1]
+    scaledArray = np.zeros((dim,dim,1758))
     try:
         for z in range(0, len(dataCONT)):
             for y in range(0, len(dataCONT[z])):
@@ -185,8 +193,10 @@ def median(dataCube, filetype):
 #Assumes halo radius of 100 pixels, returns the total value of center 31,415 pixels
 def calculateTotalStarlight(image):
     runningSum = 0
-    for y in range(125,325):
-        for x in range(125,325):
+    dim = image.shape[1]
+    cen = int((dim-1)/2.)
+    for y in range(cen-100,cen+100):
+        for x in range(cen-100,cen+100):
             if image[x][y] == image[x][y]:
                 runningSum = runningSum + image[x][y]
     print("Total starlight identified: " + str(runningSum))
@@ -194,18 +204,20 @@ def calculateTotalStarlight(image):
              
 #Takes 2D array and ratio, scales every pixel
 def multiplyByRatio(array, ratio):
-    scaledArray = np.zeros((450,450))
+    dim = array.shape[1]
+    scaledArray = np.zeros((dim,dim))
     ratio = ratio
-    for y in range(0,450):
-        for x in range(0,450):
+    for y in range(0,dim):
+        for x in range(0,dim):
             scaledArray[x][y] = (array[x][y] * ratio)
     return scaledArray
                      
 #Takes H-Alpha and Continuous spectrum 2D arrays, subtracts each pixel between the two     
 def subtractImage(HAlpha, Cont):
     subtractedArray = []
-    for y in range(0,450):
-        for x in range(0,450):
+    dim = HAlpha.shape[1]
+    for y in range(0,dim):
+        for x in range(0,dim):
             subtractedArray.append(HAlpha[x][y] - Cont[x][y])
     return subtractedArray
 
@@ -304,26 +316,30 @@ def step(guess, result, amountToStep,  medianImHA, medianImCONT, wrongTries, dat
             print("[STEP 6 OF 14] Stepped in the wrong direction initially. Trying again, in o\
 ppositte direction")
             step(guess, result, amountToStep, medianImHA, medianImCONT, 0, dataX, dataY, False, True)
+"""
+##The follwing two functions made obsolete by masking at arbitrary radii
 
 def createMaskFile(medianImHA):
     #Scan median image
     if debug == "y":
         print("[STEP 2 OF 14] Building median image mask")
-    centerX = 225
+    dim=medianImHA.shape[1]
+    cen = int((dim-1)/2.)
+    print(cen)
     radius = 0
     continueScanning = True
     while continueScanning == True:
-        if medianImHA[225][centerX + radius] > 15000:
+        if medianImHA[cen][cen + radius] > 15000:
             radius = radius + 1
         else:
             continueScanning = False
             finalRadius = radius
     #Write file
-    data = np.zeros((450,450))
-    for y in range(450):
-        for x in range(450):
-            if ((x - 225)**2 + (y - 225)**2) < 35**2:
-                if ((x - 225)**2 + (y - 225)**2) > finalRadius**2:
+    data = np.zeros((dim,dim))
+    for y in range(dim):
+        for x in range(dim):
+            if ((x - cen)**2 + (y - cen)**2) < 35**2:
+                if ((x - cen)**2 + (y - cen)**2) > finalRadius**2:
                     data[y][x] = 1
                 else:
                     data[y][x] = float('NaN')
@@ -331,29 +347,31 @@ def createMaskFile(medianImHA):
                 data[y][x] = float('NaN')
     hdu = fits.PrimaryHDU(data)
     hduList = fits.HDUList([hdu])
-    hduList.writeto("MEDIAN_MASK.fits")
+    hduList.writeto("MEDIAN_MASK.fits", overwrite=True)
 
 def createMaskFiles(cube):
-    #Scan image cube                                                                                                                                                                                     
-    centerX = 225                                                                                                                                                                                            
-    data = np.zeros((len(cube),450,450))
+    #Scan image cube
+    dim = cube.shape[1]
+    print(cube.shape)
+    cen = int((dim-1)/2.)  
+    data = np.zeros((len(cube),dim,dim))
     for z in range(len(cube)):
         if debug == "y":
             print("[STEP 4 OF 14] Scanning cube image " + str(z) + " of " + str(len(cube)) + " for mask creation")
         radius = 0
         continueScanning = True
         while continueScanning == True:
-            if cube[z][225][centerX + radius] > 15000:
+            if cube[z][cen][cen + radius] > 15000:
                 radius = radius + 1
             else:
                 continueScanning = False
                 finalRadius = radius
         if debug == "y":
             print("[STEP 4 OF 14] Writing data to cube mask file (RADIUS = " + str(finalRadius) + " pixels)")
-        for y in range(450):
-            for x in range(450):
-                if ((x - 225)**2 + (y - 225)**2) < 35**2:
-                    if ((x - 225)**2 + (y - 225)**2) > finalRadius**2:
+        for y in range(dim):
+            for x in range(dim):
+                if ((x - cen)**2 + (y - cen)**2) < 35**2:
+                    if ((x - cen)**2 + (y - cen)**2) > finalRadius**2:
                         data[z][y][x] = 1
                     else:
                         data[z][y][x] = float('NaN')
@@ -361,15 +379,16 @@ def createMaskFiles(cube):
                     data[z][y][x] = float('NaN')
     hdu = fits.PrimaryHDU(data)
     hduList = fits.HDUList([hdu])
-    hduList.writeto("CUBE_MASK.fits")
+    hduList.writeto("CUBE_MASK.fits", overwrite=True)
 
-
+"""
 
 def SDIMedianSR(scale, medianImHA, medianImCONT):
-    print("[STEP 7 OF 14] Writing scaled median image SDI")
-    SDIImage = np.zeros((450,450))
-    for y in range(450):
-        for x in range(450):
+    print("[STEP 7 OF 14] Writing median SDI image with constant scale factor")
+    dim=medianImHA.shape[1]
+    SDIImage = np.zeros((dim,dim))
+    for y in range(dim):
+        for x in range(dim):
             scaledCONT = medianImCONT[x][y] * scale
             subtractedValue = medianImHA[x][y] - scaledCONT
             SDIImage[x][y] = subtractedValue
@@ -377,39 +396,41 @@ def SDIMedianSR(scale, medianImHA, medianImCONT):
     hduList = fits.HDUList([hdu])
     prihdr = hduList[0].header
     prihdr['MEDSCL'] = scale
-    hduList.writeto("SDI_MEDIAN_SR.fits")
+    hduList.writeto("SDI_MEDIAN_FIXEDSCL.fits", overwrite=True)
                                
 
 def SDICubeSR(scale, dataHA, dataCONT):
     dataSize = len(dataHA)
-    SDIImage = np.zeros((dataSize,450,450)) #Z,Y,X 
+    dim=dataHA.shape[1]
+    SDIImage = np.zeros((dataSize,dim,dim)) #Z,Y,X 
     for z in range(len(SDIImage)):
-        for y in range(450):
-            for x in range(450):
+        for y in range(dim):
+            for x in range(dim):
                 scaledCONT = dataCONT[z][y][x] * scale
                 subtractedValue = dataHA[z][y][x] - scaledCONT
                 SDIImage[z][y][x] = subtractedValue
-        print("[STEP 8 OF 14] Writing scaled image " + str(z) + " of " + str(dataSize) + " to cube")
+    print("Writing SDI image cube with constant scale factor")
     hdu = fits.PrimaryHDU(SDIImage)
     hduList = fits.HDUList([hdu])
     prihdr = hduList[0].header
     prihdr['MEDSCL'] = scale
-    hduList.writeto("SDI_CUBE_SR.fits")
+    hduList.writeto("SDI_CUBE_FIXEDSCL.fits", overwrite=True)
 
 
 def SDICubeMR(scales, dataHA, dataCONT):
+    dim=dataHA.shape[1]
     dataSize = len(dataHA)
-    SDIImage = np.zeros((dataSize,450,450)) #Z,Y,X                                  
+    SDIImage = np.zeros((dataSize,dim,dim)) #Z,Y,X                                  
     for z in range(len(SDIImage)):
-        for y in range(450):
-            for x in range(450):
+        for y in range(dim):
+            for x in range(dim):
                 scaledCONT = dataCONT[z][y][x] * scales[z]
                 subtractedValue = dataHA[z][y][x] - scaledCONT
                 SDIImage[z][y][x] = subtractedValue
         print("Building image " + str(z))
     hdu = fits.PrimaryHDU(SDIImage)
     hduList = fits.HDUList([hdu])
-    hduList.writeto("SDI_CUBE_MR.fits")
+    hduList.writeto("SDI_CUBE_MR.fits", overwrite=True)
 
 ###############################################################################
 #                            BEGIN PROGRAM FLOW                               #
@@ -418,8 +439,6 @@ def SDICubeMR(scales, dataHA, dataCONT):
 #Prepare for calculations
 debug() #Prompts user whether or not to display progress as program runs
 switchDirectories() #Navigates to the proper working directory (NOTE you'll have to change this function to fit your machine)
-#readFitsCubeToArray("Line_clip450_reg.fits", 1) #Data is stored in dataHA
-#readFitsCubeToArray("Cont_clip450_reg.fits", 2) #Data is stored in dataCONT
 readFitsCubeToArray(str(sys.argv[2]), 1)
 readFitsCubeToArray(str(sys.argv[3]), 2)
 
@@ -427,12 +446,13 @@ readFitsCubeToArray(str(sys.argv[3]), 2)
 #Obtain an initial ratio
 medianImHA = median(dataHA, 1)
 medianImCONT = median(dataCONT, 2)
-createMaskFile(medianImHA)
-medianImHA = applyMask(medianImHA)
-medianImCONT = applyMask(medianImCONT)
-createMaskFiles(dataHA)
-dataHA = applyMaskCube(dataHA, 1)
-dataCONT = applyMaskCube(dataCONT, 2)
+##masking made obsolete by control radius mask
+#createMaskFile(medianImHA)
+#medianImHA = applyMask(medianImHA)
+#medianImCONT = applyMask(medianImCONT)
+#createMaskFiles(dataHA)
+#dataHA = applyMaskCube(dataHA, 1)
+#dataCONT = applyMaskCube(dataCONT, 2)
 
 totalStarlightHA = calculateTotalStarlight(medianImHA)
 totalStarlightCONT = calculateTotalStarlight(medianImCONT)

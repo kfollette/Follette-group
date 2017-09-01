@@ -156,10 +156,12 @@ print("Starting KLIP")
 parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "/.."), fileprefix=outputFileName, annuli=annuli2, subsections=subsections2, movement=movement2, numbasis=klmodes, calibrate_flux=True, mode="ADI")
            
 #cube to hold median combinations of klipped images
-cube = np.zeros((len(klmodes),450,450))
+dim = dataset.output.shape[2]
+
+cube = np.zeros((len(klmodes),dim,dim))
 
 #cube to hold SNR maps
-SNRcube = np.zeros((len(klmodes),450,450))
+SNRcube = np.zeros((len(klmodes),dim,dim))
             
 #flips images
 print("Now flipping KLIPed images")

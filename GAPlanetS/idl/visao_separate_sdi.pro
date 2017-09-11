@@ -23,7 +23,7 @@
 ; 2017-08-16 KBF modified to populate headers
 ;-
 
-pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=stp
+pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=stp, wfe=wfe
 
   visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, mag1=mag1
   ;;create aligned directory if doesn't already exist
@@ -139,7 +139,9 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   mkhdr, head_new, Line
   sxaddpar, head_new, 'FLAT', flat
   sxaddpar, head_new, 'EXPTIME', expt[uniq(expt)]
+  sxaddpar, head_new, 'WFE_CUT', wfe
   sxaddpar, head_new, 'MED_WFE', median(avgwfe)
+  sxaddpar, head_new, 'STDEV_WFE', stdev(avgwfe)
   sxaddpar, head_new, 'OBJECT', object[uniq(object)]
   sxaddpar, head_new, 'VFW3POSN', vfw3posn[uniq(vfw3posn)] 
 
@@ -159,6 +161,6 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
 
 if keyword_set(stp) then stop
 
-print, 'separate sdi complete'
+print, '        separate sdi complete            '
 
 end

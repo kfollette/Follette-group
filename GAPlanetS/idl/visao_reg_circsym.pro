@@ -6,7 +6,6 @@
 ;
 ; INPUTS:
 ;  sci_imlist :
-;  ref      :  the number of an image with a high-quality PSF to register against, in ds9 (index 1) coordinates
 ;
 ; INPUT KEYWORDS:
 ;  clip     :  crops the array to specified width (square)
@@ -26,7 +25,7 @@
 ;
 ;-
 
-pro visao_reg_circsym, ref, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, stp=stp, mask=mask
+pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, stp=stp, mask=mask
 
   if keyword_set(flat) then namestr='_flat_' else namestr='_'
 
@@ -202,7 +201,6 @@ pro visao_reg_circsym, ref, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=sc
   endfor
 
   ;;add parameters to header
-  sxaddpar, head, 'REG_SLICE', ref
   sxaddpar, head, 'CLIP', clip
   if not keyword_set(scl) then scl=1
   sxaddpar, head, 'CONT_SCALE', scl 

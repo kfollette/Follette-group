@@ -218,7 +218,7 @@ def toPolar(x, y):
 
 
 
-def stdevMap(indiv, planets):
+def stdevMap(indiv, planets, fwhm):
     
     """
     This function takes a filename and a list of parameters for objects to mask and outputs a dictionary object of integer value radii pointing to the standard deviation for pixel values in the image at that radius from the center.
@@ -274,7 +274,7 @@ def stdevMap(indiv, planets):
     #ignores data points if there are too few at a certain radius to take a standard deviation. These pixels will eventually become nans
     for r in radialProfs.keys():
         try: 
-            stdevs_[r]= np.nanstd(radialProfs[r])
+            stdevs_[r]= np.nanstd(radialProfs[r])/(1+fwhm/((2*math.pi*r)))*.5
         except: 
             pass
         
@@ -284,7 +284,7 @@ def stdevMap(indiv, planets):
 
 
 
-def create_map(filename, planets = None, saveOutput = True, outputName = None):
+def create_map(filename, fwhm, planets = None, saveOutput = True, outputName = None):
     """
     creates signal to noise ratio map of image.
     
@@ -323,7 +323,7 @@ def create_map(filename, planets = None, saveOutput = True, outputName = None):
         indiv = filename
         
     #creates dictionary holding the standard deviation of pixlel values at each radius 
-    stdMap = stdevMap(indiv, planets)
+    stdMap = stdevMap(indiv, planets, fwhm)
   
     #gets size of pixel value array
     xDim, yDim = np.shape(indiv)  
@@ -385,8 +385,6 @@ def getPlanet(snrmap, rad, pa, _range):
 
     x = int(rad*math.cos(math.radians(pa+90))+XCenter)
     y = int(rad*math.sin(math.radians(pa+90))+YCenter)
-    print(x)
-    print(y)
 
 
     planet = -100000000

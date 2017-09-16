@@ -204,7 +204,7 @@ HISTORY:
     CREATOR: 2016 by Kate Follette
     PY TRANS: 2016-07-11 by Wyatt Mullen, wmullen1@stanford.edu
 """
-def visao_dark(dark_imlist = [], master_dark = [], subdir=None, name=None, move=False):
+def visao_dark(dark_imlist = [], master_dark = [], subdir='raw', move=False):
     imLists = visao_inventory(subdir=subdir)
 
     #check to make sure dark_imlist hasn't been provided or that there were no dark frames from visao_inventory
@@ -217,7 +217,7 @@ def visao_dark(dark_imlist = [], master_dark = [], subdir=None, name=None, move=
 
     if len(dark_imlist) == 0:
         #raise RuntimeError('Cannot create dark frame because no dark images.')
-        print('Cannot create dark frame ' + str(name) + ' because no dark images.')
+        print('Cannot create dark frame because no dark images.')
         return
 
     for dark in dark_imlist:
@@ -233,11 +233,11 @@ def visao_dark(dark_imlist = [], master_dark = [], subdir=None, name=None, move=
     if len(uniq_exp) == 1:
         if len(dark_imlist) == 1:
             master_dark = darks
-            fits.writeto('master_dark_' + str(name) + '.fits', master_dark, overwrite = True)
+            fits.writeto('master_dark.fits', master_dark, overwrite = True)
         else:
             master_dark = np.median(darks, axis=2)
-            fits.writeto('master_dark_' + str(name) + '.fits', master_dark, overwrite = True)
-            f = fits.open('master_dark_' + str(name) + '.fits', mode = 'update')
+            fits.writeto('master_dark.fits', master_dark, overwrite = True)
+            f = fits.open('master_dark.fits', mode = 'update')
             dark_changes = f[0].header
             dark_changes['DATE'] = (time.strftime('%Y-%m-%d'), 'Creation UTC (CCCC-MM-DD) date of FITS header')
             dark_changes['EXPTIME'] = exp_time[0]

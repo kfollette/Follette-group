@@ -2,6 +2,7 @@
 //Version 1.0 - 9/17/16
 //Version 2.0 - 3/23/17
 
+import java.util.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.Paint;
@@ -12,6 +13,9 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.swing.ImageIcon;
 
+//try{
+//import com.apple.eawt.Application;
+//}catch(Exception e){}
 
 public class GetParameters{
     
@@ -39,16 +43,25 @@ public class GetParameters{
     static JTextField pa2;
     static JTextField rad2;
     
+    
+    
     public static void main(String[] args) throws FileNotFoundException{
 	
+    
 	relaunchMain();
 
+        
+    
     }
 
     public static void relaunchMain() throws FileNotFoundException{
     
+     
+    final ArrayList<Image> icons = new ArrayList<Image>();
+       
 	final JFrame frame = new JFrame("Master KLIP");
         frame.setSize(400,150);
+        frame.setIconImage(new ImageIcon("pyklip_logo.png").getImage());
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setBackground(Color.black);
@@ -57,12 +70,17 @@ public class GetParameters{
         addFields1(frame);
         frame.setVisible(true);
         frame.repaint();
+    
 
+
+        
+        
 	
     }
 
     public static void singleReduction() throws FileNotFoundException{
-	final JFrame frame = new JFrame("Single KLIP Reduction");
+	final JFrame frame = new JFrame("Single KLIP Reduction"); 
+        frame.setIconImage(new ImageIcon("pyklip_logo.png").getImage());
         frame.setSize(400,400);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -75,8 +93,9 @@ public class GetParameters{
         frame.setVisible(true);
     }
 
-    public static void automateGUI() throws FileNotFoundException{
+    public static void automateGUI() throws FileNotFoundException{   
         final JFrame frame = new JFrame("Automated Parameter Search");
+        frame.setIconImage(new ImageIcon("pyklip_logo.png").getImage());
         frame.setSize(400,400);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -95,7 +114,7 @@ public class GetParameters{
     
 	JButton single = new JButton("Single Reduction");
         single.setSize(150,40);
-        single.setLocation(25,43);
+        single.setLocation(38,43);
         single.setOpaque(true);
         single.setForeground(Color.blue);
         single.addActionListener(new ActionListener()
@@ -110,7 +129,7 @@ public class GetParameters{
 
 	JButton automated = new JButton("Automate Parameters");
 	automated.setSize(150,40);
-        automated.setLocation(225,43);
+        automated.setLocation(212,43);
         automated.setOpaque(true);
         automated.setForeground(Color.blue);
         automated.addActionListener(new ActionListener()
@@ -163,12 +182,12 @@ public class GetParameters{
 	JLabel klmodes1 = new JLabel("KL Modes");
         klmodes1.setForeground(Color.white);
         klmodes1.setSize(100,40);
-        klmodes1.setLocation(74,90+59-9);
+        klmodes1.setLocation(128,90+59-9);
 
         klmodes2 = new JTextField("1,5,10,20,50,100");
         klmodes2.setBackground(Color.white);
         klmodes2.setSize(130,30);
-        klmodes2.setLocation(37,120+59-9);
+        klmodes2.setLocation(95,120+59-9);
 
 	JLabel subsections1 = new JLabel("Subsections");
         subsections1.setForeground(Color.white);
@@ -183,12 +202,23 @@ public class GetParameters{
 	JLabel output1 = new JLabel("Output Filename");
         output1.setForeground(Color.white);
         output1.setSize(200,40);
-        output1.setLocation(200+16,90+59-9);
+        output1.setLocation(256,90+59-9);
 
         output2 = new JTextField("star_date_set");
         output2.setBackground(Color.white);
-        output2.setSize(180,30);
-        output2.setLocation(170+10,120+59-9);
+        output2.setSize(150,30);
+        output2.setLocation(234,120+59-9);
+        
+        final JLabel FWHM1 = new JLabel("FWHM");
+        FWHM1.setForeground(Color.white);
+        FWHM1.setSize(100,40);
+        FWHM1.setLocation(27,140);
+
+        final JTextField FWHM2 = new JTextField("5");
+        FWHM2.setBackground(Color.white);
+        FWHM2.setSize(70,30);
+        FWHM2.setLocation(15,170);
+        FWHM2.setEnabled(false);
 
 	JLabel filepath1 = new JLabel("Path to Desired Directory");
         filepath1.setForeground(Color.white);
@@ -210,7 +240,7 @@ public class GetParameters{
     pa2 = new JTextField("120");
         pa2.setBackground(Color.white);
         pa2.setSize(100,30);
-        pa2.setLocation(147,291);
+        pa2.setLocation(148,291);
         pa2.setEnabled(false);
         
     rad2 = new JTextField("13");
@@ -227,7 +257,7 @@ public class GetParameters{
     JLabel paL = new JLabel("Position Angle");
         paL.setForeground(Color.white);
         paL.setSize(100,40);
-        paL.setLocation(150,261);
+        paL.setLocation(151,261);
         
     JLabel radL = new JLabel("Radius");
         radL.setForeground(Color.white);
@@ -245,11 +275,13 @@ public class GetParameters{
                 rad2.setEnabled(true);
                 pa2.setEnabled(true);
                 wid2.setEnabled(true);
+                FWHM2.setEnabled(true);
 		    }	
 		    else if (!snr.isSelected()){
                 rad2.setEnabled(false);
                 pa2.setEnabled(false);
                 wid2.setEnabled(false);
+                FWHM2.setEnabled(false);
 		    }
 		}
 	    });
@@ -379,6 +411,7 @@ public class GetParameters{
 		    writer.println(snr.isSelected());
             writer.println(save.isSelected());
             if (snr.isSelected()){
+                writer.println(FWHM2.getText());
                 writer.println(rad2.getText());
                 writer.println(pa2.getText());
                 writer.println(wid2.getText());
@@ -426,6 +459,8 @@ public class GetParameters{
     frame.getContentPane().add(sdi);
     frame.getContentPane().add(both);
 	frame.getContentPane().add(back);
+        frame.getContentPane().add(FWHM1);
+        frame.getContentPane().add(FWHM2);
 	
     }    
 
@@ -546,12 +581,12 @@ public class GetParameters{
 	JLabel output1 = new JLabel("Output Filename");
         output1.setForeground(Color.white);
         output1.setSize(225,40);
-        output1.setLocation(230,173);
+        output1.setLocation(266,173);
 
         output2 = new JTextField("star_date_set");
         output2.setBackground(Color.white);
-        output2.setSize(180,30);
-        output2.setLocation(206,203);
+        output2.setSize(130,30);
+        output2.setLocation(256,202);
 
         JLabel filepath1 = new JLabel("Path to Desired Directory");
         filepath1.setForeground(Color.white);
@@ -625,17 +660,28 @@ public class GetParameters{
         IWA2 = new JTextField("10");
         IWA2.setBackground(Color.white);
         IWA2.setSize(50,30);
-        IWA2.setLocation(15,203);
+        IWA2.setLocation(15,202);
+
+	final JLabel FWHM1 = new JLabel("FWHM");
+        FWHM1.setForeground(Color.white);
+        FWHM1.setSize(100,40);
+        FWHM1.setLocation(196,173);
+
+        final JTextField FWHM2 = new JTextField("5");
+        FWHM2.setBackground(Color.white);
+        FWHM2.setSize(70,30);
+        FWHM2.setLocation(182,202);
+
 
 	JLabel klmodes1 = new JLabel("KL Modes");
         klmodes1.setForeground(Color.white);
         klmodes1.setSize(100,40);
-        klmodes1.setLocation(100,173);
+        klmodes1.setLocation(92,173);
 
         klmodes2 = new JTextField("1,5,10,50,100");
         klmodes2.setBackground(Color.white);
-        klmodes2.setSize(130,30);
-        klmodes2.setLocation(71,203);
+        klmodes2.setSize(110,30);
+        klmodes2.setLocation(68,202);
 
 	JLabel planets = new JLabel("Planet Locations:");
         planets.setForeground(Color.white);
@@ -676,6 +722,7 @@ public class GetParameters{
 			writer.println(s1.getText());
 			writer.println(s2.getText());
 			writer.println(s3.getText());
+			writer.println(FWHM2.getText());
             writer.println(rad.getText());
             writer.println(pa.getText());
             writer.println(wid.getText());
@@ -721,7 +768,9 @@ public class GetParameters{
 	frame.getContentPane().add(subsections);
 	frame.getContentPane().add(IWA1);
         frame.getContentPane().add(IWA2);
-        frame.getContentPane().add(save2);
+        frame.getContentPane().add(FWHM1);
+        frame.getContentPane().add(FWHM2);
+	frame.getContentPane().add(save2);
 
 
     }

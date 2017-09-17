@@ -13,29 +13,32 @@ import sys
 pathToFile = str(sys.argv[1])
 print("File Path = " + pathToFile)
 
+FWHM = float(sys.argv[2])
+print("Star FWHM: " +str(FWHM))
+
 args = 0
-if (sys.argv[2] == "None" or sys.argv[2] == "none"):
+if (sys.argv[3] == "None" or sys.argv[2] == "none"):
     planets = None
 else:
-    ra = list(map(int, sys.argv[2].split(",")))
-    pa =list(map(int, sys.argv[3].split(",")))
-    wid = list(map(int, sys.argv[4].split(",")))
+    ra = list(map(int, sys.argv[3].split(",")))
+    pa =list(map(int, sys.argv[4].split(",")))
+    wid = list(map(int, sys.argv[5].split(",")))
     planets = (ra,pa,wid)
     print("masking pixels for parameters: " + str(planets))
     args = 2
 
 saveOutput = False
-if (sys.argv[3+args] == 'true' or sys.argv[3+args] == 'True'):
+if (sys.argv[4+args] == 'true' or sys.argv[4+args] == 'True'):
     saveOutput = True
 
     
 if (saveOutput):
-    if (sys.argv[4+args] == "None" or sys.argv[4+args] == "none"):
+    if (sys.argv[5+args] == "None" or sys.argv[5+args] == "none"):
         outputName = None
     else:
-        outputName = sys.argv[4+args]
+        outputName = sys.argv[5+args]
         
 else:
     outputName = None
         
-snr.create_map(pathToFile, 5,planets, saveOutput, outputName)
+snr.create_map(pathToFile, FWHM, planets, saveOutput, outputName)

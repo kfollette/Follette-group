@@ -167,17 +167,20 @@ print("IWA = " + str(iwa))
 print("KL Modes = " + str(list(map(int, sys.argv[3+argnum].split(",")))))
 klmodes = list(map(int, sys.argv[3+argnum].split(",")))
 
+FWHM = float(sys.argv[14+argnum])
+print("Star FWHM = " + str(FWHM))
+
 print()
 print('Planet mask parameters:')
 
-print("Radius = " + str(list(map(int, sys.argv[14+argnum].split(",")))))
-ra = list(map(int, sys.argv[14+argnum].split(",")))
+print("Radius = " + str(list(map(int, sys.argv[15+argnum].split(",")))))
+ra = list(map(int, sys.argv[15+argnum].split(",")))
 
-print("Position Angle = " + str(list(map(int, sys.argv[15+argnum].split(",")))))
-pa = list(map(int, sys.argv[15+argnum].split(",")))
+print("Position Angle = " + str(list(map(int, sys.argv[16+argnum].split(",")))))
+pa = list(map(int, sys.argv[16+argnum].split(",")))
 
-print("Mask width (radial, angular): = " + str(list(map(int, sys.argv[16+argnum].split(",")))))
-wid = list(map(int, sys.argv[16+argnum].split(",")))
+print("Mask width (radial, angular): = " + str(list(map(int, sys.argv[17+argnum].split(",")))))
+wid = list(map(int, sys.argv[17+argnum].split(",")))
 
 #object to hold mask parameters for snr map 
 mask = (ra, pa, wid)
@@ -189,7 +192,7 @@ print("Output FileName = " + outputFileName)
 
 
 saveSNR = False
-if (sys.argv[17+argnum] == 'true' or sys.argv[17+argnum] == 'True'):
+if (sys.argv[18+argnum] == 'true' or sys.argv[18+argnum] == 'True'):
     saveSNR = True    
 
 print()
@@ -284,7 +287,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                     isolatedKL = cube[kcount,:,:]
                 
                 #makes SNR map 
-                snrmap = snr.create_map(isolatedKL, planets = mask, saveOutput = False)
+                snrmap = snr.create_map(isolatedKL,FWHM, planets = mask, saveOutput = False)
                 
                 #adds SNR map to 5d cube 
                 if (saveSNR):

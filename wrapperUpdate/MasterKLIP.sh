@@ -17,10 +17,12 @@ rm *.class
 #Determine whether to run single reduction of automated reduction
 if [ -f single_reduction_parameters.txt ]; then
     echo "Performing single reduction"
+    echo ""
     RUNTYPE=1
 fi
 if [ -f automation_parameters.txt ]; then
     echo "Performing automation"
+    echo ""
     RUNTYPE=2
 fi
 
@@ -47,10 +49,12 @@ if [[ $RUNTYPE = 1 ]]; then
 	elif [ $counter = 9 ]; then
             SAVE1=$line
 	elif [ $counter = 10 ]; then
-            RA2=$line
+            FWHM2=$line
 	elif [ $counter = 11 ]; then
-            PA2=$line
+            RA2=$line
 	elif [ $counter = 12 ]; then
+            PA2=$line
+	elif [ $counter = 13 ]; then
             WID2=$line
 	fi
     done < "single_reduction_parameters.txt"
@@ -84,12 +88,14 @@ else
 	elif [ $counter = 13 ]; then
             S3=$line
 	elif [ $counter = 14 ]; then
-            ra=$line
+            FWHM=$line
 	elif [ $counter = 15 ]; then
-            pa=$line
+            ra=$line
 	elif [ $counter = 16 ]; then
-            wi=$line
+            pa=$line
 	elif [ $counter = 17 ]; then
+            wi=$line
+	elif [ $counter = 18 ]; then
             SAVE2=$line
         fi
     done < "automation_parameters.txt"
@@ -98,7 +104,7 @@ fi
 
 #Run StartKLIP.py with command line arguments from these variables (if single reduction)
 if [[ $RUNTYPE = 1 ]]; then
-    python RunKLIP.py $FILEPATH $IWA $KLMODES $ANNULI $MOVEMENT $SUBSECTIONS $OUTPUTNAME $SNR $SAVE1 $RA2 $PA2 $WID2
+    python RunKLIP.py $FILEPATH $IWA $KLMODES $ANNULI $MOVEMENT $SUBSECTIONS $OUTPUTNAME $SNR $SAVE1 $FWHM2 $RA2 $PA2 $WID2
     #/home/anaconda3/bin/python3 StartKLIP.py $FILEPATH $ANNULI $IWA $MOVEMENT $OUTPUTNAME $KLMODES $SUBSECTIONS $SNR
     #rm $OUTPUTNAME"-KLmodes-all.fits"
     #cp "_"$OUTPUTNAME"-KLmodes-all.fits" $OUTPUTNAME".fits"
@@ -106,7 +112,7 @@ if [[ $RUNTYPE = 1 ]]; then
     #cp $OUTPUTNAME".fits" "temp_klip.fits"
     #rm temp_klip.fits
 else 
-    python AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3 $ra $pa $wi $SAVE2
+    python AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3 $FWHM $ra $pa $wi $SAVE2
 fi
 
 

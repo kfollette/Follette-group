@@ -75,6 +75,8 @@ pathToFiles = sys.argv[1]
 
 #if the file path has white space in it, recognizes the end of the filepath by the phrase '%finish'
 #If the phrase '%finish' does not occur, leaves pathToFiles as the first argument
+
+print("KLIP Parameters:")
 try:
     while (not pathToFiles[-7:] == '%finish'):
         argnum += 1
@@ -85,25 +87,25 @@ except:
     pathToFiles = sys.argv[1]
     argnum = 0
 
-print("File Path = " + pathToFiles) 
+print("  File Path = " + pathToFiles) 
 
 if not os.path.exists(pathToFiles + "_KLIP"):
     os.makedirs(pathToFiles + "_KLIP")
 
 iwa = int(sys.argv[2+argnum])
-print("IWA = " + str(iwa))
+print("  IWA = " + str(iwa))
 
 klmodes = list(map(int, sys.argv[3+argnum].split(",")))
-print("KL Modes = " + str(list(map(int, sys.argv[3+argnum].split(",")))))
+print("  KL Modes = " + str(list(map(int, sys.argv[3+argnum].split(",")))))
 
 annuli2 = int(sys.argv[4+argnum])
-print("Annuli = " + str(annuli2))
+print("  Annuli = " + str(annuli2))
 
 movement2 = float(sys.argv[5+argnum])
-print("Movement = " + str(movement2))
+print("  Movement = " + str(movement2))
 
 subsections2 = int(sys.argv[6+argnum])
-print("Subsections = " + str(subsections2))
+print("  Subsections = " + str(subsections2))
 
 outputFileName = sys.argv[7+argnum]     
 
@@ -117,16 +119,19 @@ if (sys.argv[9+argnum] == 'true' or sys.argv[9+argnum] == 'True'):
     
 maskParams = None
 
-
 if (SNR):
     try: 
-        print('Planet mask parameters:')
-        print("Radius = " + str(list(map(int, sys.argv[10+argnum].split(",")))))
-        ra = list(map(int, sys.argv[10+argnum].split(",")))
-        print("Position Angle = " + str(list(map(int, sys.argv[11+argnum].split(",")))))
-        pa = list(map(int, sys.argv[11+argnum].split(",")))
-        print("Mask width (radial, angular): = " + str(list(map(int, sys.argv[12+argnum].split(",")))))
-        wid = list(map(int, sys.argv[12+argnum].split(",")))
+        print()
+        print("SNR Map Parameters:")
+        FWHM = float(sys.argv[10+argnum])
+        print('  Star FWHM = ' + str(FWHM))
+        print('  Planet mask parameters:')
+        print("    Radius = " + str(list(map(int, sys.argv[11+argnum].split(",")))))
+        ra = list(map(int, sys.argv[11+argnum].split(",")))
+        print("    Position Angle = " + str(list(map(int, sys.argv[12+argnum].split(",")))))
+        pa = list(map(int, sys.argv[12+argnum].split(",")))
+        print("    Mask width (radial, angular): = " + str(list(map(int, sys.argv[13+argnum].split(",")))))
+        wid = list(map(int, sys.argv[13+argnum].split(",")))
         maskParams = (ra, pa, wid)
         
     except:
@@ -141,7 +146,7 @@ if (SNR):
 #############                                        #############
 ##################################################################
 
-
+print()
 print("Reading: " + pathToFiles + "/*.fits")
 filelist = glob.glob(pathToFiles + '/*.fits')
 
@@ -151,6 +156,7 @@ dataset.IWA = iwa
 
 print()
 print("Starting KLIP")
+
 
 #run klip for given parameters
 parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "/.."), fileprefix=outputFileName, annuli=annuli2, subsections=subsections2, movement=movement2, numbasis=klmodes, calibrate_flux=True, mode="ADI")
@@ -184,13 +190,16 @@ for k in klmodes:
     cube[kcount,:,:] = isolatedKL
     
     #creates SNR map if designated
-    if (SNR):        
-        SNRcube[kcount,:,:] = snr.create_map(isolatedKL, planets = maskParams, saveOutput = False)
+    if (SNR):  
+        print()
+        print("Runing SNRMap on KLIPed data")
+        SNRcube[kcount,:,:] = snr.create_map(isolatedKL, FWHM, planets = mask, saveOutput = False)
                 
     kcount += 1
        
         
 #write median combination cube to disk 
+print()
 print("Writing median KLIPed images to " + pathToFiles + "_KLIP")
 writeData(cube, pathToFiles, outputFileName, annuli2, movement2, subsections2, iwa, klmodes, pre = "med_")
 

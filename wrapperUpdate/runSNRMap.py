@@ -17,7 +17,7 @@ FWHM = float(sys.argv[2])
 print("Star FWHM: " +str(FWHM))
 
 args = 0
-if (sys.argv[3] == "None" or sys.argv[2] == "none"):
+if (sys.argv[3] == "None" or sys.argv[3] == "none"):
     planets = None
 else:
     ra = list(map(int, sys.argv[3].split(",")))

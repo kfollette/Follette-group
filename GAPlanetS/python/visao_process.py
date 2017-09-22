@@ -367,6 +367,17 @@ def visao_separate_sdi(*keywords, **keysMap):
     fits.writeto('rotoff_preproc.fits', np.array(dataDict['rotoff']), clobber=True)
     fits.writeto('avgwfe_preproc.fits', np.array(dataDict['avgwfe']), clobber=True)
 
+    new_head = fits.getheader('Line_flat_preproc.fits',0)
+    new_head.set('FLAT',keysMap['flat'])
+    new_head.set('EXPTIME', expt[0])
+    #new_head.set('WFE_CUT', wfe)
+    new_head.set('MED_WFE',np.median(np.array(dataDict['avgwfe'])))
+    new_head.set('STDEVWFE',np.std(np.array(dataDict['avgwfe'])))
+    new_head.set('OBJECT',dataDict['object'][0])
+    new_head.set('VFW3POSN',dataDict['vfw3posn'][0])
+    fits.writeto('Line_flat_preproc.fits',Line,header=new_head,clobber=True)
+    fits.writeto('Cont_flat_preproc.fits',Cont,header=new_head,clobber=True)
+
     return dataDict
 
 """

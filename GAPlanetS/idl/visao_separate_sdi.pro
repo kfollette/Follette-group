@@ -139,12 +139,13 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   mkhdr, head_new, Line
   sxaddpar, head_new, 'FLAT', flat
   sxaddpar, head_new, 'EXPTIME', expt[uniq(expt)]
-  sxaddpar, head_new, 'WFE_CUT', wfe
-  sxaddpar, head_new, 'MED_WFE', median(avgwfe)
-  sxaddpar, head_new, 'STDEV_WFE', stdev(avgwfe)
+  if keyword_set(wfe) then begin
+    sxaddpar, head_new, 'WFE_CUT', wfe
+    sxaddpar, head_new, 'MED_WFE', median(avgwfe)
+    sxaddpar, head_new, 'STDEV_WFE', stdev(avgwfe)
+  endif
   sxaddpar, head_new, 'OBJECT', object[uniq(object)]
   sxaddpar, head_new, 'VFW3POSN', vfw3posn[uniq(vfw3posn)] 
-
 
     if not keyword_set(indiv) then begin
       if keyword_set(flat) then begin

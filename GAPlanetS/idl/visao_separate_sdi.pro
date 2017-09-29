@@ -142,7 +142,7 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   if keyword_set(wfe) then begin
     sxaddpar, head_new, 'WFE_CUT', wfe
     sxaddpar, head_new, 'MED_WFE', median(avgwfe)
-    sxaddpar, head_new, 'STDEV_WFE', stdev(avgwfe)
+    sxaddpar, head_new, 'STDEV_WFE', stddev(avgwfe)
   endif
   sxaddpar, head_new, 'OBJECT', object[uniq(object)]
   sxaddpar, head_new, 'VFW3POSN', vfw3posn[uniq(vfw3posn)] 

@@ -204,6 +204,10 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
   sxaddpar, head, 'CLIP', clip
   if not keyword_set(scl) then scl=1
   sxaddpar, head, 'CONT_SCALE', scl 
+  if keyword_set(mask) then begin
+    sxaddpar, head, 'MASK', mask
+  endif
+  sxaddpar, head, 'SMOOTH_FWHM', fwhm
 
  ;; write files
   if keyword_set(clip) then begin

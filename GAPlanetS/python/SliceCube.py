@@ -5,7 +5,7 @@ from astropy.io import fits
 import os
 import numpy as np
 
-def slice(filepath, output='sliced', filename, rotoff='rotoff_preproc.fits'):
+def slice(filepath, filename, output='sliced', rotoff='rotoff_preproc.fits'):
     os.chdir(str(filepath))
     hdulist = fits.open(str(filename))
     cube = hdulist[0].data
@@ -29,12 +29,12 @@ def slice(filepath, output='sliced', filename, rotoff='rotoff_preproc.fits'):
             for y in range(dim):
                 for x in range(dim):
                     newFITS[y][x] = cube[z][y][x]
-                    hdu = fits.PrimaryHDU(newFITS)
-                    hdulist = fits.HDUList([hdu])
-                    prihdr = hdulist[0].header
-                    prihdr.set('rotoff', str(rotoffs[z]))
-                    hdulist.writeto("sliced_"+str(z+1)+".fits", clobber=True)
-                    print("Sliced image " + str(z+1))
+            hdu = fits.PrimaryHDU(newFITS)
+            hdulist = fits.HDUList([hdu])
+            prihdr = hdulist[0].header
+            prihdr.set('rotoff', str(rotoffs[z]))
+            hdulist.writeto("sliced_"+str(z+1)+".fits", clobber=True)
+            print("Sliced image " + str(z+1))
 
     print("Done slicing")
 

@@ -48,6 +48,7 @@ def register(file,rmax,clip):
     original = hdulist[0].data
     #original = original[0:5]
     header_data = fits.getheader(file,0)
+    header_data.set('CLIP',clip)
     hdulist.close()
     centerX = int(original.shape[2]/2. - 0.5)
     centerY = int(original.shape[1]/2. - 0.5)

@@ -193,7 +193,7 @@ for k in klmodes:
     if (SNR):  
         print()
         print("Runing SNRMap on KLIPed data")
-        SNRcube[kcount,:,:] = snr.create_map(isolatedKL, FWHM, planets = mask, saveOutput = False)
+        SNRcube[kcount,:,:] = snr.create_map(isolatedKL, FWHM, planets = maskParams, saveOutput = False)
                 
     kcount += 1
        

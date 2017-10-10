@@ -216,6 +216,10 @@ dataset = MagAO.MagAOData(filelist)
 #set iwa
 dataset.IWA = iwa
 
+#print(dataset._input.shape)
+
+xDim = dataset._input.shape[2]
+yDim = dataset._input.shape[1]
 #creates cube to eventually hold average SNR data
 snrCube = np.zeros((len(klmodes),int((subsections2_stop-subsections2_start)/subsections2_inc+1), int((annuli2_stop-annuli2_start)/annuli2_inc+1),int((movement2_stop-movement2_start)/movement2_inc+1)))
 
@@ -237,9 +241,9 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
         for s in range(subsections2_start, subsections2_stop+1, subsections2_inc):
                   
             #cube to hold median combinations of klipped images
-            cube = np.zeros((len(klmodes),450,450))
+            cube = np.zeros((len(klmodes),yDim,xDim))
             #creates cube to hold snr maps 
-            snrMapCube = np.zeros((len(klmodes),450,450))
+            snrMapCube = np.zeros((len(klmodes),yDim,xDim))
 
             
             runKLIP = True

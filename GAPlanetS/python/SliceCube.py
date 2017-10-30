@@ -21,6 +21,7 @@ def slice(filepath, filename, output='sliced', rotoff='rotoff_preproc.fits'):
 
     os.chdir(str(output))
     if len(cube) != len(rotoffs):
+        print(len(cube),len(rotoffs))
         print("the specified rotoff cube is not the same length as the z dimension of the image cube")
 
     else:

@@ -2,11 +2,11 @@ from astropy.io import fits
 import numpy as np
 
 def remove_cosmics():
-    hdulist = fits.open("Cont_clip451_flat_reg_circsym.fits")
+    hdulist = fits.open("Cont_clip451_flat_circsymreg.fits")
     Cont_cube = hdulist[0].data
-    header_data = fits.getheader("Cont_clip451_flat_reg_circsym.fits")
+    header_data = fits.getheader("Cont_clip451_flat_circsymreg.fits")
     hdulist.close()
-    hdulist = fits.open("Line_clip451_flat_reg_circsym.fits")
+    hdulist = fits.open("Line_clip451_flat_circsymreg.fits")
     Line_cube = hdulist[0].data
     hdulist.close()
     hdulist = fits.open("cosmic_arr.fits")
@@ -69,8 +69,8 @@ def remove_cosmics():
                 new_line = np.vstack((new_line,[Line_cube[a]]))
             
     print("Writing to fits files.")    
-    fits.writeto('Cont_clip451_flat_reg_circsym_nocosmics.fits', new_cont, header=header_data, overwrite = True)
-    fits.writeto('Line_clip451_flat_reg_circsym_nocosmics.fits', new_line, header=header_data, overwrite = True)
+    fits.writeto('Cont_clip451_flat_circsymreg_nocosmics.fits', new_cont, header=header_data, overwrite = True)
+    fits.writeto('Line_clip451_flat_circsymreg_nocosmics.fits', new_line, header=header_data, overwrite = True)
     fits.writeto('rotoff_nocosmics.fits', rotoff_line, overwrite = True)
     #fits.writeto('rotoff_nocosmics_cont.fits', rotoff_cont, overwrite = True)
     #fits.writeto('rotoff_nocosmics_line.fits', rotoff_line, overwrite = True)

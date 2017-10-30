@@ -274,7 +274,7 @@ def stdevMap(indiv, planets, fwhm):
     #ignores data points if there are too few at a certain radius to take a standard deviation. These pixels will eventually become nans
     for r in radialProfs.keys():
         try: 
-            stdevs_[r]= np.nanstd(radialProfs[r])/(1+fwhm/((2*math.pi*r)))*.5
+            stdevs_[r]= np.nanstd(radialProfs[r])/(1+fwhm((2*math.pi*r)))**.5
         except: 
             pass
         

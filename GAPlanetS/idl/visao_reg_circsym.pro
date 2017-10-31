@@ -117,7 +117,8 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
     print, 'center of circular symmetry for Line image is', Line_xc, Line_yc
     print, 'shifting Line image', j+1, ' of', nims, ' by', Line_shift
     
-    Line[*,*,j]=shift_interp(Line[*,*,j], Line_shift-1, spline=-0.5)
+    ;Line[*,*,j]=shift_interp(Line[*,*,j], Line_shift-1, spline=-0.5) old ver. - based on bug in Fourier cx correlation
+    Line[*,*,j]=shift_interp(Line[*,*,j], Line_shift, spline=-0.5)
     
     ;now the same for the continuum image
     subreg, gauss_cen, Cont_smooth[*,*,j], sft, method='F'
@@ -145,7 +146,9 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
     print, 'center of circular symmetry for Line image is', Cont_xc, Cont_yc
     print, 'shifting Continuum image', j+1, 'of', nims, 'by', Cont_shift
     
-    Cont[*,*,j]=shift_interp(Cont[*,*,j], Cont_shift-1, spline=-0.5)
+    ;Cont[*,*,j]=shift_interp(Cont[*,*,j], Cont_shift-1, spline=-0.5) old ver. - based on bug in Fourier cx correlation
+    Cont[*,*,j]=shift_interp(Cont[*,*,j], Cont_shift, spline=-0.5)
+
     
 
     ;;rescale continuum image by scl if keyowrd is set

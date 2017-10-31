@@ -5,38 +5,43 @@ from astropy.io import fits
 import os
 import numpy as np
 
-def slice(filepath, filename, output='sliced', rotoff='rotoff_preproc.fits'):
-    os.chdir(str(filepath))
-    hdulist = fits.open(str(filename))
-    cube = hdulist[0].data
-    hdulist.close()
-    dim = cube.shape[1]
+print("Enter absolute directory filepath")
+dir = input()
+print("Enter name for output directory ")
+outdir = input()
+print("Enter filename to be sliced ")
+fname = input()
+print("Enter name of rotoff cube ")
+rotname = input()
 
-    hdulist = fits.open(str(rotoff))
-    rotoffs = hdulist[0].data
-    hdulist.close()
+os.chdir(str(dir))
+hdulist = fits.open(str(fname))
+cube = hdulist[0].data
+hdulist.close()
+dim = cube.shape[1]
 
-    if not os.path.exists(str(output)):
-        os.makedirs(str(output))
+hdulist = fits.open(str(rotname))
+rotoffs = hdulist[0].data
+hdulist.close()
 
-    os.chdir(str(output))
-    if len(cube) != len(rotoffs):
-        print(len(cube),len(rotoffs))
-        print("the specified rotoff cube is not the same length as the z dimension of the image cube")
+if not os.path.exists(str(outdir)):
+    os.makedirs(str(outdir))
 
-    else:
-        for z in range(len(rotoffs)):
-            newFITS = np.zeros((dim, dim))
-            for y in range(dim):
-                for x in range(dim):
-                    newFITS[y][x] = cube[z][y][x]
-            hdu = fits.PrimaryHDU(newFITS)
-            hdulist = fits.HDUList([hdu])
-            prihdr = hdulist[0].header
-            prihdr.set('rotoff', str(rotoffs[z]))
-            hdulist.writeto("sliced_"+str(z+1)+".fits", clobber=True)
-            print("Sliced image " + str(z+1))
+os.chdir(str(outdir))
+if len(cube) != len(rotoffs):
+    print("the specified rotoff cube is not the same length as the z dimension of the image cube")
 
-    print("Done slicing")
+else:
+    for z in range(len(rotoffs)):
+        newFITS = np.zeros((dim, dim))
+        for y in range(dim):
+            for x in range(dim):
+                newFITS[y][x] = cube[z][y][x]
+        hdu = fits.PrimaryHDU(newFITS)
+        hdulist = fits.HDUList([hdu])
+        prihdr = hdulist[0].header
+        prihdr.set('rotoff', str(rotoffs[z]))
+        hdulist.writeto("sliced_"+str(z+1)+".fits", clobber=True)
+        print("Sliced image " + str(z+1))
 
-
+print("Done slicing")

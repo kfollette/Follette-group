@@ -274,7 +274,8 @@ def stdevMap(indiv, planets, fwhm):
     #ignores data points if there are too few at a certain radius to take a standard deviation. These pixels will eventually become nans
     for r in radialProfs.keys():
         try: 
-            stdevs_[r]= np.nanstd(radialProfs[r])/(1+fwhm((2*math.pi*r)))**.5
+            stdevs_[r]= np.nanstd(radialProfs[r])/(1+fwhm/(2*math.pi*r))**.5
+            #stdevs_[r]= np.nanstd(radialProfs[r])        
         except: 
             pass
         
@@ -348,6 +349,7 @@ def create_map(filename, fwhm, planets = None, saveOutput = True, outputName = N
                 #if statement prevents a divide by zero warning message
                 if (stdMap[radius] == 0):
                     indiv[x][y] = np.nan
+                    print('nan')
                 else:
                     indiv[x][y] = indiv[x][y]/stdMap[radius]
                 
@@ -358,6 +360,7 @@ def create_map(filename, fwhm, planets = None, saveOutput = True, outputName = N
             #if no standard deviation has been calculated, pixel is given a nan value
             except:
                 indiv[x][y] = np.nan
+                #print('nan e')
     
     #saves output to disk if saveOutput designated True
     if (saveOutput == True):

@@ -91,7 +91,7 @@ pro visao_fakes_new, filename, rotoffs, contrast, sep, pa=pa, saturated=saturate
 
   ;;run KLIP on images with fakes
 
-  fname = filename[:-5] + '_fakes'
+  fname = filename+'_fakes'
 
   sxaddpar, head_new, 'PAS', pa
   sxaddpar, head_new, 'SEPS', sep

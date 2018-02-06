@@ -32,10 +32,10 @@
 ;-
 
 
-pro visao_fakes, filename, rotoffs, contrast, sep, pa=pa, saturated=saturated, $
+pro visao_fakes_new, filename, rotoffs, contrast, sep, pa=pa, saturated=saturated, $
   nplanets=nplanets, klipparams=klipparams, fixpix=fixpix
 
-  imcube = readfits(filename, head)
+  imcube = readfits(filename+'.fits', head)
   
   dim1=(size(imcube))[1]
   dim2=(size(imcube))[2]

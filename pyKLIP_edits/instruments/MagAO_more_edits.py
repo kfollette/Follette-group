@@ -100,10 +100,10 @@ class MagAOData(object):
             self._filenames = None
             self._PAs = None
             self._wvs = None
-            self._wcs = None
+            #self._wcs = None
             self._IWA = None
             self._OWA = None
-            self.star_flux = None
+            #self.star_flux = None
             self.contrast_scaling = None
             self.prihdrs = None
         else:
@@ -140,12 +140,12 @@ class MagAOData(object):
     def wvs(self, newval):
         self._wvs = newval
     
-    @property
-    def wcs(self):
-        return self._wcs
-    @wcs.setter
-    def wcs(self, newval):
-        self._wcs = newval
+    #@property
+    #def wcs(self):
+     #   return self._wcs
+    #@wcs.setter
+    #def wcs(self, newval):
+     #   self._wcs = newval
 
     @property
     def IWA(self):
@@ -186,14 +186,14 @@ class MagAOData(object):
         #wcs_hdrs = []
         wvs = []
         centers = []
-        star_fluxes = []
+        #star_fluxes = []
         prihdrs = []
 
         for index, filepath in enumerate(filepaths):
-            cube, center, pa, wv, astr_hdrs, filt_band, prihdr, star_flux = _magao_process_file(self, filepath, index)
+            cube, center, pa, wv, astr_hdrs, filt_band, prihdr = _magao_process_file(self, filepath, index)
             data.append(cube)
             centers.append(center)
-            star_fluxes.append(star_flux)
+            #star_fluxes.append(star_flux)
             rot_angles.append(pa)
             wvs.append(wv)
             #wcs_hdrs.append(astr_hdrs)
@@ -217,7 +217,7 @@ class MagAOData(object):
         for y in range(dsize):
             for x in range(2):
                 centers[y][x] = (dims[1]-1)/2
-        star_fluxes = np.array(star_fluxes)
+        #star_fluxes = np.array(star_fluxes)
 
         self._input = data
         self._centers = centers
@@ -225,14 +225,14 @@ class MagAOData(object):
         self._filenames = filenames
         self._PAs = rot_angles
         self._wvs = wvs
-        self._wcs = None
+        #self._wcs = None
         #IWA gets reset by GUI. This is the default value.
         self.IWA = 10
         # half the size of the array
         self.OWA = data.shape[0]/2
         #CHECK IWA AND OWA
-        self.star_flux = star_fluxes
-        self.contrast_scaling = 1./star_fluxes
+        #self.star_flux = star_fluxes
+        #self.contrast_scaling = 1./star_fluxes
         #check this
         self.prihdrs = prihdrs
 
@@ -260,10 +260,11 @@ class MagAOData(object):
             if spectral:
                 # spectral cube, each slice needs it's own calibration
                 numwvs = img.shape[0]
-                img *= self.contrast_scaling[:numwvs, None, None]
+                img /= self.dn_per_contrast[:numwvs, None, None]
             else:
                 # broadband image
-                img *= np.nanmean(self.contrast_scaling)
+                img /= np.nanmean(self.dn_per_contrast)
+            self.flux_units = "contrast"
 
         return img
         
@@ -381,7 +382,7 @@ def _magao_process_file(self, filepath, filetype):
         dims = cube.shape
         x, y = np.meshgrid(np.arange(dims[1], dtype=np.float32), np.arange(dims[0], dtype=np.float32))
         
-        star_flux = [[1]]
+        #star_flux = [[1]]
         #check later
        
         cube.reshape([1, cube.shape[0], cube.shape[1]]) #makes a 2D y by x image into a 1 by y by x cube
@@ -391,8 +392,9 @@ def _magao_process_file(self, filepath, filetype):
 
     finally:
         hdulist.close()
-
-    return cube, center, parang, wvs, astr_hdrs, filt_band, prihdr, star_flux
+        
+    #return cube, center, parang, wvs, astr_hdrs, filt_band, star_flux, prihdr
+    return cube, center, parang, wvs, astr_hdrs, filt_band, prihdr
 
 #comes from NIRC2 or maybe P1640, but not GPI
 #def calc_starflux(cube, center):

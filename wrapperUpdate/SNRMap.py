@@ -345,7 +345,10 @@ def create_map(filename, fwhm, planets = None, saveOutput = True, outputName = N
     Output = np.zeros((zDim,yDim,xDim))
 
     for s in range (zDim):
-        indiv = inp[s,:,:]
+        try:
+            indiv = inp[s,:,:]
+        except:
+            indiv = inp
         #creates dictionary holding the standard deviation of pixlel values at each radius 
         stdMap = stdevMap(indiv, planets, fwhm)
         #loops through all pixels in array

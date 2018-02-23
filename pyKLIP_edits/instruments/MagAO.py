@@ -21,7 +21,6 @@ import configparser as ConfigParser
 from scipy.interpolate import interp1d
 
 class MagAOData(object):
-    #why does this say object while GPI says Data?
     
     """
     A sequence of P1640 Data. Each P1640Data object has the following fields and functions 
@@ -51,8 +50,6 @@ class MagAOData(object):
         calibrate_output(): calibrates flux of self.output
     """
 
-    #I'm marking things that I'm not sure if we need with a "#!"
-
     ##########################
    ### Class Initialization ###
     ##########################
@@ -77,7 +74,6 @@ class MagAOData(object):
         for band in bands:
             centralwave[band] = float(config.get("instrument", "cen_wave_{0}".format(band)))
             flux_zeropt[band] = float(config.get("instrument", "zero_pt_flux_{0}".format(band)))
-            #check later
         observatory_latitude = float(config.get("observatory", "observatory_lat"))
     except ConfigParser.Error as e:
         print("Error reading MagAO configuration file: {0}".format(e.message))
@@ -178,7 +174,7 @@ class MagAOData(object):
         """
         if isinstance(filepaths, str):
             filepaths = [filepaths]
-
+        print(len(filepaths))
         data = []
         filenums = []
         filenames = []
@@ -190,7 +186,7 @@ class MagAOData(object):
         prihdrs = []
 
         for index, filepath in enumerate(filepaths):
-            cube, center, pa, wv, astr_hdrs, filt_band, prihdr, star_flux = _magao_process_file(self, filepath, index)
+            cube, center, pa, wv, astr_hdrs, prihdr, star_flux = _magao_process_file(self, filepath, index)
             data.append(cube)
             centers.append(center)
             star_fluxes.append(star_flux)
@@ -233,7 +229,6 @@ class MagAOData(object):
         #CHECK IWA AND OWA
         self.star_flux = star_fluxes
         self.contrast_scaling = 1./star_fluxes
-        #check this
         self.prihdrs = prihdrs
 
     ##not currently used but will when we apply flux conversion
@@ -357,8 +352,7 @@ class MagAOData(object):
 
         
 def _magao_process_file(self, filepath, filetype):
-    #filetype == 0 --> HA
-    #filetype == 1 --> CONT
+
     try:
         hdulist = fits.open(filepath)
         header = hdulist[0].header
@@ -369,12 +363,8 @@ def _magao_process_file(self, filepath, filetype):
         cube = hdulist[0].data
         prihdr = hdulist[0].header
         
-        if filetype == 0:
-            filt_band = "H-Alpha"
-            wvs = self.centralwave["HA"]
-        else:
-            filt_band = "Continuum"
-            wvs = self.centralwave["CONT"]
+        wvs = header['WLENGTH'] 
+
         datasize = cube.shape[1] #ours will be 2D
         center = [[(datasize-1)/2, (datasize-1)/2]]
         
@@ -382,17 +372,15 @@ def _magao_process_file(self, filepath, filetype):
         x, y = np.meshgrid(np.arange(dims[1], dtype=np.float32), np.arange(dims[0], dtype=np.float32))
         
         star_flux = [[1]]
-        #check later
        
         cube.reshape([1, cube.shape[0], cube.shape[1]]) #makes a 2D y by x image into a 1 by y by x cube
         parang = angles
         astr_hdrs = np.repeat(None, 1)
-        #what is this for
 
     finally:
         hdulist.close()
 
-    return cube, center, parang, wvs, astr_hdrs, filt_band, prihdr, star_flux
+    return cube, center, parang, wvs, astr_hdrs, prihdr, star_flux
 
 #comes from NIRC2 or maybe P1640, but not GPI
 #def calc_starflux(cube, center):

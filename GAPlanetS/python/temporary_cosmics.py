@@ -71,6 +71,6 @@ def remove_cosmics():
     print("Writing to fits files.")    
     fits.writeto('Cont_clip451_flat_circsymreg_nocosmics.fits', new_cont, header=header_data, overwrite = True)
     fits.writeto('Line_clip451_flat_circsymreg_nocosmics.fits', new_line, header=header_data, overwrite = True)
-    fits.writeto('rotoff_nocosmics.fits', rotoff_line, overwrite = True)
+    #fits.writeto('rotoff_nocosmics.fits', rotoff_line, overwrite = True)
     #fits.writeto('rotoff_nocosmics_cont.fits', rotoff_cont, overwrite = True)
     #fits.writeto('rotoff_nocosmics_line.fits', rotoff_line, overwrite = True)

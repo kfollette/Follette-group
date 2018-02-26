@@ -92,7 +92,7 @@ pro visao_fakes_new, filename, rotoff_fname, contrast, sep, pa=pa, saturated=sat
 
   ;;run KLIP on images with fakes
   if keyword_set(suffix) then begin
-    fname = filename+suffix
+    fname = filename+'_'+suffix
   endif else begin
     fname = filename+'_fakes'
   endelse

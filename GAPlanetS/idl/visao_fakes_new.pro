@@ -9,7 +9,7 @@
 ;  imcube  :   the cube of images into which you'd like to inject fake planets
 ;  rotoffs :   a vector of rotational offsets for these images
 ;  contrast:   contrast between fake planet peak and stellar peak
-;  sep     :   separation, in arcseconds, for the fake planet(s). Can have multiple elements.
+;  sep     :   separation, in pixels, for the fake planet(s). Can have multiple elements.
 ;
 ; INPUT KEYWORDS:
 ;   saturated  :  two element vector [A,B], where A is the value of stellar peak in raw image counts (should be measured from ghost), and B is the desired FWHM
@@ -59,17 +59,17 @@ pro visao_fakes_new, filename, rotoff_fname, contrast, sep, pa=pa, saturated=sat
   endif
 
   ;;convert separation to pixels
-  platescale=0.00798
-  seppix=sep/platescale
+  ;platescale=0.00798
+  ;seppix=sep/platescale
 
   ;;for saturated data, need to inject a gaussian planet with the appropriate brightness
   if keyword_set(saturated) then begin
     fwhm = saturated[1]
-    adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, seppix, pa, fwhm=fwhm
+    adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, sep, pa, fwhm=fwhm
     scale = contrast*saturated[0]
   endif else begin
     ;stop
-    adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, seppix, pa, psf0=imcube
+    adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, sep, pa, psf0=imcube
     scale = contrast
   endelse
 

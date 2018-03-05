@@ -422,9 +422,6 @@ def getPlanet(snrmap, sli, rad, pa, _range):
             if (snrmap[sli][j][i] > planet):
                 planet = snrmap[sli][j][i]
                 
-    print(x)
-    print(y)
-    print(planet)
             
     return planet
 

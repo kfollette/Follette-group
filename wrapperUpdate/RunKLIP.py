@@ -92,6 +92,8 @@ print("  File Path = " + pathToFiles)
 if not os.path.exists(pathToFiles + "_KLIP"):
     os.makedirs(pathToFiles + "_KLIP")
 
+os.chmod(pathToFiles + "_KLIP", 0o777)
+
 iwa = int(sys.argv[2+argnum])
 print("  IWA = " + str(iwa))
 

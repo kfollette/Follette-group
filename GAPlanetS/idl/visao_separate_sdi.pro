@@ -137,7 +137,9 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
 
   ;; add parameters to header
   mkhdr, head_new, Line
-  sxaddpar, head_new, 'FLAT', flat
+  if keyword_set(flat) then begin
+    sxaddpar, head_new, 'FLAT', flat
+  endif
   sxaddpar, head_new, 'EXPTIME', expt[uniq(expt)]
   if not keyword_set(wfe) then wfe='No cut'
   sxaddpar, head_new, 'WFE_CUT', wfe

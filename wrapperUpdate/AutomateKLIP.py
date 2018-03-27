@@ -113,7 +113,8 @@ print()
 
 if not os.path.exists(pathToFiles + "_KLIP"):
     os.makedirs(pathToFiles + "_KLIP")
- 
+    os.chmod(pathToFiles + "_KLIP", 0o777)
+
 print("Parameters to explore:")
 
 annuli2_start = int(sys.argv[5+argnum])
@@ -301,7 +302,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 planetSNRs = []
                 
                 for x in range (len(ra)):
-                    planetSNRs.append(snr.getPlanet(snrmap, ra[x], pa[x], int(wid[0]/2)+1))
+                    planetSNRs.append(snr.getPlanet(snrmap, 0, ra[x], pa[x], int(wid[0]/2)+1))
                 
                 planetSNR = np.mean(planetSNRs)
                 

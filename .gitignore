@@ -1,6 +1,7 @@
 #ignore all .pyc files
 *.pyc
 *.class
+*.DS_Store
 automation_parameters.txt
 
 

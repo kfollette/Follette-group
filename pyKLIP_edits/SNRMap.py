@@ -273,8 +273,11 @@ def stdevMap(indiv, planets, fwhm):
     #adds standard deviation to stdevs_ dictionary with radius as the key
     #ignores data points if there are too few at a certain radius to take a standard deviation. These pixels will eventually become nans
     for r in radialProfs.keys():
-        try: 
-            stdevs_[r]= np.nanstd(radialProfs[r])/(1+fwhm/((2*math.pi*r)))*.5
+        try:
+            if (len(radialProfs[r]) > 8):
+                stdevs_[r]= np.nanstd(radialProfs[r])/(1+fwhm/(2*math.pi*r))**.5
+                #stdevs_[r]= np.nanstd(radialProfs[r])  
+                
         except: 
             pass
         
@@ -316,52 +319,72 @@ def create_map(filename, fwhm, planets = None, saveOutput = True, outputName = N
     #checks data type of 'filename'
     # if 'filename' is a string, assumes it is a filepath and reads in file
     if(isinstance(filename, str)):
-        indiv = read_file(filename)
+        inp = read_file(filename)
         
     #if data type is not a string, reads in python object holding data
     else:
-        indiv = filename
+        inp = filename
+        
+    
         
     #creates dictionary holding the standard deviation of pixlel values at each radius 
-    stdMap = stdevMap(indiv, planets, fwhm)
+    #stdMap = stdevMap(inp, planets, fwhm)
   
     #gets size of pixel value array
-    xDim, yDim = np.shape(indiv)  
+    try:
+        zDim, yDim, xDim = np.shape(inp)  
+    except:
+        yDim, xDim = np.shape(inp)
+        zDim = 1
+        
     global XCenter
     global YCenter 
     XCenter = (xDim-1)/2
     YCenter = (yDim-1)/2
+    
+    Output = np.zeros((zDim,yDim,xDim))
 
-    #loops through all pixels in array
-    for x in range (xDim): 
-        for y in range (yDim):
-            
-            #converts indeces to polar coordinates
-            radius, angle = toPolar(x,y,)
-            
-            #use for debugging if you want to see where the mask is:
-            #if (isPlanet(radius, angle, planets)):
-                #indiv[x][y] = np.nan
-           
-            #if enough pixels have been found to calculate a standard deviation for this pixels radius, the pixel value is divided by the standard deviation of pixels at that radius
-            try:
-                #if statement prevents a divide by zero warning message
-                if (stdMap[radius] == 0):
+    for s in range (zDim):
+        try:
+            indiv = inp[s,:,:]
+        except:
+            indiv = inp
+        #creates dictionary holding the standard deviation of pixlel values at each radius 
+        stdMap = stdevMap(indiv, planets, fwhm)
+        #loops through all pixels in array
+        for x in range (xDim): 
+            for y in range (yDim):
+
+                #converts indeces to polar coordinates
+                radius, angle = toPolar(x,y)
+
+                #use for debugging if you want to see where the mask is:
+                #if (isPlanet(radius, angle, planets)):
+                    #indiv[x][y] = np.nan
+
+                #if enough pixels have been found to calculate a standard deviation for this pixels radius, the pixel value is divided by the standard deviation of pixels at that radius
+                try:
+                    #if statement prevents a divide by zero warning message
+                    if (stdMap[radius] == 0):
+                        indiv[x][y] = np.nan
+             
+                    else:
+                        indiv[x][y] = indiv[x][y]/stdMap[radius]
+
+                    #debugging step to show noise map:
+                        #indiv[x][y] = stdMap[radius]
+
+
+                #if no standard deviation has been calculated, pixel is given a nan value
+                except:
                     indiv[x][y] = np.nan
-                else:
-                    indiv[x][y] = indiv[x][y]/stdMap[radius]
-                
-                #debugging step to show noise map:
-                #indiv[x][y] = stdMap[radius]
-     
-     
-            #if no standard deviation has been calculated, pixel is given a nan value
-            except:
-                indiv[x][y] = np.nan
+
+                     
+        Output[s,:,:] = indiv
     
     #saves output to disk if saveOutput designated True
     if (saveOutput == True):
-        hdu = fits.PrimaryHDU(indiv)
+        hdu = fits.PrimaryHDU(Output)
         hdulist = fits.HDUList([hdu])
         newname = str(nameOutput(filename, outputName))
         hdulist.writeto(newname, overwrite=True)
@@ -369,15 +392,19 @@ def create_map(filename, fwhm, planets = None, saveOutput = True, outputName = N
 
 
     #returns final SNR map            
-    return indiv
+    return Output
     
     
 
 
 
-def getPlanet(snrmap, rad, pa, _range):
+def getPlanet(snrmap, sli, rad, pa, _range):
     
-    xDim, yDim = np.shape(snrmap)
+    try:
+        zDim, yDim, xDim = np.shape(snrmap)  
+    except:
+        yDim, xDim = np.shape(snrmap)
+        zDim = 1
     global XCenter
     global YCenter
     XCenter = (xDim-1)/2
@@ -385,20 +412,25 @@ def getPlanet(snrmap, rad, pa, _range):
 
     x = int(rad*math.cos(math.radians(pa+90))+XCenter)
     y = int(rad*math.sin(math.radians(pa+90))+YCenter)
+    
 
 
     planet = -100000000
    
     for i in range (x-_range, x+_range):
         for j in range (y-_range, y+_range):
-            if (snrmap[i][j] > planet):
-                planet = snrmap[i][j]
+            if (snrmap[sli][j][i] > planet):
+                planet = snrmap[sli][j][i]
+                
+    print(x)
+    print(y)
+    print(planet)
             
     return planet
 
 
 
-#print(getPlanet('med_HD142527_8Apr14short_SDI_a7m3-5KLmodes.fits', 220, 215, 10))
+
 
 
 

@@ -9,7 +9,7 @@
 ;  imcube  :   the cube of images into which you'd like to inject fake planets
 ;  rotoffs :   a vector of rotational offsets for these images
 ;  contrast:   contrast between fake planet peak and stellar peak
-;  sep     :   separation, in arcseconds, for the fake planet(s). Can have multiple elements.
+;  sep     :   separation, in pixels, for the fake planet(s). Can have multiple elements.
 ;
 ; INPUT KEYWORDS:
 ;   saturated  :  two element vector [A,B], where A is the value of stellar peak in raw image counts (should be measured from ghost), and B is the desired FWHM
@@ -32,10 +32,11 @@
 ;-
 
 
-pro visao_fakes, filename, rotoffs, contrast, sep, pa=pa, saturated=saturated, $
-  nplanets=nplanets, klipparams=klipparams, fixpix=fixpix
+pro visao_fakes_new, filename, rotoff_fname, contrast, sep, pa=pa, saturated=saturated, $
+  nplanets=nplanets, klipparams=klipparams, fixpix=fixpix, suffix=suffix
 
-  imcube = readfits(filename, head)
+  imcube = readfits(filename+'.fits', head)
+  rotoffs = readfits(rotoff_fname+'.fits')
   
   dim1=(size(imcube))[1]
   dim2=(size(imcube))[2]
@@ -58,17 +59,17 @@ pro visao_fakes, filename, rotoffs, contrast, sep, pa=pa, saturated=saturated, $
   endif
 
   ;;convert separation to pixels
-  platescale=0.00798
-  seppix=sep/platescale
+  ;platescale=0.00798
+  ;seppix=sep/platescale
 
   ;;for saturated data, need to inject a gaussian planet with the appropriate brightness
   if keyword_set(saturated) then begin
     fwhm = saturated[1]
-    adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, seppix, pa, fwhm=fwhm
+    adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, sep, pa, fwhm=fwhm
     scale = contrast*saturated[0]
   endif else begin
-    stop
-    adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, seppix, pa, psf0=imcube
+    ;stop
+    adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, sep, pa, psf0=imcube
     scale = contrast
   endelse
 
@@ -90,16 +91,18 @@ pro visao_fakes, filename, rotoffs, contrast, sep, pa=pa, saturated=saturated, $
   endelse
 
   ;;run KLIP on images with fakes
+  if keyword_set(suffix) then begin
+    fname = filename+'_'+suffix
+  endif else begin
+    fname = filename+'_fakes'
+  endelse
+  
+  sxaddpar, head, 'PAS', '['+strjoin(string(pa), ',')+']'
+  sxaddpar, head, 'SEPS', '['+strjoin(string(sep), ',')+']'
+  sxaddpar, head, 'CONTRAST', contrast
 
-  fname = filename[:-5] + '_fakes'
-
-  sxaddpar, head_new, 'PAS', pa
-  sxaddpar, head_new, 'SEPS', sep
-  sxaddpar, head_new, 'CONTRAST', contrast
-
-  writefits, filename+'.fits', inim, head_new
+  writefits, fname+'.fits', inim, head
   
   ;pca_regions, finim, inim, rotoffs+50-0.59, rotmask, rzone, azzone, [1,2,3,4,5,10,20,50,100], minrad=minrad, fitsfile=string(fname)+'.fits'
 
-  stop
 end

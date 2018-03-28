@@ -5,15 +5,17 @@ import sys
 s3 = boto3.resource('s3')
 bucket = s3.Bucket('ac-follettelab')
 try:
-    dirname = sys.argv[1]
+    dirname = sys.argv[1]+'/'
 except:
     dirname = ''
-if(dirname  == 'options'):
+if(dirname  == 'options/'):
     dirname = ''
 
-dirs = ()
+dirs = []
+if(dirname == ''):
+    print('options:' )
 
-for obj in bucket.objects.filter(Prefix = 'follette-lab/cloud/input/' +dirname + '/'):
+for obj in bucket.objects.filter(Prefix = 'follette-lab/cloud/input/' +dirname):
     filename = obj.key.rsplit('/')
 
     if (dirname == ''):

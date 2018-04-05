@@ -13,26 +13,27 @@ psf2[0] = psf
 
 # setup FM guesses
 # You should change these to be suited to your data!
-numbasis = np.array([100]) # KL basis cutoffs you want to try
-guesssep = 13 # estimate of separation in pixels
+numbasis = np.array([50]) # KL basis cutoffs you want to try
+guesssep = 10 # estimate of separation in pixels
 guesspa = 120 # estimate of position angle, in degrees
 guessflux = 1e-2 # estimated contrast
-dn_per_contrast = 2.38 # factor to scale PSF to star PSF. For GPI, this is dataset.dn_per_contrast
-#guessspec # should be 1-D array with number of elements = np.size(np.unique(dataset.wvs))
+dn_per_contrast = np.zeros((dataset.input.shape[0]))
+for i in range (dn_per_contrast.shape[0]):
+    dn_per_contrast[i] = 238.095 # factor to scale PSF to star PSF. For GPI, this is dataset.dn_per_contrast
+guessspec = np.array([1]) # should be 1-D array with number of elements = np.size(np.unique(dataset.wvs))
 
 # initialize the FM Planet PSF class
 import pyklip.fmlib.fmpsf as fmpsf
-fm_class = fmpsf.FMPlanetPSF(dataset.input.shape, numbasis, guesssep, guesspa, guessflux, psf2, np.unique(dataset.wvs), dn_per_contrast, star_spt='A6')
-#spectrallib=[guessspec])
+fm_class = fmpsf.FMPlanetPSF(dataset.input.shape, numbasis, guesssep, guesspa, guessflux, psf2, np.unique(dataset.wvs), dn_per_contrast, star_spt='A6', spectrallib=[guessspec])
 
 # PSF subtraction parameters
 # You should change these to be suited to your data!
 outputdir = "/Users/awatson18/Desktop/BKA_output" # where to write the output files
 prefix = "HD142527_8Apr14_Line_test1" # fileprefix for the output files
-annulus_bounds = [[guesssep-15, guesssep+15]] # one annulus centered on the planet
+annulus_bounds = [[2, 25]] # one annulus centered on the planet
 subsections = 1 # we are not breaking up the annulus
 padding = 0 # we are not padding our zones
-movement = 9 # we are using an conservative exclusion criteria of 4 pixels
+movement = 8 
 
 # run KLIP-FM
 import pyklip.fm as fm

@@ -37,7 +37,7 @@ pro visao_fakes_new, filename, rotoff_fname, contrast, sep, pa=pa, saturated=sat
 
   imcube = readfits(filename+'.fits', head)
   rotoffs = readfits(rotoff_fname+'.fits')
-  
+
   dim1=(size(imcube))[1]
   dim2=(size(imcube))[2]
 
@@ -64,45 +64,57 @@ pro visao_fakes_new, filename, rotoff_fname, contrast, sep, pa=pa, saturated=sat
 
   ;;for saturated data, need to inject a gaussian planet with the appropriate brightness
   if keyword_set(saturated) then begin
-    fwhm = saturated[1]
-    adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, sep, pa, fwhm=fwhm
-    scale = contrast*saturated[0]
-  endif else begin
-    ;stop
-    adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, sep, pa, psf0=imcube
-    scale = contrast
-  endelse
+  fwhm = saturated[1]
+    if n_elements(contrast) eq 1 then begin
+      adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, sep, pa, fwhm=fwhm
+      scale = contrast*saturated[0]
+      inim=imcube+scale*fakes
+    endif else begin
+      print, 'multiple contrast loop'
+      numplanets = n_elements(contrast)
+      fakes=dblarr(dim1,dim2,(size(imcube))[3])
+      for i=0, numplanets-1 do begin
+        adi_psfmodel, fakepls, dim1, dim2, rotoffs+90-0.59, sep[i], pa[i], fwhm=fwhm
+        print, contrast[i]
+        fakes=fakes+fakepls*contrast[i]
+      endfor
+      writefits, 'test_fakes.fits', fakes
+      inim=imcube+fakes
+    endelse
+  endif
+
+  if not keyword_set(saturated) then begin
+    if n_elements(contrast) eq 1 then begin
+      adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, sep, pa, psf0=imcube
+      scale = contrast
+      inim=imcube+scale*fakes
+    endif else begin
+      numplanets = n_elements(contrast)
+      fakes=dblarr(dim1,dim2,(size(imcube))[3])
+      for i=0, numplanets-1 do begin
+        adi_psfmodel, fakepls, dim1, dim2, rotoffs+90-0.59, sep[i], pa[i], psf0=imcube
+        fakes=fakes+fakepls*contrast[i]
+      endfor
+      writefits, 'test_fakes.fits', fakes
+      inim=imcube+fakes
+    endelse
+  endif
 
   ;;inject fake planets into image cube
-  inim=imcube+scale*fakes
 
-  ;;define KLIP parameters
-  if keyword_set(klip) then begin
-    rzone=klipparams[0]
-    azzone=klipparams[1]
-    rotmask=klipparams[2]
-    minrad=klipparams[3]
-  endif else begin
-    ;;apply default klip parameters
-    minrad = 10
-    rzone=dim1/2-minrad
-    azzone=360
-    rotmask=1
-  endelse
 
-  ;;run KLIP on images with fakes
   if keyword_set(suffix) then begin
     fname = filename+'_'+suffix
   endif else begin
     fname = filename+'_fakes'
   endelse
-  
+
   sxaddpar, head, 'PAS', '['+strjoin(string(pa), ',')+']'
   sxaddpar, head, 'SEPS', '['+strjoin(string(sep), ',')+']'
-  sxaddpar, head, 'CONTRAST', contrast
+  sxaddpar, head, 'CONTRAST', '['+strjoin(string(contrast), ',')+']'
 
   writefits, fname+'.fits', inim, head
-  
+
   ;pca_regions, finim, inim, rotoffs+50-0.59, rotmask, rzone, azzone, [1,2,3,4,5,10,20,50,100], minrad=minrad, fitsfile=string(fname)+'.fits'
 
 end

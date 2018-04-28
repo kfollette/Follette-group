@@ -113,7 +113,8 @@ print()
 
 if not os.path.exists(pathToFiles + "_KLIP"):
     os.makedirs(pathToFiles + "_KLIP")
- 
+    os.chmod(pathToFiles + "_KLIP", 0o777)
+
 print("Parameters to explore:")
 
 annuli2_start = int(sys.argv[5+argnum])

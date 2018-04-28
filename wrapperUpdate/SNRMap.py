@@ -3,12 +3,13 @@ import math
 import statistics as stat 
 from astropy.io import fits
 import matplotlib.pyplot as plt
+import astropy.convolution as conv
 import os
 import sys
 import time 
 
-XCenter = 224.5
-YCenter = 224.5
+#XCenter = 224.5
+#YCenter = 224.5
 
 def nameOutput(filename, output):
     
@@ -48,6 +49,11 @@ def read_file(filename):
     indivData = hdulist[0].data
     hdulist.close()
     print("Read " + filename  + " in to memory")
+    #temporary test begins here - remove to keyword with tunable FWHM and separate smoothing function if works
+    gauss = conv.Gaussian2DKernel(stddev=2)
+    smindivData =conv.convolve(indivData, gauss)
+    indivData = smindivData
+    #end test
     return indivData
 
 

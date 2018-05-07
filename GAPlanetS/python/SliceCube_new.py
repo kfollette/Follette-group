@@ -5,7 +5,7 @@ from astropy.io import fits
 import os
 import numpy as np
 
-def slice(filename, output='sliced', rotoff='rotoff_preproc.fits'):
+def slice(filename, output='sliced', rotoff='rotoff_nocosmics.fits'):
     #os.chdir(str(filepath))
     hdulist = fits.open(str(filename))
     cube = hdulist[0].data
@@ -21,6 +21,7 @@ def slice(filename, output='sliced', rotoff='rotoff_preproc.fits'):
     if not os.path.exists(str(output)):
         os.makedirs(str(output))
 
+    current = os.getcwd
     os.chdir(str(output))
     if len(cube) != len(rotoffs):
         print(len(cube),len(rotoffs))
@@ -41,5 +42,6 @@ def slice(filename, output='sliced', rotoff='rotoff_preproc.fits'):
             print("Sliced image " + str(z+1))
 
     print("Done slicing")
+    os.chdir(current)
 
 

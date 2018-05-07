@@ -17,7 +17,7 @@ def readFitsCubeToArray(filename):
     print("read fits file into data")
     medianImage = np.nanmedian(original, axis=0)
     data = medianImage
-    fits.writeto("test_median.fits",data,overwrite=True)
+    #fits.writeto("test_median.fits",data,overwrite=True)
     print("created median")
     return original, data
 
@@ -119,9 +119,9 @@ def ghostIsolation(filename, gx, gy, amp, wid, power):
     medianImage = np.nanmedian(original, axis=0)
     data = medianImage
     print("created median after shifting")
-    maskedArray2, a, b = makeSquare(foundX,foundY,data,"test_square2.fits")
-    normalizeSquare(maskedArray2)
-    fits.writeto("test_final.fits", maskedArray2, overwrite=True)
+    maskedArray2, a, b = makeSquare(foundX,foundY,data,"ghost.fits")
+    #normalizeSquare(maskedArray2)
+    #fits.writeto("test_final.fits", maskedArray2, overwrite=True)
     
     '''
     with open("moffat.txt","w") as text_file:

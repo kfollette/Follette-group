@@ -118,5 +118,5 @@ pro visao_fakes_new, filename, rotoff_fname, contrast, sep, pa=pa, saturated=sat
   writefits, fname+'.fits', inim, head
 
   ;pca_regions, finim, inim, rotoffs+50-0.59, rotmask, rzone, azzone, [1,2,3,4,5,10,20,50,100], minrad=minrad, fitsfile=string(fname)+'.fits'
-stop
+
 end

@@ -27,7 +27,8 @@
 ;
 ;
 ; HISTORY:
-;  Written June 2016
+;  Written June 2016 by KBF
+;  Modified April 2018 by KBF to accommodate multiple contrast values
 ;
 ;-
 
@@ -86,8 +87,9 @@ pro visao_fakes_new, filename, rotoff_fname, contrast, sep, pa=pa, saturated=sat
   if not keyword_set(saturated) then begin
     if n_elements(contrast) eq 1 then begin
       adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, sep, pa, psf0=imcube
-      scale = contrast
+      scale = contrast[0]
       inim=imcube+scale*fakes
+      writefits, 'test_fakes.fits', fakes
     endif else begin
       numplanets = n_elements(contrast)
       fakes=dblarr(dim1,dim2,(size(imcube))[3])
@@ -116,5 +118,5 @@ pro visao_fakes_new, filename, rotoff_fname, contrast, sep, pa=pa, saturated=sat
   writefits, fname+'.fits', inim, head
 
   ;pca_regions, finim, inim, rotoffs+50-0.59, rotmask, rzone, azzone, [1,2,3,4,5,10,20,50,100], minrad=minrad, fitsfile=string(fname)+'.fits'
-
+stop
 end

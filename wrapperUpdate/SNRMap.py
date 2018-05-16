@@ -8,9 +8,6 @@ import os
 import sys
 import time 
 
-#XCenter = 224.5
-#YCenter = 224.5
-
 def nameOutput(filename, output):
     
     if (output == None):
@@ -49,11 +46,6 @@ def read_file(filename):
     indivData = hdulist[0].data
     hdulist.close()
     print("Read " + filename  + " in to memory")
-    #temporary test begins here - remove to keyword with tunable FWHM and separate smoothing function if works
-    gauss = conv.Gaussian2DKernel(stddev=2)
-    smindivData =conv.convolve(indivData, gauss)
-    indivData = smindivData
-    #end test
     return indivData
 
 
@@ -255,7 +247,6 @@ def stdevMap(indiv, planets, fwhm):
     #finds the size of the image
     xDim, yDim = np.shape(indiv)
 
-  
     
     #loops through every pixel in the image
     for x in range (xDim): 
@@ -330,9 +321,13 @@ def create_map(filename, fwhm, planets = None, saveOutput = True, outputName = N
     #if data type is not a string, reads in python object holding data
     else:
         inp = filename
-        
     
-        
+    #temporary test begins here - remove to keyword with tunable FWHM and separate smoothing function if works
+    gauss = conv.Gaussian2DKernel(stddev=2)
+    inpsm =conv.convolve(inp, gauss)
+    inp = inpsm
+    #end test 
+    
     #creates dictionary holding the standard deviation of pixlel values at each radius 
     #stdMap = stdevMap(inp, planets, fwhm)
   

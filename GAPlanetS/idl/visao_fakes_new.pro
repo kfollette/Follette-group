@@ -97,7 +97,7 @@ pro visao_fakes_new, filename, rotoff_fname, contrast, sep, pa=pa, saturated=sat
         adi_psfmodel, fakepls, dim1, dim2, rotoffs+90-0.59, sep[i], pa[i], psf0=imcube
         fakes=fakes+fakepls*contrast[i]
       endfor
-      writefits, 'test_fakes.fits', fakes
+      ;writefits, 'test_fakes.fits', fakes
       inim=imcube+fakes
     endelse
   endif

@@ -17,6 +17,7 @@ rotname = input()
 os.chdir(str(dir))
 hdulist = fits.open(str(fname))
 cube = hdulist[0].data
+prihdr = hdulist[0].header
 hdulist.close()
 dim = cube.shape[1]
 
@@ -39,8 +40,8 @@ else:
                 newFITS[y][x] = cube[z][y][x]
         hdu = fits.PrimaryHDU(newFITS)
         hdulist = fits.HDUList([hdu])
-        prihdr = hdulist[0].header
         prihdr.set('rotoff', str(rotoffs[z]))
+        hdulist[0].header = prihdr
         hdulist.writeto("sliced_"+str(z+1)+".fits", clobber=True)
         print("Sliced image " + str(z+1))
 

@@ -33,11 +33,12 @@ def slice(filename, output='sliced', rotoff='rotoff_nocosmics.fits'):
             for y in range(dim):
                 for x in range(dim):
                     newFITS[y][x] = cube[z][y][x]
-            hdu = fits.PrimaryHDU(newFITS)
+            hdu = fits.PrimaryHDU(cube)
             hdulist = fits.HDUList([hdu])
-            prihdr = hdulist[0].header
-            prihdr.set('rotoff', str(rotoffs[z]))
-            prihdr.set('WLENGTH', wv)
+            #prihdr = hdulist[0].header
+            header.set('rotoff', str(rotoffs[z]))
+            header.set('WLENGTH', wv)
+            hdulist[0].header = header
             hdulist.writeto("sliced_"+str(z+1)+".fits", clobber=True)
             print("Sliced image " + str(z+1))
 

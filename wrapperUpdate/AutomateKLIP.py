@@ -27,18 +27,19 @@ from astropy.utils.exceptions import AstropyWarning
 
 warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
+
 ##################################################################
 #############                                        #############
 #############               SAVE FILES               #############
 #############                                        #############
 ################################################################## 
  
-def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klmodes, mask = None, pre = '', suff = ""):    
+def writeData(indiv, filepath, filename, prihdr, annuli, movement, subsections, iwa, klmodes, mask = None, pre = '', suff = ""):    
     #function writes out fits files and writes important information to fits headers
     
     hdu = fits.PrimaryHDU(indiv)
     hdulist = fits.HDUList([hdu])
-    prihdr = hdulist[0].header
+    #prihdr = hdulist[0].header
     
     #creates new strings to add parameter information to file names
     annuli2 = annuli
@@ -77,6 +78,8 @@ def writeData(indiv, filepath, filename, annuli, movement, subsections, iwa, klm
         prihdr.set('mask_rad', str(rad))
         prihdr.set('mask_pa', str(pa))
         prihdr.set('mask_wid', str(wid))
+   
+    hdulist[0].header = prihdr
     
     #writes out files
     hdulist.writeto(str(filepath) + "_KLIP/" + str(pre)  + filename + "_a" + str(annuli2) + "m" + str(movement2) + "s" + str(subsections2) + "iwa" + str(iwa)  + str(suff) + '_KLmodes-all.fits', clobber=True)
@@ -212,6 +215,12 @@ print("reading: " + pathToFiles + "/*.fits")
 
 print()
 
+#grab header
+hdulist = fits.open(pathToFiles + '/sliced_1.fits')
+prihdr = hdulist[0].header
+hdulist.close()
+prihdr['rotoff'] = None 
+
 filelist = glob.glob(pathToFiles + '/*.fits')
 dataset = MagAO.MagAOData(filelist)
 #set iwa
@@ -312,11 +321,11 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                                           
             #write median combination cube to disk 
             print("Writing median image combinations to " + pathToFiles + "_KLIP/")
-            writeData(cube, pathToFiles, outputFileName, a, m, s, iwa, klmodes, mask = None, pre = 'med_', suff = outSuff)
+            writeData(cube, pathToFiles, outputFileName, prihdr, a, m, s, iwa, klmodes, mask = None, pre = 'med_', suff = outSuff)
             print()
             if (saveSNR):
                 print("Writing SNR maps to " + pathToFiles + "_KLIP/")
-                writeData(snrMapCube, pathToFiles, outputFileName, a, m, s, iwa, klmodes, mask = mask, pre = 'SNRMap_')
+                writeData(snrMapCube, pathToFiles, outputFileName, prihdr, a, m, s, iwa, klmodes, mask = mask, pre = 'SNRMap_')
             scount+=1
         mcount+=1
     acount+=1
@@ -325,7 +334,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
          
 print("Writing average SNR values to " + pathToFiles + "_KLIP/")    
 #write snr cube to disk 
-writeData(snrCube, pathToFiles, outputFileName, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'paramexplore_')
+writeData(snrCube, pathToFiles, outputFileName, prihdr, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'paramexplore_')
 
 print()
 print("KLIP automation complete")  

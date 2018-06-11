@@ -39,7 +39,7 @@ def writeData(indiv, filepath, filename, prihdr, annuli, movement, subsections, 
     
     hdu = fits.PrimaryHDU(indiv)
     hdulist = fits.HDUList([hdu])
-    #prihdr = hdulist[0].header
+ 
     
     #creates new strings to add parameter information to file names
     annuli2 = annuli

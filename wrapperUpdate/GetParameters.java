@@ -514,12 +514,12 @@ public class GetParameters{
 	JLabel start = new JLabel("Start");
         start.setForeground(Color.white);
         start.setSize(100,50);
-        start.setLocation(178,-10);
+        start.setLocation(178-9,-10);
         
     JLabel stop = new JLabel("Stop");
         stop.setForeground(Color.white);
         stop.setSize(100,50);
-        stop.setLocation(178+50,-10);
+        stop.setLocation(178+50-9,-10);
         
     JLabel inc = new JLabel("Increment");
         inc.setForeground(Color.white);
@@ -578,25 +578,39 @@ public class GetParameters{
         s3.setLocation(300-30-10,63+10+17);
 	
 
-	JLabel output1 = new JLabel("Output Filename");
+	JLabel output1 = new JLabel("Output File Name");
         output1.setForeground(Color.white);
         output1.setSize(225,40);
-        output1.setLocation(266,173);
+        //output1.setLocation(266,173);
+        output1.setLocation(266+4,117);
 
         output2 = new JTextField("star_date_set");
         output2.setBackground(Color.white);
-        output2.setSize(130,30);
-        output2.setLocation(256,202);
+        output2.setSize(130-10,30);
+        //output2.setLocation(256,202);
+        output2.setLocation(256+10,147);
+        
+        JLabel smooth1 = new JLabel("Smoothing Value");
+        smooth1.setForeground(Color.white);
+        smooth1.setSize(225,40);
+        smooth1.setLocation(266+5,173);
+        //smooth1.setLocation(266+4,117);
+
+        final JTextField smooth2 = new JTextField("2.0");
+        smooth2.setBackground(Color.white);
+        smooth2.setSize(130-10,30);
+        smooth2.setLocation(256+10,202);
+        //smooth2.setLocation(256+10,147);
 
         JLabel filepath1 = new JLabel("Path to Desired Directory");
         filepath1.setForeground(Color.white);
         filepath1.setSize(200,40);
-        filepath1.setLocation(118,117);
+        filepath1.setLocation(118-10-35,117);
 
         filepath2 = new JTextField("example/star_name/date/sliced");
         filepath2.setBackground(Color.white);
-        filepath2.setSize(325,30);
-        filepath2.setLocation(58,147);
+        filepath2.setSize(325-109,30);
+        filepath2.setLocation(58-13,147);
 
         snr = new JCheckBox("SNR Analysis");
         snr.setLocation(135,235);
@@ -606,7 +620,7 @@ public class GetParameters{
 
         final JButton searcher = new JButton("!");
         searcher.setSize(20,20);
-        searcher.setLocation(25, 152);
+        searcher.setLocation(25-6, 152);
         searcher.setOpaque(true);
         searcher.setForeground(Color.blue);
         searcher.addActionListener(new ActionListener()
@@ -665,23 +679,23 @@ public class GetParameters{
 	final JLabel FWHM1 = new JLabel("FWHM");
         FWHM1.setForeground(Color.white);
         FWHM1.setSize(100,40);
-        FWHM1.setLocation(196,173);
+        FWHM1.setLocation(196+7,173);
 
         final JTextField FWHM2 = new JTextField("5");
         FWHM2.setBackground(Color.white);
         FWHM2.setSize(70,30);
-        FWHM2.setLocation(182,202);
+        FWHM2.setLocation(182+4+3,202);
 
 
 	JLabel klmodes1 = new JLabel("KL Modes");
         klmodes1.setForeground(Color.white);
         klmodes1.setSize(100,40);
-        klmodes1.setLocation(92,173);
+        klmodes1.setLocation(92+4,173);
 
         klmodes2 = new JTextField("1,5,10,50,100");
         klmodes2.setBackground(Color.white);
         klmodes2.setSize(110,30);
-        klmodes2.setLocation(68,202);
+        klmodes2.setLocation(68+2+2,202);
 
 	JLabel planets = new JLabel("Planet Locations:");
         planets.setForeground(Color.white);
@@ -770,6 +784,8 @@ public class GetParameters{
         frame.getContentPane().add(IWA2);
         frame.getContentPane().add(FWHM1);
         frame.getContentPane().add(FWHM2);
+        frame.getContentPane().add(smooth1);
+        frame.getContentPane().add(smooth2);
 	frame.getContentPane().add(save2);
 
 

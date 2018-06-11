@@ -81,7 +81,7 @@ public class GetParameters{
     public static void singleReduction() throws FileNotFoundException{
 	final JFrame frame = new JFrame("Single KLIP Reduction"); 
         frame.setIconImage(new ImageIcon("pyklip_logo.png").getImage());
-        frame.setSize(400,400);
+        frame.setSize(400,490);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setBackground(Color.black);
@@ -152,73 +152,86 @@ public class GetParameters{
 	JLabel annuli1 = new JLabel("Annuli");
         annuli1.setForeground(Color.white);
         annuli1.setSize(100,40);
-        annuli1.setLocation(90+40,20+73-8);
+        annuli1.setLocation(90+40+3,20+73-8+4);
 
         annuli2 = new JTextField("9");
         annuli2.setBackground(Color.white);
         annuli2.setSize(80,30);
-        annuli2.setLocation(86+26,50+73-8);
+        annuli2.setLocation(86+26+2,50+73-8+4);
 
 	JLabel IWA1 = new JLabel("IWA");
 	IWA1.setForeground(Color.white);
         IWA1.setSize(100,40);
-	IWA1.setLocation(30+18,20+73-8);
+	IWA1.setLocation(30+18+2,20+73-8+4);
 
 	IWA2 = new JTextField("10");
 	IWA2.setBackground(Color.white);
 	IWA2.setSize(80,30);
-        IWA2.setLocation(20,50+73-8);
+        IWA2.setLocation(20+2,50+73-8+4);
 
 	JLabel movement1 = new JLabel("Movement");
         movement1.setForeground(Color.white);
         movement1.setSize(100,40);
-        movement1.setLocation(132+79,20+73-8);
+        movement1.setLocation(132+79+2,20+73-8+4);
 
         movement2 = new JTextField("2.5");
         movement2.setBackground(Color.white);
         movement2.setSize(80,30);
-        movement2.setLocation(135+69,50+73-8);
+        movement2.setLocation(135+69+2,50+73-8+4);
 	
 	JLabel klmodes1 = new JLabel("KL Modes");
         klmodes1.setForeground(Color.white);
         klmodes1.setSize(100,40);
-        klmodes1.setLocation(128,90+59-9);
+        klmodes1.setLocation(128-40-1,90+59-9+1);
 
         klmodes2 = new JTextField("1,5,10,20,50,100");
         klmodes2.setBackground(Color.white);
         klmodes2.setSize(130,30);
-        klmodes2.setLocation(95,120+59-9);
+        klmodes2.setLocation(95-40-1,120+59-9+1);
 
 	JLabel subsections1 = new JLabel("Subsections");
         subsections1.setForeground(Color.white);
         subsections1.setSize(100,40);
-        subsections1.setLocation(299,93-8);
+        subsections1.setLocation(299+2,93-8+4);
 
         subsections2 = new JTextField("1");
         subsections2.setBackground(Color.white);
         subsections2.setSize(80,30);
-        subsections2.setLocation(297,123-8);
+        subsections2.setLocation(297+2,123-8+4);
 
 	JLabel output1 = new JLabel("Output Filename");
         output1.setForeground(Color.white);
         output1.setSize(200,40);
-        output1.setLocation(256,90+59-9);
+        output1.setLocation(256-40+1,90+59-9+1);
 
         output2 = new JTextField("star_date_set");
         output2.setBackground(Color.white);
         output2.setSize(150,30);
-        output2.setLocation(234,120+59-9);
+        output2.setLocation(234-40+1,120+59-9+1);
         
         final JLabel FWHM1 = new JLabel("FWHM");
         FWHM1.setForeground(Color.white);
         FWHM1.setSize(100,40);
-        FWHM1.setLocation(27,140);
+        FWHM1.setLocation(28+78+6,140+122);
 
         final JTextField FWHM2 = new JTextField("5");
         FWHM2.setBackground(Color.white);
-        FWHM2.setSize(70,30);
-        FWHM2.setLocation(15,170);
+        FWHM2.setSize(70+8,30);
+        FWHM2.setLocation(15+78,170+122);
         FWHM2.setEnabled(false);
+        
+        JLabel smooth1 = new JLabel("Smoothing Value");
+        smooth1.setForeground(Color.white);
+        smooth1.setSize(225,40);
+        smooth1.setLocation(266+5-83,262);
+  
+
+        final JTextField smooth2 = new JTextField("2.0");
+        smooth2.setBackground(Color.white);
+        smooth2.setSize(130-10,30);
+        smooth2.setLocation(256-74,292);
+        smooth2.setEnabled(false);
+
 
 	JLabel filepath1 = new JLabel("Path to Desired Directory");
         filepath1.setForeground(Color.white);
@@ -234,35 +247,35 @@ public class GetParameters{
     wid2 = new JTextField("10,15");
         wid2.setBackground(Color.white);
         wid2.setSize(100,30);
-        wid2.setLocation(300-30,291);
+        wid2.setLocation(300-30-2,291+50+29);
         wid2.setEnabled(false);
         
     pa2 = new JTextField("120");
         pa2.setBackground(Color.white);
         pa2.setSize(100,30);
-        pa2.setLocation(148,291);
+        pa2.setLocation(148+1,291+50+29);
         pa2.setEnabled(false);
         
     rad2 = new JTextField("13");
         rad2.setBackground(Color.white);
         rad2.setSize(100,30);
-        rad2.setLocation(25,291);
+        rad2.setLocation(25+4,291+50+29);
         rad2.setEnabled(false);
         
     JLabel widL = new JLabel("Width");
         widL.setForeground(Color.white);
         widL.setSize(100,40);
-        widL.setLocation(300,261);
+        widL.setLocation(300-1,261+50+29);
 
     JLabel paL = new JLabel("Position Angle");
         paL.setForeground(Color.white);
         paL.setSize(100,40);
-        paL.setLocation(151,261);
+        paL.setLocation(152,261+50+29);
         
     JLabel radL = new JLabel("Radius");
         radL.setForeground(Color.white);
         radL.setSize(100,40);
-        radL.setLocation(55,261);    
+        radL.setLocation(56,261+50+29);    
 
 	snr = new JCheckBox("Create SNR Map");
 	snr.setLocation(28,196);
@@ -276,12 +289,14 @@ public class GetParameters{
                 pa2.setEnabled(true);
                 wid2.setEnabled(true);
                 FWHM2.setEnabled(true);
+                smooth2.setEnabled(true);
 		    }	
 		    else if (!snr.isSelected()){
                 rad2.setEnabled(false);
                 pa2.setEnabled(false);
                 wid2.setEnabled(false);
                 FWHM2.setEnabled(false);
+                smooth2.setEnabled(false);
 		    }
 		}
 	    });
@@ -295,12 +310,18 @@ public class GetParameters{
         
     JLabel params = new JLabel("KLIP Parameters:");
         params.setForeground(Color.white);
-        params.setSize(190,31);
-        params.setLocation(117,72-7);
-	params.setFont(new Font("Serif", Font.BOLD, 20));
+        params.setSize(190+15,60);
+        params.setLocation(117-17,72-17);
+	params.setFont(new Font("Serif", Font.BOLD, 25));
+        
+    JLabel SNRparams = new JLabel("SNRMap Parameters:");
+        SNRparams.setForeground(Color.white);
+        SNRparams.setSize(190+50,60);
+        SNRparams.setLocation(117-37,72+155);
+	SNRparams.setFont(new Font("Serif", Font.BOLD, 25));
         
     final JCheckBox adi = new JCheckBox("ADI");
-	adi.setLocation(105,345);
+	adi.setLocation(105,345+85);
 	adi.setSize(60,20);
 	adi.setVisible(true);
 	adi.setForeground(Color.white); 
@@ -309,7 +330,7 @@ public class GetParameters{
         
         
     final JCheckBox sdi = new JCheckBox("SDI");
-	sdi.setLocation(155,345);
+	sdi.setLocation(155,345+85);
 	sdi.setSize(60,20);
 	sdi.setVisible(true);
 	sdi.setForeground(Color.white);
@@ -317,7 +338,7 @@ public class GetParameters{
     
         
    final JCheckBox both = new JCheckBox("ADI+SDI");
-	both.setLocation(205,345);
+	both.setLocation(205,345+85);
 	both.setSize(130,20);
 	both.setVisible(true);
 	both.setForeground(Color.white); 
@@ -353,7 +374,7 @@ public class GetParameters{
     JLabel planets2 = new JLabel("Planet Locations:");
         planets2.setForeground(Color.white);
         planets2.setSize(190,30);
-        planets2.setLocation(120,241);
+        planets2.setLocation(120+3,241+50+34);
 	planets2.setFont(new Font("Serif", Font.BOLD, 20));    
 
 	final JButton searcher = new JButton("!");
@@ -374,7 +395,7 @@ public class GetParameters{
 	
 	JButton back = new JButton("<----");
         back.setSize(80,30);
-        back.setLocation(20, 340);
+        back.setLocation(20, 340+87);
         back.setOpaque(true);
         back.setForeground(Color.red);
         back.addActionListener(new ActionListener()
@@ -393,7 +414,7 @@ public class GetParameters{
     final Color DARK_GREEN = new Color(0x00, 0xC0, 0x00);
 	JButton launcher = new JButton("Run KLIP");
 	launcher.setSize(80,32);
-	launcher.setLocation(300,339);
+	launcher.setLocation(300,339+87);
 	launcher.setOpaque(true);
 	launcher.setForeground(DARK_GREEN);
 	launcher.addActionListener(new ActionListener()
@@ -412,6 +433,7 @@ public class GetParameters{
             writer.println(save.isSelected());
             if (snr.isSelected()){
                 writer.println(FWHM2.getText());
+                writer.println(smooth2.getText());
                 writer.println(rad2.getText());
                 writer.println(pa2.getText());
                 writer.println(wid2.getText());
@@ -424,7 +446,7 @@ public class GetParameters{
 
 	JLabel divider = new JLabel("____________________________________________________________");
 	divider.setSize(500,20);
-	divider.setLocation(0,314);
+	divider.setLocation(0,314+83);
 	divider.setVisible(true);
 	divider.setForeground(Color.blue);
 	
@@ -446,6 +468,7 @@ public class GetParameters{
 	frame.getContentPane().add(filepath2);
 	frame.getContentPane().add(searcher);
     frame.getContentPane().add(params);
+    frame.getContentPane().add(SNRparams);
     frame.getContentPane().add(planets2);
 	frame.getContentPane().add(snr);
     frame.getContentPane().add(wid2);
@@ -461,6 +484,8 @@ public class GetParameters{
 	frame.getContentPane().add(back);
         frame.getContentPane().add(FWHM1);
         frame.getContentPane().add(FWHM2);
+        frame.getContentPane().add(smooth1);
+        frame.getContentPane().add(smooth2);
 	
     }    
 
@@ -737,6 +762,7 @@ public class GetParameters{
 			writer.println(s2.getText());
 			writer.println(s3.getText());
 			writer.println(FWHM2.getText());
+            writer.println(smooth2.getText());
             writer.println(rad.getText());
             writer.println(pa.getText());
             writer.println(wid.getText());

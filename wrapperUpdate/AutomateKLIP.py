@@ -34,7 +34,7 @@ warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 #############                                        #############
 ################################################################## 
  
-def writeData(indiv, filepath, filename, prihdr, annuli, movement, subsections, iwa, klmodes, mask = None, pre = '', suff = ""):    
+def writeData(indiv, filepath, filename, prihdr, annuli, movement, subsections, iwa, klmodes, mask = None, pre = '', suff = "", smooth = None):    
     #function writes out fits files and writes important information to fits headers
     
     hdu = fits.PrimaryHDU(indiv)
@@ -78,6 +78,8 @@ def writeData(indiv, filepath, filename, prihdr, annuli, movement, subsections, 
         prihdr.set('mask_rad', str(rad))
         prihdr.set('mask_pa', str(pa))
         prihdr.set('mask_wid', str(wid))
+    if (not smooth == None):
+        prihdr.set('smooth_val', str(smooth))
    
     hdulist[0].header = prihdr
     
@@ -174,17 +176,20 @@ klmodes = list(map(int, sys.argv[3+argnum].split(",")))
 FWHM = float(sys.argv[14+argnum])
 print("Star FWHM = " + str(FWHM))
 
+_smooth = float(sys.argv[15+argnum])
+print("Smoothing Value = " + str(_smooth))
+
 print()
 print('Planet mask parameters:')
 
-print("Radius = " + str(list(map(int, sys.argv[15+argnum].split(",")))))
-ra = list(map(int, sys.argv[15+argnum].split(",")))
+print("Radius = " + str(list(map(int, sys.argv[16+argnum].split(",")))))
+ra = list(map(int, sys.argv[16+argnum].split(",")))
 
-print("Position Angle = " + str(list(map(int, sys.argv[16+argnum].split(",")))))
-pa = list(map(int, sys.argv[16+argnum].split(",")))
+print("Position Angle = " + str(list(map(int, sys.argv[17+argnum].split(",")))))
+pa = list(map(int, sys.argv[17+argnum].split(",")))
 
-print("Mask width (radial, angular): = " + str(list(map(int, sys.argv[17+argnum].split(",")))))
-wid = list(map(int, sys.argv[17+argnum].split(",")))
+print("Mask width (radial, angular): = " + str(list(map(int, sys.argv[18+argnum].split(",")))))
+wid = list(map(int, sys.argv[18+argnum].split(",")))
 
 #object to hold mask parameters for snr map 
 mask = (ra, pa, wid)
@@ -196,7 +201,7 @@ print("Output FileName = " + outputFileName)
 
 
 saveSNR = False
-if (sys.argv[18+argnum] == 'true' or sys.argv[18+argnum] == 'True'):
+if (sys.argv[19+argnum] == 'true' or sys.argv[19+argnum] == 'True'):
     saveSNR = True    
 
 print()
@@ -301,7 +306,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                     isolatedKL = cube[kcount,:,:]
                 
                 #makes SNR map 
-                snrmap = snr.create_map(isolatedKL,FWHM, planets = mask, saveOutput = False)
+                snrmap = snr.create_map(isolatedKL,FWHM, smooth = _smooth, planets = mask, saveOutput = False)
                 
                 #adds SNR map to 5d cube 
                 if (saveSNR):
@@ -325,7 +330,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
             print()
             if (saveSNR):
                 print("Writing SNR maps to " + pathToFiles + "_KLIP/")
-                writeData(snrMapCube, pathToFiles, outputFileName, prihdr, a, m, s, iwa, klmodes, mask = mask, pre = 'SNRMap_')
+                writeData(snrMapCube, pathToFiles, outputFileName, prihdr, a, m, s, iwa, klmodes, mask = mask, pre = 'SNRMap_', smooth = _smooth)
             scount+=1
         mcount+=1
     acount+=1
@@ -334,7 +339,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
          
 print("Writing average SNR values to " + pathToFiles + "_KLIP/")    
 #write snr cube to disk 
-writeData(snrCube, pathToFiles, outputFileName, prihdr, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'paramexplore_')
+writeData(snrCube, pathToFiles, outputFileName, prihdr, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'paramexplore_', smooth = _smooth)
 
 print()
 print("KLIP automation complete")  

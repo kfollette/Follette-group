@@ -284,7 +284,7 @@ def stdevMap(indiv, planets, fwhm):
 
 
 
-def create_map(filename, fwhm, planets = None, saveOutput = True, outputName = None):
+def create_map(filename, fwhm, smooth=2, planets = None, saveOutput = True, outputName = None):
     """
     creates signal to noise ratio map of image.
     
@@ -323,7 +323,7 @@ def create_map(filename, fwhm, planets = None, saveOutput = True, outputName = N
         inp = filename
     
     #temporary test begins here - remove to keyword with tunable FWHM and separate smoothing function if works
-    gauss = conv.Gaussian2DKernel(stddev=2)
+    gauss = conv.Gaussian2DKernel(stddev=smooth)
     inpsm =conv.convolve(inp, gauss)
     inp = inpsm
     #end test 
@@ -423,7 +423,8 @@ def getPlanet(snrmap, sli, rad, pa, _range):
             if (snrmap[sli][j][i] > planet):
                 planet = snrmap[sli][j][i]
                 
-            
+    if (planet == -100000000):
+        return np.nan
     return planet
 
 

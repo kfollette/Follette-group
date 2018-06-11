@@ -108,7 +108,7 @@ fi
 
 #Run StartKLIP.py with command line arguments from these variables (if single reduction)
 if [[ $RUNTYPE = 1 ]]; then
-    python RunKLIP.py $FILEPATH $IWA $KLMODES $ANNULI $MOVEMENT $SUBSECTIONS $OUTPUTNAME $SNR $SAVE1 $FWHM $RA2 $PA2 $WID2
+    python RunKLIP.py $FILEPATH $IWA $KLMODES $ANNULI $MOVEMENT $SUBSECTIONS $OUTPUTNAME $SNR $SAVE1 $FWHM $SMOOTH $RA2 $PA2 $WID2
     #/home/anaconda3/bin/python3 StartKLIP.py $FILEPATH $ANNULI $IWA $MOVEMENT $OUTPUTNAME $KLMODES $SUBSECTIONS $SNR
     #rm $OUTPUTNAME"-KLmodes-all.fits"
     #cp "_"$OUTPUTNAME"-KLmodes-all.fits" $OUTPUTNAME".fits"
@@ -116,7 +116,7 @@ if [[ $RUNTYPE = 1 ]]; then
     #cp $OUTPUTNAME".fits" "temp_klip.fits"
     #rm temp_klip.fits
 else 
-    python AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3 $FWHM $ra $pa $wi $SAVE2
+    python AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3 $FWHM $SMOOTH $ra $pa $wi $SAVE2
 fi
 
 

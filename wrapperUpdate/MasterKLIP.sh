@@ -49,12 +49,14 @@ if [[ $RUNTYPE = 1 ]]; then
 	elif [ $counter = 9 ]; then
             SAVE1=$line
 	elif [ $counter = 10 ]; then
-            FWHM2=$line
-	elif [ $counter = 11 ]; then
-            RA2=$line
+            FWHM=$line
+    elif [ $counter = 11 ]; then
+            SMOOTH=$line
 	elif [ $counter = 12 ]; then
-            PA2=$line
+            RA2=$line
 	elif [ $counter = 13 ]; then
+            PA2=$line
+	elif [ $counter = 14 ]; then
             WID2=$line
 	fi
     done < "single_reduction_parameters.txt"
@@ -89,13 +91,15 @@ else
             S3=$line
 	elif [ $counter = 14 ]; then
             FWHM=$line
-	elif [ $counter = 15 ]; then
-            ra=$line
+    elif [ $counter = 15 ]; then
+            SMOOTH=$line
 	elif [ $counter = 16 ]; then
-            pa=$line
+            ra=$line
 	elif [ $counter = 17 ]; then
-            wi=$line
+            pa=$line
 	elif [ $counter = 18 ]; then
+            wi=$line
+	elif [ $counter = 19 ]; then
             SAVE2=$line
         fi
     done < "automation_parameters.txt"
@@ -104,7 +108,7 @@ fi
 
 #Run StartKLIP.py with command line arguments from these variables (if single reduction)
 if [[ $RUNTYPE = 1 ]]; then
-    python RunKLIP.py $FILEPATH $IWA $KLMODES $ANNULI $MOVEMENT $SUBSECTIONS $OUTPUTNAME $SNR $SAVE1 $FWHM2 $RA2 $PA2 $WID2
+    python RunKLIP.py $FILEPATH $IWA $KLMODES $ANNULI $MOVEMENT $SUBSECTIONS $OUTPUTNAME $SNR $SAVE1 $FWHM $RA2 $PA2 $WID2
     #/home/anaconda3/bin/python3 StartKLIP.py $FILEPATH $ANNULI $IWA $MOVEMENT $OUTPUTNAME $KLMODES $SUBSECTIONS $SNR
     #rm $OUTPUTNAME"-KLmodes-all.fits"
     #cp "_"$OUTPUTNAME"-KLmodes-all.fits" $OUTPUTNAME".fits"

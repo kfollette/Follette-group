@@ -31,8 +31,8 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
 
   ;; read in channel cubes from visao_separate_sdi, which are dark subtracted and flat fielded
   if not keyword_set(indiv) then begin
-    Line=readfits('Line'+string(namestr)+'preproc.fits', head)
-    Cont=readfits('Cont'+string(namestr)+'preproc.fits', head)
+    Line=readfits('Line'+string(namestr)+'preproc.fits', Linehead)
+    Cont=readfits('Cont'+string(namestr)+'preproc.fits', Conthead)
 
   endif
 
@@ -203,22 +203,30 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
     
   endfor
 
-  ;;add parameters to header
-  sxaddpar, head, 'CLIP', clip
+  ;;add parameters to headers
+  sxaddpar, Linehead, 'CLIP', clip
   if not keyword_set(scl) then scl=1
-  sxaddpar, head, 'CONT_SCALE', scl 
+  sxaddpar, Linehead, 'CONT_SCALE', scl 
   if keyword_set(mask) then begin
-    sxaddpar, head, 'MASK', mask
+    sxaddpar, Linehead, 'MASK', mask
   endif
-  sxaddpar, head, 'SMOOTH_FWHM', fwhm
+  sxaddpar, Linehead, 'SMOOTH_FWHM', fwhm
+  
+  sxaddpar, Conthead, 'CLIP', clip
+  if not keyword_set(scl) then scl=1
+  sxaddpar, Conthead, 'CONT_SCALE', scl
+  if keyword_set(mask) then begin
+    sxaddpar, Conthead, 'MASK', mask
+  endif
+  sxaddpar, Conthead, 'SMOOTH_FWHM', fwhm
 
  ;; write files
   if keyword_set(clip) then begin
     writefits, 'Line_clip'+string(clip, format='(i03)')+string(namestr)+'circsymreg.fits', Line_reg, head
     writefits, 'Cont_clip'+string(clip, format='(i03)')+string(namestr)+'circsymreg.fits', Cont_reg, head
   endif else begin
-    writefits, 'Line'+string(namestr)+'circsymreg.fits', Line_reg, head
-    writefits, 'Cont'+string(namestr)+'circsymreg.fits', Cont_reg, head
+    writefits, 'Line'+string(namestr)+'circsymreg.fits', Line_reg, Linehead
+    writefits, 'Cont'+string(namestr)+'circsymreg.fits', Cont_reg, Conthead
   endelse
 
   if keyword_set(stp) then  stop

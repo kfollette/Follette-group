@@ -23,7 +23,7 @@
 ; 2017-08-16 KBF modified to populate headers
 ;-
 
-pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=stp, wfe=wfe
+pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=stp, wfe=wfe, suffix=suffix
 
   visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, mag1=mag1
   ;;create aligned directory if doesn't already exist
@@ -65,6 +65,7 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   rotoff=dblarr(nims)
   object=strarr(nims)
   vfw3posn=strarr(nims)
+  dateobs=strarr(nims)
 
   if keyword_set(flat) then flatim=readfits(flat)
 
@@ -81,6 +82,7 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
       j=0
       raw[*,*,0]=readfits(sci_imlist[i], head, /silent)*1
     endelse
+    dateobs[i]=sxpar(head, 'DATE-OBS')
     expt[i]=sxpar(head, 'EXPTIME')
     avgwfe[i]=sxpar(head, 'AVGWFE')
     rotoff[i]=sxpar(head, 'ROTOFF')
@@ -144,17 +146,25 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   if not keyword_set(wfe) then wfe='No cut'
   sxaddpar, head_new, 'WFE_CUT', wfe
   sxaddpar, head_new, 'MED_WFE', median(avgwfe)
-  sxaddpar, head_new, 'STDEV_WFE', stdev(avgwfe)
+  sxaddpar, head_new, 'STD_WFE', stdev(avgwfe)
   sxaddpar, head_new, 'OBJECT', object[uniq(object)]
   sxaddpar, head_new, 'VFW3POSN', vfw3posn[uniq(vfw3posn)] 
-
+  ;wavelength keyword required for PyKLIP
+  sxaddpar, head_new, 'WLENGTH', 0.656
+  sxaddpar, head_new, 'DATE-START', strmid(dateobs[0],0,10)
+  sxaddpar, head_new, 'TIME-START', strmid(dateobs[0],11,8)
+  sxaddpar, head_new, 'DATE-END', strmid(dateobs[nims-1],0,10)  
+  sxaddpar, head_new, 'TIME-END', strmid(dateobs[nims-1],11,8)
 
     if not keyword_set(indiv) then begin
       if keyword_set(flat) then begin
         writefits, 'Line_flat_preproc.fits', Line, head_new
+        ;modify WLENGTH before writing continuum header
+        sxaddpar, head_new, 'WLENGTH', 0.642
         writefits, 'Cont_flat_preproc.fits', Cont, head_new
       endif else begin
         writefits, 'Line_preproc.fits', Line, head_new
+        sxaddpar, head_new, 'WLENGTH', 0.642
         writefits, 'Cont_preproc.fits', Cont, head_new
       endelse
     endif

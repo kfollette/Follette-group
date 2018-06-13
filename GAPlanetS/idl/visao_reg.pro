@@ -34,8 +34,8 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
 
   ;; read in channel cubes from visao_separate_sdi, which are dark subtracted and flat fielded
   if not keyword_set(indiv) then begin
-  Line=readfits('Line'+string(namestr)+'preproc.fits')
-  Cont=readfits('Cont'+string(namestr)+'preproc.fits')
+  Line=readfits('Line'+string(namestr)+'preproc.fits', Linehead)
+  Cont=readfits('Cont'+string(namestr)+'preproc.fits', Conthead)
  
   ;;grab reference image to register against
   center_ref_line=Line[*,*,ref-1]
@@ -170,14 +170,16 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     print, 'processed image', i+1, '        of', nims
 
   endfor
-
+  
+  sxaddpar, Linehead, 'REFIM', ref
+  sxaddpar, Conthead, 'REFIM', ref
 
     if keyword_set(clip) then begin
-    writefits, 'Line_clip'+string(clip, format='(i03)')+string(namestr)+'reg.fits', Line_reg
-    writefits, 'Cont_clip'+string(clip, format='(i03)')+string(namestr)+'reg.fits', Cont_reg
+    writefits, 'Line_clip'+string(clip, format='(i03)')+string(namestr)+'reg.fits', Line_reg, Linehead
+    writefits, 'Cont_clip'+string(clip, format='(i03)')+string(namestr)+'reg.fits', Cont_reg, Conthead
     endif else begin
-      writefits, 'Line'+string(namestr)+'reg.fits', Line_reg
-      writefits, 'Cont'+string(namestr)+'reg.fits', Cont_reg
+      writefits, 'Line'+string(namestr)+'reg.fits', Line_reg, Linehead
+      writefits, 'Cont'+string(namestr)+'reg.fits', Cont_reg, Conthead
     endelse
     
     if keyword_set(sdi) then begin

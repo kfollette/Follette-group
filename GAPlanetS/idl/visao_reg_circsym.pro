@@ -222,8 +222,8 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
 
  ;; write files
   if keyword_set(clip) then begin
-    writefits, 'Line_clip'+string(clip, format='(i03)')+string(namestr)+'circsymreg.fits', Line_reg, head
-    writefits, 'Cont_clip'+string(clip, format='(i03)')+string(namestr)+'circsymreg.fits', Cont_reg, head
+    writefits, 'Line_clip'+string(clip, format='(i03)')+string(namestr)+'circsymreg.fits', Line_reg, Linehead
+    writefits, 'Cont_clip'+string(clip, format='(i03)')+string(namestr)+'circsymreg.fits', Cont_reg, Conthead
   endif else begin
     writefits, 'Line'+string(namestr)+'circsymreg.fits', Line_reg, Linehead
     writefits, 'Cont'+string(namestr)+'circsymreg.fits', Cont_reg, Conthead

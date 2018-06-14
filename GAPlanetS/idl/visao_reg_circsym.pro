@@ -78,8 +78,8 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
   for i=0, nims-1 do begin
 
     if keyword_set(indiv) then begin
-      Line=readfits('./indiv/Line'+string(namestr)+string(i+1, format='(i04)')+'.fits')
-      Cont=readfits('./indiv/Cont'+string(namestr)+string(i+1, format='(i04)')+'.fits')
+      Line=readfits('./indiv/Line'+string(namestr)+string(i+1, format='(i04)')+'.fits', Linehead)
+      Cont=readfits('./indiv/Cont'+string(namestr)+string(i+1, format='(i04)')+'.fits', Conthead)
       j=0
     endif else begin
       j=i

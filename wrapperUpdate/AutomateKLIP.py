@@ -34,53 +34,60 @@ warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 #############                                        #############
 ################################################################## 
  
-def writeData(indiv, filepath, filename, prihdr, annuli, movement, subsections, iwa, klmodes, mask = None, pre = '', smooth = None, fwhm = None):    
+#def writeData(indiv, filepath, filename, prihdr, annuli, movement, subsections, iwa, klmodes, mask = None, pre = '', smooth = None, fwhm = None): 
+def writeData(indiv, allParams = False, snrmap = False, pre = ''): 
     #function writes out fits files and writes important information to fits headers
     
     hdu = fits.PrimaryHDU(indiv)
     hdulist = fits.HDUList([hdu])
  
     
+    if (allParams):
     #creates new strings to add parameter information to file names
-    annuli2 = annuli
-    movement2 = movement
-    subsections2 = subsections
-    
-    #if program iterates over several parameter values, formats these for fits headers and file names
-    if (isinstance(annuli, tuple)):
-        annuli2 = str(annuli2[0]) + '-' + str(annuli2[1]) + 'x' + str(annuli2[2])
-        annuli = str(annuli[0]) + 'to' + str(annuli[1]) + 'by' + str(annuli[2])  
-    if (isinstance(movement, tuple)):
-        movement2 = str(movement2[0]) + '-' + str(movement2[1]) + 'x' + str(movement2[2])
-        movement = str(movement[0]) + 'to' + str(movement[1]) + 'by' + str(movement[2])
-    if (isinstance(subsections, tuple)):
-        subsections = str(subsections[0]) + 'to' + str(subsections[1]) + 'by' + str(subsections[2])
-        subsections2 = str(subsections2[0]) + '-' + str(subsections2[1]) + '-' + str(subsections2[2])
-    
+        annuli2 = annuli
+        movement2 = movement
+        subsections2 = subsections
+
+        #if program iterates over several parameter values, formats these for fits headers and file names
+        if (isinstance(annuli, tuple)):
+            annuli2 = str(annuli2[0]) + '-' + str(annuli2[1]) + 'x' + str(annuli2[2])
+            annuli3 = str(annuli[0]) + 'to' + str(annuli[1]) + 'by' + str(annuli[2])  
+        if (isinstance(movement, tuple)):
+            movement2 = str(movement2[0]) + '-' + str(movement2[1]) + 'x' + str(movement2[2])
+            movement3 = str(movement[0]) + 'to' + str(movement[1]) + 'by' + str(movement[2])
+        if (isinstance(subsections, tuple)):
+            subsections3 = str(subsections[0]) + 'to' + str(subsections[1]) + 'by' + str(subsections[2])
+            subsections2 = str(subsections2[0]) + '-' + str(subsections2[1]) + '-' + str(subsections2[2])
+    else:
+        annuli3 = a
+        movement3 = m
+        subsections3 = s
+
     #shortens file path to bottom 4 directories so it will fit in fits header
     pathToFiles_short  = ''
     numdir = 0
-    for n in range (len(filepath)):
-        pathToFiles_short = filepath[-1-n] + pathToFiles_short
-        if (filepath[-1-n] == '/'):
+    for n in range (len(pathToFiles)):
+        pathToFiles_short = pathToFiles[-1-n] + pathToFiles_short
+        if (pathToFiles[-1-n] == '/'):
             numdir += 1
         if (numdir >=4 ):
             break
             
     #adds info to fits headers
-    prihdr.set('annuli', str(annuli))
-    prihdr.set('movement', str(movement))
-    prihdr.set('subsctns', str(subsections))
+    prihdr.set('annuli', str(annuli3))
+    prihdr.set('movement', str(movement3))
+    prihdr.set('subsctns', str(subsections3))
     prihdr.set('klmodes', str(klmodes))
     prihdr.set('filepath', str(pathToFiles_short))
-    if (not mask == None):
+    #if (not mask == None):
+    if(snrmap):
         rad, pa, wid = mask 
         prihdr.set('mask_rad', str(rad))
         prihdr.set('mask_pa', str(pa))
         prihdr.set('mask_wid', str(wid))
-    if (not smooth == None):
-        prihdr.set('smooth_val', str(smooth))
-    if (not fwhm == None):
+    #if (not smooth == None):
+        prihdr.set('smooth_val', str(_smooth))
+    #if (not fwhm == None):
         prihdr.set('FWHM', str(fwhm))
    
     hdulist[0].header = prihdr
@@ -124,48 +131,48 @@ if not os.path.exists(pathToFiles + "_klip"):
 
 print("Parameters to explore:")
 
-annuli2_start = int(sys.argv[5+argnum])
-annuli2_stop = int(sys.argv[6+argnum])
-annuli2_inc = int(sys.argv[7+argnum])
+annuli_start = int(sys.argv[5+argnum])
+annuli_stop = int(sys.argv[6+argnum])
+annuli_inc = int(sys.argv[7+argnum])
 #creates touple for easier eventual string formatting when saving files
-annuli = (annuli2_start, annuli2_stop, annuli2_inc)
+annuli = (annuli_start, annuli_stop, annuli_inc)
 #if only one parameter is iterated over, makes sure increment is 1 and changes touple to single int
-if(annuli2_start == annuli2_stop):
-    annuli2_inc = 1;
-    annuli = annuli2_start
-    print("Annuli = " +str(annuli2_start))    
+if(annuli_start == annuli_stop):
+    annuli_inc = 1;
+    annuli = annuli_start
+    print("Annuli = " +str(annuli_start))    
 else:
-    print("Annuli: start = %s; end = %s; increment = %s " %(str(annuli2_start), str(annuli2_stop), str(annuli2_inc)))
+    print("Annuli: start = %s; end = %s; increment = %s " %(str(annuli_start), str(annuli_stop), str(annuli_inc)))
 
 
 
-movement2_start = float(sys.argv[8+argnum])
-movement2_stop = float(sys.argv[9+argnum])
-movement2_inc = float(sys.argv[10+argnum])
+movement_start = float(sys.argv[8+argnum])
+movement_stop = float(sys.argv[9+argnum])
+movement_inc = float(sys.argv[10+argnum])
 #creates touple for easier eventual string formatting when saving files
-movement = (movement2_start, movement2_stop, movement2_inc)
+movement = (movement_start, movement_stop, movement_inc)
 #if parameter is not set to change, makes sure increment is 1 and changes touple to single int
-if(movement2_start == movement2_stop):
-    movement2_inc = 1;
-    movement = movement2_start
-    print("Movement = " +str(movement2_start))
+if(movement_start == movement_stop):
+    movement_inc = 1;
+    movement = movement_start
+    print("Movement = " +str(movement_start))
     
 else:
-    print("Movement: start = %s; end = %s; increment = %s " %(str(movement2_start), str(movement2_stop), str(movement2_inc)))
+    print("Movement: start = %s; end = %s; increment = %s " %(str(movement_start), str(movement_stop), str(movement_inc)))
 
 
-subsections2_start = int(sys.argv[11+argnum])
-subsections2_stop = int(sys.argv[12+argnum])
-subsections2_inc = int(sys.argv[13+argnum])
+subsections_start = int(sys.argv[11+argnum])
+subsections_stop = int(sys.argv[12+argnum])
+subsections_inc = int(sys.argv[13+argnum])
 #creates touple for easier eventual string formatting when saving files
-subsections = (subsections2_start, subsections2_stop, subsections2_inc)
+subsections = (subsections_start, subsections_stop, subsections_inc)
 #if parameter is not set to change, makes sure increment is 1 and changes touple to single int
-if(subsections2_start == subsections2_stop):
-    subsections2_inc = 1;
-    subsections = subsections2_start
-    print("Subsections = " +str(subsections2_start))    
+if(subsections_start == subsections_stop):
+    subsections_inc = 1;
+    subsections = subsections_start
+    print("Subsections = " +str(subsections_start))    
 else:
-    print("Subsections: start = %s; end = %s; increment = %s " %(str(subsections2_start), str(subsections2_stop), str(subsections2_inc)))
+    print("Subsections: start = %s; end = %s; increment = %s " %(str(subsections_start), str(subsections_stop), str(subsections_inc)))
 
 print()
     
@@ -246,16 +253,16 @@ snrCube = np.zeros((len(klmodes),int((subsections2_stop-subsections2_start)/subs
 #keeps track of number of annuli values that have been tested, used for indexing
 acount = 0
 
-for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
+for a in range(annuli_start, annuli_stop+1, annuli_inc):
     
     #keeps track of number of movement values that have been tested, used for indexing
     mcount = 0
     
-    for m in np.arange(movement2_start, movement2_stop+movement2_inc, movement2_inc):
+    for m in np.arange(movement_start, movement_stop+1, movement_inc):
         
         scount = 0
         
-        for s in range(subsections2_start, subsections2_stop+1, subsections2_inc):
+        for s in range(subsections_start, subsections_stop+1, subsections_inc):
             
             print("Parameters: annuli = %d; movement = %s; subections = %d" %(a, m,s))
                   
@@ -275,16 +282,12 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 if (len([k for k in klmodes if not k in klmodes2]) == 0):
                     print("Found KLIP processed images for same parameters saved to disk. Reading in data.")
                     runKLIP = False 
-                    #i = 0
                     for i in range(len(klmodes)):
                         cube[i,:,:] = hdulist[0].data[klmodes2.index(klmodes[i]),:,:]
-                        #i += 1
+                       
 
             
-            #output = 0
             if (runKLIP):
-                #print("Starting KLIP for parameters:")
-                #print("annuli = %d; movement = %s; subections = %d" %(a, m,s))
                 print("Starting KLIP")
                 #run klip for given parameters
                 parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=a, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
@@ -313,11 +316,7 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 if (saveSNR):
                     snrMapCube[kcount,:,:] = snrmap 
                 
-                #gets highest pixel value in snr map in the location of the planet 
-                #planetSNRs = []
-                
-                #for x in range (len(ra)):
-                    #planetSNRs.append(snr.getPlanet(snrmap, 0, ra[x], pa[x], int(wid[0]/2)+1))
+      
                 planetSNRs = [snr.getPlanet(snrmap, 0, ra[x], pa[x], int(wid[0]/2)+1) for x in range (len(ra))]
                 planetSNR = np.mean(planetSNRs)
                 
@@ -329,11 +328,12 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
                 #write median combination cube to disk 
                 print("Writing median image combinations to " + pathToFiles + "_klip/")
                 writeData(cube, pathToFiles, outputFileName, prihdr, a, m, s, iwa, klmodes, mask = None, pre = 'med_')
+                writeData(snrCube, pre = 'med_')
 
             if (saveSNR):
                 print("Writing SNR maps to " + pathToFiles + "_klip/")
-                writeData(snrMapCube, pathToFiles, outputFileName, prihdr, a, m, s, iwa, klmodes, mask = mask, pre = 'snrmap_', smooth = _smooth, fwhm = FWHM)
-            
+                #writeData(snrMapCube, pathToFiles, outputFileName, prihdr, a, m, s, iwa, klmodes, mask = mask, pre = 'snrmap_', smooth = _smooth, fwhm = FWHM)
+                writeData(snrCube, snrmap = True, pre = 'snrmap_')
             print()
             
             scount+=1
@@ -344,7 +344,8 @@ for a in range(annuli2_start, annuli2_stop+1, annuli2_inc):
          
 print("Writing average SNR values to " + pathToFiles + "_klip/")    
 #write snr cube to disk 
-writeData(snrCube, pathToFiles, outputFileName, prihdr, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'paramexplore_', smooth = _smooth, fwhm = FWHM)
+#writeData(snrCube, pathToFiles, outputFileName, prihdr, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'paramexplore_', smooth = _smooth, fwhm = FWHM)
+writeData(snrCube, allParams = True, snrmap = True, pre = 'paramexplore_')
 
 print()
 print("KLIP automation complete")  

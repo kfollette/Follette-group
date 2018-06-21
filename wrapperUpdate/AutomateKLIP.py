@@ -62,6 +62,9 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
         annuli3 = a
         movement3 = m
         subsections3 = s
+        annuli2 = a
+        movement2 = m
+        subsections2 = s
 
     #shortens file path to bottom 4 directories so it will fit in fits header
     pathToFiles_short  = ''
@@ -245,7 +248,7 @@ dataset.IWA = iwa
 xDim = dataset._input.shape[2]
 yDim = dataset._input.shape[1]
 #creates cube to eventually hold average SNR data
-snrCube = np.zeros((len(klmodes),int((subsections2_stop-subsections2_start)/subsections2_inc+1), int((annuli2_stop-annuli2_start)/annuli2_inc+1),int((movement2_stop-movement2_start)/movement2_inc+1)))
+snrCube = np.zeros((len(klmodes),int((subsections_stop-subsections_start)/subsections_inc+1), int((annuli_stop-annuli_start)/annuli_inc+1),int((movement_stop-movement_start)/movement_inc+1)))
 
 
 #loop over annuli, movement, and subsection parameters

@@ -34,7 +34,7 @@ warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 #############                                        #############
 ################################################################## 
  
-#def writeData(indiv, filepath, filename, prihdr, annuli, movement, subsections, iwa, klmodes, mask = None, pre = '', smooth = None, fwhm = None): 
+
 def writeData(indiv, allParams = False, snrmap = False, pre = ''): 
     #function writes out fits files and writes important information to fits headers
     
@@ -44,27 +44,30 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
     
     if (allParams):
     #creates new strings to add parameter information to file names
-        annuli2 = annuli
-        movement2 = movement
-        subsections2 = subsections
-
+        annuli_fname = annuli
+        annuli_head = annuli
+        movement_fname = movement
+        movement_head = movement
+        subsections_fname = subsections
+        subsections_head = subsections
+       
         #if program iterates over several parameter values, formats these for fits headers and file names
         if (isinstance(annuli, tuple)):
-            annuli2 = str(annuli2[0]) + '-' + str(annuli2[1]) + 'x' + str(annuli2[2])
-            annuli3 = str(annuli[0]) + 'to' + str(annuli[1]) + 'by' + str(annuli[2])  
+            annuli_fname = str(annuli[0]) + '-' + str(annuli[1]) + 'x' + str(annuli[2])
+            annuli_head = str(annuli[0]) + 'to' + str(annuli[1]) + 'by' + str(annuli[2])  
         if (isinstance(movement, tuple)):
-            movement2 = str(movement2[0]) + '-' + str(movement2[1]) + 'x' + str(movement2[2])
-            movement3 = str(movement[0]) + 'to' + str(movement[1]) + 'by' + str(movement[2])
+            movement_fname = str(movement[0]) + '-' + str(movement[1]) + 'x' + str(movement[2])
+            movement_head = str(movement[0]) + 'to' + str(movement[1]) + 'by' + str(movement[2])
         if (isinstance(subsections, tuple)):
-            subsections3 = str(subsections[0]) + 'to' + str(subsections[1]) + 'by' + str(subsections[2])
-            subsections2 = str(subsections2[0]) + '-' + str(subsections2[1]) + '-' + str(subsections2[2])
+            subsections_head = str(subsections[0]) + 'to' + str(subsections[1]) + 'by' + str(subsections[2])
+            subsections_fname = str(subsections[0]) + '-' + str(subsections[1]) + '-' + str(subsections[2])
     else:
-        annuli3 = a
-        movement3 = m
-        subsections3 = s
-        annuli2 = a
-        movement2 = m
-        subsections2 = s
+        annuli_head = a
+        movement_head = m
+        subsections_head = s
+        annuli_fname = a
+        movement_fname = m
+        subsections_fname = s
 
     #shortens file path to bottom 4 directories so it will fit in fits header
     pathToFiles_short  = ''
@@ -77,26 +80,26 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
             break
             
     #adds info to fits headers
-    prihdr.set('annuli', str(annuli3))
-    prihdr.set('movement', str(movement3))
-    prihdr.set('subsctns', str(subsections3))
+    prihdr.set('annuli', str(annuli_head))
+    prihdr.set('movement', str(movement_head))
+    prihdr.set('subsctns', str(subsections_head))
     prihdr.set('klmodes', str(klmodes))
     prihdr.set('filepath', str(pathToFiles_short))
-    #if (not mask == None):
+ 
     if(snrmap):
         rad, pa, wid = mask 
         prihdr.set('mask_rad', str(rad))
         prihdr.set('mask_pa', str(pa))
         prihdr.set('mask_wid', str(wid))
-    #if (not smooth == None):
+  
         prihdr.set('smooth_val', str(_smooth))
-    #if (not fwhm == None):
-        prihdr.set('FWHM', str(fwhm))
+
+        prihdr.set('FWHM', str(FWHM))
    
     hdulist[0].header = prihdr
     
     #writes out files
-    hdulist.writeto(str(filepath) + "_klip/" + str(pre)  + filename + "_a" + str(annuli2) + "m" + str(movement2) + "s" + str(subsections2) + "iwa" + str(iwa) + '_klmodes-all.fits', clobber=True)
+    hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli_fname) + "m" + str(movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + '_klmodes-all.fits', clobber=True)
 
 
 
@@ -128,6 +131,7 @@ except:
 print("File Path = " + pathToFiles)   
 print()
 
+#create directory to save ouput to
 if not os.path.exists(pathToFiles + "_klip"):
     os.makedirs(pathToFiles + "_klip")
     os.chmod(pathToFiles + "_klip", 0o777)
@@ -194,14 +198,14 @@ print("Smoothing Value = " + str(_smooth))
 print()
 print('Planet mask parameters:')
 
-print("Radius = " + str(list(map(int, sys.argv[16+argnum].split(",")))))
 ra = list(map(int, sys.argv[16+argnum].split(",")))
+print("Radius = " + str(ra))
 
-print("Position Angle = " + str(list(map(int, sys.argv[17+argnum].split(",")))))
 pa = list(map(int, sys.argv[17+argnum].split(",")))
+print("Position Angle = " + str(pa))
 
-print("Mask width (radial, angular): = " + str(list(map(int, sys.argv[18+argnum].split(",")))))
 wid = list(map(int, sys.argv[18+argnum].split(",")))
+print("Mask width (radial, angular): = " + str(wid))
 
 #object to hold mask parameters for snr map 
 mask = (ra, pa, wid)
@@ -238,12 +242,12 @@ prihdr = hdulist[0].header
 hdulist.close()
 prihdr['rotoff'] = None 
 
+#reads in files
 filelist = glob.glob(pathToFiles + '/*.fits')
 dataset = MagAO.MagAOData(filelist)
+
 #set iwa
 dataset.IWA = iwa
-
-#print(dataset._input.shape)
 
 xDim = dataset._input.shape[2]
 yDim = dataset._input.shape[1]
@@ -330,12 +334,10 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
             if(runKLIP):
                 #write median combination cube to disk 
                 print("Writing median image combinations to " + pathToFiles + "_klip/")
-                writeData(cube, pathToFiles, outputFileName, prihdr, a, m, s, iwa, klmodes, mask = None, pre = 'med_')
                 writeData(snrCube, pre = 'med_')
 
             if (saveSNR):
                 print("Writing SNR maps to " + pathToFiles + "_klip/")
-                #writeData(snrMapCube, pathToFiles, outputFileName, prihdr, a, m, s, iwa, klmodes, mask = mask, pre = 'snrmap_', smooth = _smooth, fwhm = FWHM)
                 writeData(snrCube, snrmap = True, pre = 'snrmap_')
             print()
             
@@ -347,7 +349,6 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
          
 print("Writing average SNR values to " + pathToFiles + "_klip/")    
 #write snr cube to disk 
-#writeData(snrCube, pathToFiles, outputFileName, prihdr, annuli, movement, subsections, iwa, klmodes, mask = mask, pre = 'paramexplore_', smooth = _smooth, fwhm = FWHM)
 writeData(snrCube, allParams = True, snrmap = True, pre = 'paramexplore_')
 
 print()

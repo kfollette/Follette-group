@@ -10,8 +10,7 @@ import glob
 import fnmatch
 import shutil
 
-
-def process_flats(path_to_raw_flats, imsize, flatcategory, objname):
+def process_flats(path_to_raw_flats, path_to_raw_darks, imsize, flatcategory, objname):
     '''
     process_flats
     ----------
@@ -24,10 +23,11 @@ def process_flats(path_to_raw_flats, imsize, flatcategory, objname):
     Inputs
     ----------
     path_to_raw_flats       : (string) path to location of flatfield directory for given target; usu. './FLAT/'
+    path_to_raw_darks	    : (string) path to location of dark directory for given target; usu. './DARK/'
     imsize                  : (int) dimension of FITS image array
     flatcategory            : (boolean) describe whether flats are lamps (1) or sky/twilight (0)
     objname                 : (string) name of target, e.g., "HIP123"
-    
+        
     Returns
     ----------
     med_flat                : (array) median-combined flat frame
@@ -101,7 +101,7 @@ def process_flats(path_to_raw_flats, imsize, flatcategory, objname):
         
         if len(masterdark) == 0:
             print('Creating new master dark for flats with '+str(exptime)+'s exposure.')
-            med_dark = dark_combine(exptime, imsize)
+            med_dark = dark_combine(path_to_raw_darks, exptime, imsize, objname)
 
         elif len(masterdark) > 1:
             print('Error: Too many matching darks for given exptime.')

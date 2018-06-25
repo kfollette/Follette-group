@@ -25,28 +25,37 @@
 ;
 ;-
 
-pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, stp=stp, mask=mask
+pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, stp=stp, reg=reg, mask=mask
 
   if keyword_set(flat) then namestr='_flat_' else namestr='_'
 
-  ;; read in channel cubes from visao_separate_sdi, which are dark subtracted and flat fielded
-  if not keyword_set(indiv) then begin
-    Line=readfits('Line'+string(namestr)+'preproc.fits', Linehead)
-    Cont=readfits('Cont'+string(namestr)+'preproc.fits', Conthead)
 
-  endif
+  if not keyword_set(reg) then begin
+    ;; if reg keyword not set, read in channel cubes from visao_separate_sdi, which are dark subtracted and flat fielded
+    if not keyword_set(indiv) then begin
+      Line=readfits('Line'+string(namestr)+'preproc.fits', head)
+      Cont=readfits('Cont'+string(namestr)+'preproc.fits', head)
 
-  dim1=1024.
-  dim2=512.
-  
-  if keyword_set(indiv) then begin
-    spawn, 'ls indiv/Line* | wc -l', nims
-    nims=long(nims[0])
+    endif
+
+    if keyword_set(indiv) then begin
+      spawn, 'ls indiv/Line* | wc -l', nims
+      nims=long(nims[0])
+    endif
+
   endif else begin
-    nims=(size(Line))[3]
+    if not keyword_set(clip) then print, 'must set clip keyword with reg keyword'
+    Line = readfits('Line_clip'+string(clip, format='(i03)')+string(namestr)+'reg.fits')
+    Cont = readfits('Cont_clip'+string(clip, format='(i03)')+string(namestr)+'reg.fits')
   endelse
+
+  dim1 = (size(Line))[1]
+  dim2 = (size(Line))[2]
+
   xcen=(dim1-1)/2.
   ycen=(dim2-1)/2.
+
+  if not keyword_set(indiv) then nims=(size(Line))[3]
 
   ;;if clip keyword not defined (not recommended), image size is full array (10254x512)
   if not keyword_set(clip) then clip=dim1
@@ -84,27 +93,27 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
     endif else begin
       j=i
     endelse
-    
+
     ;smooth out cosmic rays
     Line_smooth[*,*,j]=gauss_smooth(Line[*,*,j], width=fwhm)*1.
     Cont_smooth[*,*,j]=gauss_smooth(Cont[*,*,j], width=fwhm)*1.
 
-    ;; calculate approximate offset by registering against gaussian via Fourier cross-correlation, but don't shift 
+    ;; calculate approximate offset by registering against gaussian via Fourier cross-correlation, but don't shift
     ;; note just finding the max after smoothing doesn't work for faint sources
     subreg, gauss_cen, Line_smooth[*,*,j], sft, method='F'
     ;stop
-    
+
     ;; do line image first
     ;make 71x71 grid around max coords
     xr=indgen(51.)-50/2.-sft[0]
-    ;; line below is 
+    ;; line below is
     yr=indgen(51.)-50/2.-sft[1]
-    
-    rmax=25 
-    
+
+    rmax=25
+
     ;; calculate center of circular symmetry in this region
     if keyword_set(mask) then begin
-      print, 'masked' 
+      ;print, 'masked'
       center_circlesym, Line[*,*,j], xr, yr, rmax, Line_xc, Line_yc, Line_grid, mask=mask
     endif else begin
       center_circlesym, Line[*,*,j], xr, yr, rmax, Line_xc, Line_yc, Line_grid
@@ -116,24 +125,24 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
     nims=(size(Line))[3]
     print, 'center of circular symmetry for Line image is', Line_xc, Line_yc
     print, 'shifting Line image', j+1, ' of', nims, ' by', Line_shift
-    
+
     ;Line[*,*,j]=shift_interp(Line[*,*,j], Line_shift-1, spline=-0.5) old ver. - based on bug in Fourier cx correlation
     Line[*,*,j]=shift_interp(Line[*,*,j], Line_shift, spline=-0.5)
-    
+
     ;now the same for the continuum image
     subreg, gauss_cen, Cont_smooth[*,*,j], sft, method='F'
     ;stop
-    
+
     ;make 71x71 grid around max coords
     xr=indgen(51.)-50/2.-sft[0]
-    ;; line below is 
+    ;; line below is
     yr=indgen(51.)-50/2.-sft[1]
-    
-    rmax=25 
-    
+
+    rmax=25
+
     ;; calculate center of circular symmetry in this region
     if keyword_set(mask) then begin
-      print, 'masked' 
+      print, 'masked'
       center_circlesym, Cont[*,*,j], xr, yr, rmax, Cont_xc, Cont_yc, Cont_grid, mask=mask
     endif else begin
       center_circlesym, Cont[*,*,j], xr, yr, rmax, Cont_xc, Cont_yc, Cont_grid
@@ -145,11 +154,11 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
     nims=(size(Cont))[3]
     print, 'center of circular symmetry for Line image is', Cont_xc, Cont_yc
     print, 'shifting Continuum image', j+1, 'of', nims, 'by', Cont_shift
-    
+
     ;Cont[*,*,j]=shift_interp(Cont[*,*,j], Cont_shift-1, spline=-0.5) old ver. - based on bug in Fourier cx correlation
     Cont[*,*,j]=shift_interp(Cont[*,*,j], Cont_shift, spline=-0.5)
 
-    
+
 
     ;;rescale continuum image by scl if keyowrd is set
     if keyword_set(scl) then begin
@@ -200,13 +209,14 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
 
     print, 'processed image', i+1, '        of', nims
     ;stop
-    
+
   endfor
 
   ;;add parameters to headers
   sxaddpar, Linehead, 'CLIP', clip
   if not keyword_set(scl) then scl=1
   sxaddpar, Linehead, 'CONT_SCALE', scl 
+
   if keyword_set(mask) then begin
     sxaddpar, Linehead, 'MASK', mask
   endif
@@ -220,7 +230,7 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
   endif
   sxaddpar, Conthead, 'SMOOTH_FWHM', fwhm
 
- ;; write files
+  ;; write files
   if keyword_set(clip) then begin
     writefits, 'Line_clip'+string(clip, format='(i03)')+string(namestr)+'circsymreg.fits', Line_reg, Linehead
     writefits, 'Cont_clip'+string(clip, format='(i03)')+string(namestr)+'circsymreg.fits', Cont_reg, Conthead

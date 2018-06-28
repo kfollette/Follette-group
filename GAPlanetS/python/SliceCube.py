@@ -5,44 +5,66 @@ from astropy.io import fits
 import os
 import numpy as np
 
-print("Enter absolute directory filepath")
-dir = input()
-print("Enter name for output directory ")
-outdir = input()
-print("Enter filename to be sliced ")
-fname = input()
-print("Enter name of rotoff cube ")
-rotname = input()
+def slice(filename, output='sliced', rotoff='rotoff_nocosmics.fits'):
+    #os.chdir(str(filepath))
+    hdulist = fits.open(str(filename))
+    cube = hdulist[0].data
+    header = hdulist[0].header
+    wv = header['WLENGTH']
+    hdulist.close()
+    dim = cube.shape[1]
 
-os.chdir(str(dir))
-hdulist = fits.open(str(fname))
-cube = hdulist[0].data
-prihdr = hdulist[0].header
-hdulist.close()
-dim = cube.shape[1]
+    hdulist = fits.open(str(rotoff))
+    rotoffs = hdulist[0].data
+    hdulist.close()
 
-hdulist = fits.open(str(rotname))
-rotoffs = hdulist[0].data
-hdulist.close()
+    if not os.path.exists(str(output)):
+        os.makedirs(str(output))
 
-if not os.path.exists(str(outdir)):
-    os.makedirs(str(outdir))
+    current = os.getcwd
+    os.chdir(str(output))
+    if len(cube) != len(rotoffs):
+        print(len(cube),len(rotoffs))
+        print("the specified rotoff cube is not the same length as the z dimension of the image cube")
 
-os.chdir(str(outdir))
-if len(cube) != len(rotoffs):
-    print("the specified rotoff cube is not the same length as the z dimension of the image cube")
+    else:
+        for z in range(len(rotoffs)):
+            newFITS = np.zeros((dim, dim))
+            for y in range(dim):
+                for x in range(dim):
+                    newFITS[y][x] = cube[z][y][x]
+            hdu = fits.PrimaryHDU(cube)
+            hdulist = fits.HDUList([hdu])
+            #prihdr = hdulist[0].header
+            header.set('rotoff', str(rotoffs[z]))
+            header.set('WLENGTH', wv)
+            hdulist[0].header = header
+            hdulist.writeto("sliced_"+str(z+1)+".fits", clobber=True)
+            print("Sliced image " + str(z+1))
 
-else:
-    for z in range(len(rotoffs)):
-        newFITS = np.zeros((dim, dim))
-        for y in range(dim):
-            for x in range(dim):
-                newFITS[y][x] = cube[z][y][x]
-        hdu = fits.PrimaryHDU(newFITS)
-        hdulist = fits.HDUList([hdu])
-        prihdr.set('rotoff', str(rotoffs[z]))
-        hdulist[0].header = prihdr
-        hdulist.writeto("sliced_"+str(z+1)+".fits", clobber=True)
-        print("Sliced image " + str(z+1))
+    print("Done slicing")
+    os.chdir(current)
+    
+    
+    
 
-print("Done slicing")
+try:
+    file = sys.argv[1]
+    outdir = sys.argv[2]
+    rotname = sys.argv[3]
+        
+except:    
+    print("Enter absolute directory filepath")
+    dir = input()
+    print("Enter name for output directory ")
+    outdir = input()
+    print("Enter filename to be sliced ")
+    fname = input()
+    print("Enter name of rotoff cube ")
+    rotname = input()
+    file = dir + "/" + fname
+
+slice(file, output=outdir, rotoff=rotname)
+
+
+

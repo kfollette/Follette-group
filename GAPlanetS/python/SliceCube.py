@@ -4,13 +4,16 @@
 from astropy.io import fits
 import os
 import numpy as np
+import sys 
 
-def slice(filename, output='sliced', rotoff='rotoff_nocosmics.fits'):
-    #os.chdir(str(filepath))
+def slice(dirPath, filename, output='sliced', rotoff='rotoff_nocosmics.fits'):
+    filename = dirPath + '/' + filename
+    output = dirPath + '/' + output
+    rotoff = dirPath + '/' + rotoff
+
     hdulist = fits.open(str(filename))
     cube = hdulist[0].data
     header = hdulist[0].header
-    wv = header['WLENGTH']
     hdulist.close()
     dim = cube.shape[1]
 
@@ -21,7 +24,7 @@ def slice(filename, output='sliced', rotoff='rotoff_nocosmics.fits'):
     if not os.path.exists(str(output)):
         os.makedirs(str(output))
 
-    current = os.getcwd
+    current = str(os.getcwd())
     os.chdir(str(output))
     if len(cube) != len(rotoffs):
         print(len(cube),len(rotoffs))
@@ -33,11 +36,9 @@ def slice(filename, output='sliced', rotoff='rotoff_nocosmics.fits'):
             for y in range(dim):
                 for x in range(dim):
                     newFITS[y][x] = cube[z][y][x]
-            hdu = fits.PrimaryHDU(cube)
+            hdu = fits.PrimaryHDU(newFITS)
             hdulist = fits.HDUList([hdu])
-            #prihdr = hdulist[0].header
             header.set('rotoff', str(rotoffs[z]))
-            header.set('WLENGTH', wv)
             hdulist[0].header = header
             hdulist.writeto("sliced_"+str(z+1)+".fits", clobber=True)
             print("Sliced image " + str(z+1))
@@ -47,24 +48,26 @@ def slice(filename, output='sliced', rotoff='rotoff_nocosmics.fits'):
     
     
     
-
-try:
-    file = sys.argv[1]
-    outdir = sys.argv[2]
-    rotname = sys.argv[3]
+def main():
+    try:
+        dir = sys.argv[1]
+        fname = sys.argv[2]
+        outdir = sys.argv[3]
+        rotname = sys.argv[4]
         
-except:    
-    print("Enter absolute directory filepath")
-    dir = input()
-    print("Enter name for output directory ")
-    outdir = input()
-    print("Enter filename to be sliced ")
-    fname = input()
-    print("Enter name of rotoff cube ")
-    rotname = input()
-    file = dir + "/" + fname
-
-slice(file, output=outdir, rotoff=rotname)
+    except:    
+        print("Enter absolute directory filepath")
+        dir = input()
+        print("Enter name for output directory ")
+        outdir = input()
+        print("Enter filename to be sliced ")
+        fname = input()
+        print("Enter name of rotoff cube ")
+        rotname = input()
 
 
+    slice(dir, fname, output=outdir, rotoff=rotname)
 
+
+
+if __name__ == "__main__": main()

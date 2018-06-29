@@ -1,5 +1,3 @@
-#!/Library/Frameworks/Python.framework/Versions/Current/bin/python
-
 import numpy as np
 import scipy as sp
 import scipy.ndimage
@@ -21,15 +19,12 @@ idl = pidly.IDL('/Applications/exelis/idl/bin/idl')
 
 """
 vlt_reduce_module.py:  
-
 Usage: From within directory with science-only frames of a single exposure time: 
         python vlt_reduce_module.py objname
-
 Arguments: sys.argv[1] = object name 
            sys.argv[2] = type of flat (1 if lamp, 0 if sky)
            sys.argv[3] = flag for saturated data (1 if saturated, 0 if unsaturated)
            sys.argv[4] = flag for alignment (1 if equal mass binary, 0 if single star or faint companion)       
-
 History:
 (v1) 2018-06-01 - KWD: Updated from original script (vlt_reduce_new) to implement the following:
                         * Python 3 compatibility
@@ -65,7 +60,6 @@ def dark_combine(path_to_raw_darks, sci_exptime, imsize, objname):
     med_dark            : (array) median-combined dark frame
     
     darkname            : (FITS file) output fits file of master dark frame and header taken from first raw dark.
-
     Dependents
     ----------
     sci_exptime         : (float)
@@ -149,7 +143,6 @@ def process_flats(path_to_raw_flats, path_to_raw_darks, imsize, flatcategory, ob
     master_flat             : (array) normalized, combined flatframe
     flatname                : (FITS file) output fits file of median flatfield (can be lamp or sky)
     masterflatname          : (FITS file) output fits file of master flatfield
-
     Dependents
     ----------
     flat_exptime            : (float)
@@ -285,7 +278,6 @@ def badpixelmap(med_flat, objname, flatheader, max_std = 3.0):
     ----------
     badflat             : (array) output image of the bad pixel map
     badpixname          : (FITS file) output FITS file of the bad pixel map
-
     Dependents
     ----------
     None
@@ -821,12 +813,10 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
     objname             : (string) name of target, e.g., "HIP123"
     imsize              : (float) dimension of FITS images, default = 1024 x 1024
     saveframes          : (boolean) flag whether to write out the individual FITS files or not, default = True
-
     
     Returns
     ----------
     reduced_sci         : (FITS files) reduced fits files of processed science frames, 'reduced_sci_*.fits'
-
     Dependents
     ----------
     dark_combine         : (function)
@@ -866,7 +856,7 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
     else:
         sciarray = np.zeros([imsize,imsize,n])
 
-    if len(im.shape) == 3: # check for data cubes of science frames    
+    if len(fits.getdata(scilist[0]).shape) == 3: # check for data cubes of science frames    
         totalframes = n*fits.getdata(scilist[0]).shape[0]
     else:
         totalframes = n
@@ -878,6 +868,7 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
     
     for ii in range(0, n):
         im = fits.getdata(scilist[ii])
+        header = fits.getheader(scilist[ii])
         if len(im.shape) == 3: # check for data cubes of science frames
             assert not np.any(np.isnan(im))
             for jj in range(0, im.shape[0]):
@@ -898,14 +889,14 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
     med_dark = dark_combine(path_to_raw_darks, sci_exptime, imsize, objname) 
 
     # subtract off the median dark frame from each of the science frames
-    for ii in range (0, n):
+    for ii in range (0, totalframes):
         sciarray[:,:,ii] -= med_dark
 
     # create the masterflat 
     med_flat, master_flat, flatheader = process_flats(path_to_raw_flats, path_to_raw_darks, imsize, flattype, objname)
 
     # divide each science frame by the masterflat frame
-    for ii in range(0, n):
+    for ii in range(0, totalframes):
         sciarray[:,:,ii] /= master_flat
 
     
@@ -994,26 +985,3 @@ if __name__ == '__main__':
 
 
 #____________________________________________________________#
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

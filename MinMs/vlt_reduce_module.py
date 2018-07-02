@@ -598,7 +598,7 @@ def measure_star_centers(skysub_science_array, scinames_list, sciheader, saturat
     return xcen, ycen
 
 
-def rotate_shift_align(xcen, ycen, angle, skysub_science_array, objname, sciheader, imsize=1024):
+def rotate_shift_align(xcen, ycen, angle, skysub_science_array, objname, sciheader, current_dir, imsize=1024):
     '''
     rotate_shift_align
     ----------
@@ -613,6 +613,7 @@ def rotate_shift_align(xcen, ycen, angle, skysub_science_array, objname, scihead
     skysub_science_array    : (array) stacked (x by y by n) array of reduced, sky-subtracted science image data 
     objname                 : (string) name of object
     sciheader               : (FITS header) header from the first science image in the stack
+    current_dir             : (string) path to current directory to update pIDLy
     imsize                  : image dimensions, default = 1024
     
     Returns
@@ -624,7 +625,10 @@ def rotate_shift_align(xcen, ycen, angle, skysub_science_array, objname, scihead
     reduced_science_array   :  this should be the output from the sky_subtract function
     measure_star_centers    :  needed to provide the input x, y center positions
     '''
-    n = len(skysub_science_array)
+    date = sciheader['DATE']
+    date = date[0:10]
+    
+    n = skysub_science_array.shape[2]
 
     #The position of the star in the first image
     #is used as the reference position
@@ -681,20 +685,21 @@ def rotate_shift_align(xcen, ycen, angle, skysub_science_array, objname, scihead
     corners[0,:,:] -= dy
 
     # and find the maximum size
-    xsize = np.ceil(np.max(corners[1,:,:]))
-    ysize = np.ceil(np.max(corners[0,:,:]))
+    xsize = int(np.ceil(np.max(corners[1,:,:])))
+    ysize = int(np.ceil(np.max(corners[0,:,:])))
+    print(xsize,ysize)
 
     # Restore your original list of star positions within the non-rotated/shifted images
     xcen = np.copy(old_xcen)
     ycen = np.copy(old_ycen)
 
     # now shift each of the science frames to match reference
-    big_im = np.zeros((ysize,xsize,n))
+    big_im = np.zeros([ysize,xsize,n])
 
     for ii in range(0, n):
         
-        xarr = np.array([np.arange(xsize),]*ysize)
-        yarr = np.array([np.arange(ysize),]*xsize).transpose()
+        xarr = np.array([np.arange(xsize),]*ysize, dtype=np.float64)
+        yarr = np.array([np.arange(ysize),]*xsize, dtype=np.float64).transpose()
 
         if angle[ii] != 0.0:
             new_x = (np.cos(angle[ii])*xcen[ii]) + (-(np.sin(angle[ii])*ycen[ii]))
@@ -732,11 +737,11 @@ def rotate_shift_align(xcen, ycen, angle, skysub_science_array, objname, scihead
         big_im[:,:,ii] = shifted_tmp
         print(f"Shifting image {ii} of {n}...") 
 
-        shiftname = objname + '-' + date + '-NACO-00' + str(i) + '.fits'
-        if i >= 10:
-            shiftname = objname + '-'+ date + '-NACO-0' + str(i) + '.fits'
-        if i >= 100:
-            shiftname = objname + '-' + date + '-NACO-' + str(i) + '.fits'
+        shiftname = objname + '-' + date + '-NACO-00' + str(ii) + '.fits'
+        if ii >= 10:
+            shiftname = objname + '-'+ date + '-NACO-0' + str(ii) + '.fits'
+        if ii >= 100:
+            shiftname = objname + '-' + date + '-NACO-' + str(ii) + '.fits'
 
         sciheader['CRPIX1A'] = (star[1],'primary star X-center')
         sciheader['CRPIX2A'] = (star[0],'primary star Y-center')
@@ -774,9 +779,13 @@ def rotate_shift_align(xcen, ycen, angle, skysub_science_array, objname, scihead
 
     fits.writeto('tmp.fits', big_im, sciheader, overwrite = True, output_verify='silentfix')
 
-    del sciarray
+    del skysub_science_array
     del big_im
     del shifted_tmp
+    
+    # ensure that idl thinks we're in the same place the console does
+    idl_changedir = 'cd, ' + f'"{current_dir}"'
+    idl(idl_changedir)
 
     idl('name = "'+ name +'"')
     idl('big_im = mrdfits("tmp.fits",0,header,/fscale,/silent)')
@@ -943,7 +952,7 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
     xcen, ycen = measure_star_centers(skysub_science_array, scinames_list, sciheader, saturated, alignflag, current_dir, saveframes = True)
 
     # final step (!) - shift and combine all of the images.
-    rotate_shift_align(xcen, ycen, angle, skysub_science_array, objname, sciheader, imsize=1024)
+    rotate_shift_align(xcen, ycen, angle, skysub_science_array, objname, sciheader, current_dir, imsize=1024)
 
     t1 = time.time()
     timetaken = (t1-t0)/60.
@@ -959,20 +968,20 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
 if __name__ == '__main__':
     
     # Define system arguments
-    # objname  = sys.argv[1] # object name 
-    #flattype  = sys.argv[2] # type of flat (1 if lamp, 0 if sky/twilight)
-    #saturated = sys.argv[3] # flag for saturated data (1 if saturated)
-    #alignflag = sys.argv[4] # flag for alignment (1 if equal mass binary)   
+    objname  = sys.argv[1] # object name 
+    flattype  = sys.argv[2] # type of flat (1 if lamp, 0 if sky/twilight)
+    saturated = sys.argv[3] # flag for saturated data (1 if saturated)
+    alignflag = sys.argv[4] # flag for alignment (1 if equal mass binary)   
 
-    objname   = "finaltest" # object name 
-    flattype  = 1 # type of flat (1 if lamp, 0 if sky/twilight)
-    saturated = 0 # flag for saturated data (1 if saturated)
-    alignflag = 0 # flag for alignment (1 if equal mass binary)
+    # objname   = "finaltest" # object name 
+    # flattype  = 1 # type of flat (1 if lamp, 0 if sky/twilight)
+    # saturated = 0 # flag for saturated data (1 if saturated)
+    # alignflag = 0 # flag for alignment (1 if equal mass binary)
 
     # Define working paths; this should be the HIP###/data_with_raw_calibs folder
     current_dir = os.getcwd()
     path_to_raw_darks = current_dir + '/DARK/'
-    path_to_raw_flats = current_dir + '/FLAT/'
+    path_to_raw_flats = current_dir + '/FLAT_LAMP/'
     path_to_raw_sci = current_dir + '/OBJECT/'
 
 

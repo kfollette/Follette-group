@@ -33,8 +33,8 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
   if not keyword_set(reg) then begin
     ;; if reg keyword not set, read in channel cubes from visao_separate_sdi, which are dark subtracted and flat fielded
     if not keyword_set(indiv) then begin
-      Line=readfits('Line'+string(namestr)+'preproc.fits', head)
-      Cont=readfits('Cont'+string(namestr)+'preproc.fits', head)
+      Line=readfits('Line'+string(namestr)+'preproc.fits', Linehead)
+      Cont=readfits('Cont'+string(namestr)+'preproc.fits', Conthead)
 
     endif
 
@@ -214,8 +214,6 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
 
   ;;add parameters to headers
   sxaddpar, Linehead, 'CLIP', clip
-  if not keyword_set(scl) then scl=1
-  sxaddpar, Linehead, 'CONT_SCALE', scl 
 
   if keyword_set(mask) then begin
     sxaddpar, Linehead, 'MASK', mask

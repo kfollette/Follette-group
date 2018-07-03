@@ -10,11 +10,6 @@ import os
 import glob
 import time
 
-# idl = pidly.IDL()
-idl = pidly.IDL('/Applications/exelis/idl/bin/idl')
-# idl = pidly.IDL('/Applications/exelis/idl85/bin/idl')
-
-# call file as: python reductionscripttest.py darklist flatlist sciencelist 1lamp(or 0 for sky) 0(not saturated) objname alignflag(1 if equal mass binary)
 
 
 """
@@ -24,13 +19,20 @@ Usage: From within directory with science-only frames of a single exposure time:
 Arguments: sys.argv[1] = object name 
            sys.argv[2] = type of flat (1 if lamp, 0 if sky)
            sys.argv[3] = flag for saturated data (1 if saturated, 0 if unsaturated)
-           sys.argv[4] = flag for alignment (1 if equal mass binary, 0 if single star or faint companion)       
+           sys.argv[4] = flag for alignment (1 if equal mass binary, 0 if single star or faint companion)     
+           sys.argv[5] = flag for SHORT or LONG exposures
 History:
 (v1) 2018-06-01 - KWD: Updated from original script (vlt_reduce_new) to implement the following:
                         * Python 3 compatibility
                         * astropy updates (from original pyfits)
                         * modularization
-                        * separation of individual frames from datacubes                    
+                        * separation of individual frames from datacubes  
+(v2) 2018-07-03 - KWD: Now usable with command line interface.
+
+
+Example usage: 
+python vlt_reduce_module.py 'HIP100_SHORT' 1 0 0 'SHORT'
+    - would perform a reduction with lamp flats, unsaturated exposures, and no need for alignment
 """
 
 
@@ -981,13 +983,26 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
 
 if __name__ == '__main__':
     
+    # idl = pidly.IDL()
+    idl = pidly.IDL('/Applications/exelis/idl/bin/idl')
+    # idl = pidly.IDL('/Applications/exelis/idl85/bin/idl') 
+    
     # Define system arguments
     objname  = sys.argv[1] # object name 
     flattype  = int(sys.argv[2]) # type of flat (1 if lamp, 0 if sky/twilight)
     saturated = int(sys.argv[3]) # flag for saturated data (1 if saturated)
-    alignflag = int(sys.argv[4]) # flag for alignment (1 if equal mass binary)   
+    alignflag = int(sys.argv[4]) # flag for alignment (1 if equal mass binary) 
+    shortflag = sys.argv[5]
     
     print(f"Object name: {objname} \n")
+    
+    if shortflag == 'SHORT':
+        print(f"Data type: Short exposures \n")
+    elif shortflag == 'LONG':
+        print(f"Data type: Long exposures \n")
+    else:
+        raise Exception("Incorrect exposure type: Must be SHORT or LONG")
+    
     if flattype == 1:
         print(f"Flat type: {flattype}, Lamp \n")
     elif flattype == 0:
@@ -1008,10 +1023,18 @@ if __name__ == '__main__':
 
     # Define working paths; this should be the HIP###/data_with_raw_calibs folder
     current_dir = os.getcwd()
-    path_to_raw_darks = current_dir + '/DARK/'
+    
     path_to_raw_flats = current_dir + '/FLAT_LAMP/'
-    path_to_raw_sci = current_dir + '/OBJECT/'
-
+    
+    if shortflag == 'SHORT':
+        path_to_raw_darks = current_dir + '/DARK/SHORT/'
+    elif shortflag == 'LONG':
+        path_to_raw_darks = current_dir + '/DARK/LONG/'
+        
+    if shortflag == 'SHORT':    
+        path_to_raw_sci = current_dir + '/OBJECT/SHORT/'
+    if shortflag == 'LONG':
+        path_to_raw_sci = current_dir + '/OBJECT/LONG/'
 
 
     # define size of image arrays

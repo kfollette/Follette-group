@@ -93,7 +93,7 @@ def dark_combine(path_to_raw_darks, sci_exptime, imsize, objname):
 
     number_of_darks = len(matching_darks)
 
-    print(f'Found {number_of_darks} darks with exposure times of {sci_exptime}.')
+    print(f'Found {number_of_darks} darks with exposure times of {sci_exptime}. \n')
 
     if number_of_darks == 0:
         raise ValueError('There are no matching dark frames.')
@@ -156,6 +156,7 @@ def process_flats(path_to_raw_flats, path_to_raw_darks, imsize, flatcategory, ob
 
     date = flatheader['DATE']
     date = date[0:10]
+    
 
     # if flats are lamp flats:
     if flatcategory == 1:
@@ -163,7 +164,7 @@ def process_flats(path_to_raw_flats, path_to_raw_darks, imsize, flatcategory, ob
         # check exposure times: lamp flats should all be the same
         flattimes = [fits.getheader(im)['EXPTIME'] for im in flatlist]
         if all(x == flattimes[0] for x in flattimes):
-            print("Exposure time: "+str(flattimes[0]))
+            print("Flatfield exposure time: " + str(flattimes[0]) + "\n")
         else:
             raise Exception("Exposure times for given list of lamp flats do not match.")
 
@@ -196,19 +197,26 @@ def process_flats(path_to_raw_flats, path_to_raw_darks, imsize, flatcategory, ob
         medflaton = np.median(flaton,axis = 2)    
         med_flat = medflaton - medflatoff
         flatname = objname + '_' + date + '_medianlampflat.fits'
-        fits.writeto(flatname, med_flat, flatheader, overwrite = True, output_verify='silentfix')            
+        fits.writeto(flatname, med_flat, flatheader, overwrite = True, output_verify='silentfix')     
+        
+        # some housekeeping to free up memory (at some point)
+        del flatarray
+        del flaton
+        del flatoff        
 
 
 
     # if flats are twilight/skyflats:
-    if flatcategory == 0:
+    elif flatcategory == 0:
         
         # determine if a master dark with appropriate exposure time exists in main directory:
         exptime = flatheader['EXPTIME']
         masterdark = glob.glob('*masterdark*'+str(exptime)+'*fits')
         
+        flatarray = np.zeros([imsize, imsize, n])
+        
         if len(masterdark) == 0:
-            print('Creating new master dark for flats with '+str(exptime)+'s exposure.')
+            print('Creating new master dark for flats with '+str(exptime)+'s exposure. \n')
             med_dark = dark_combine(path_to_raw_darks, exptime, imsize, objname)
 
         elif len(masterdark) > 1:
@@ -231,11 +239,14 @@ def process_flats(path_to_raw_flats, path_to_raw_darks, imsize, flatcategory, ob
         flatname = objname + '_' + date + '_medianskyflat.fits'
         fits.writeto(flatname, med_flat, flatheader, overwrite = True, output_verify='silentfix')
 
-    # some housekeeping to free up memory (at some point)
-    del flatarray
-    del flaton
-    del flatoff
-        
+        # some housekeeping to free up memory (at some point)
+        del flatarray
+        del flaton
+        del flatoff
+    
+    else: 
+        raise Exception("Type of flat not understood.")
+    
     ind = np.where(med_flat == 0)
     if np.sum(ind) > 0:    
         med_flat[ind] = 0.001
@@ -335,6 +346,7 @@ def correct_bad_pixels(sciarray, badflat, width = 5, sd_cut = 4.0):
     sciarray_copy = np.copy(sciarray)
     
     for ii in range(0,n):
+        print(f"Correcting image #{ii}")
 
         # cleans the bad pixels identified from the flatfield
         med_im = sp.ndimage.median_filter(sciarray_copy[:,:,ii], width)
@@ -802,7 +814,7 @@ def rotate_shift_align(xcen, ycen, angle, skysub_science_array, objname, scihead
     return
 
 
-def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objname, flattype, saturated, alignflag, imsize = 1024):
+def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objname, flattype, saturated, alignflag, saveframes=True, imsize = 1024):
     '''
     IN PROGRESS:NEED TO UPDATE DOCSTRING
     reduce_raw_sci
@@ -842,12 +854,14 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
 
     # Make list of science frames and check exposure time 
     scilist = glob.glob(path_to_raw_sci + 'NACO*.fits')
+    
+    print(f"Number of science frames found: {len(scilist)} \n")
 
     scitimes = [fits.getheader(im)['EXPTIME'] for im in scilist]
 
     # check if all of the exposure times in the current directory are the same:
     if all(x == scitimes[0] for x in scitimes):
-        print("Exposure time: "+str(scitimes[0]))
+        print("Science frame exposure time: " + str(scitimes[0]) + "\n")
     else:
         raise Exception("Exposure times for given list of files do not match. \
         You may need to make/define separate subfolders for different exptimes.")
@@ -956,7 +970,7 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
 
     t1 = time.time()
     timetaken = (t1-t0)/60.
-    print("Completed reduction of {n} images in {timetaken} minutes.")
+    print(f"Completed reduction of {totalframes} images in {timetaken} minutes.")
     return
     
 
@@ -969,9 +983,23 @@ if __name__ == '__main__':
     
     # Define system arguments
     objname  = sys.argv[1] # object name 
-    flattype  = sys.argv[2] # type of flat (1 if lamp, 0 if sky/twilight)
-    saturated = sys.argv[3] # flag for saturated data (1 if saturated)
-    alignflag = sys.argv[4] # flag for alignment (1 if equal mass binary)   
+    flattype  = int(sys.argv[2]) # type of flat (1 if lamp, 0 if sky/twilight)
+    saturated = int(sys.argv[3]) # flag for saturated data (1 if saturated)
+    alignflag = int(sys.argv[4]) # flag for alignment (1 if equal mass binary)   
+    
+    print(f"Object name: {objname} \n")
+    if flattype == 1:
+        print(f"Flat type: {flattype}, Lamp \n")
+    elif flattype == 0:
+        print(f"Flat type: {flattype}, sky \n")
+    if saturated == 1:
+        print(f"Saturated Flag: {saturated}, saturated \n")
+    elif saturated == 0:
+        print(f"Object name: {saturated}, not saturated \n")
+    if alignflag == 1:
+        print(f"Manual alignment needed: {alignflag}, true \n")
+    elif alignflag == 0:
+        print(f"Manual alignment needed: {alignflag}, false \n")
 
     # objname   = "finaltest" # object name 
     # flattype  = 1 # type of flat (1 if lamp, 0 if sky/twilight)

@@ -324,7 +324,7 @@ def create_map(filename, fwhm, smooth=2, planets = None, saveOutput = True, outp
     
     #temporary test begins here - remove to keyword with tunable FWHM and separate smoothing function if works
     gauss = conv.Gaussian2DKernel(stddev=smooth)
-    inpsm =conv.convolve(inp, gauss)
+    inpsm =conv.convolve(inp, gauss, preserve_nan=True)
     inp = inpsm
     #end test 
     

@@ -37,14 +37,10 @@ def writeData(indiv, snrmap = False, pre = ''):
  
 
     #shortens file path to bottom 4 directories so it will fit in fits header
-    pathToFiles_short  = ''
-    numdir = 0
-    for n in range (len(pathToFiles)):
-        pathToFiles_short = pathToFiles[-1-n] + pathToFiles_short
-        if (pathToFiles[-1-n] == '/'):
-            numdir += 1
-        if (numdir >=4 ):
-            break
+    try:
+        pathToFiles_short = '/'.join(pathToFiles.split(os.path.sep)[-4:])
+    except:
+        pathToFiles_short = pathToFiles
             
     #adds info to fits headers
     prihdr.set('annuli', str(annuli))
@@ -98,9 +94,9 @@ except:
 
 print("  File Path = " + pathToFiles) 
 
-if not os.path.exists(pathToFiles + "_KLIP"):
-    os.makedirs(pathToFiles + "_KLIP")
-    os.chmod(pathToFiles + "_KLIP", 0o777)
+if not os.path.exists(pathToFiles + "_klip"):
+    os.makedirs(pathToFiles + "_klip")
+    os.chmod(pathToFiles + "_klip", 0o777)
 
 iwa = int(sys.argv[2+argnum])
 print("  IWA = " + str(iwa))
@@ -192,7 +188,7 @@ print("Now flipping KLIPed images")
 dataset.output = dataset.output[:,:,:,::-1]
       
 if (saveData):
-    print("Writing KLIPed time series 4D cube to " + pathToFiles + "_KLIP")
+    print("Writing KLIPed time series 4D cube to " + pathToFiles + "_klip")
     writeData(dataset.output, pre = "uncombined_")
     
 
@@ -209,8 +205,6 @@ for k in klmodes:
     
     #creates SNR map if designated
     if (SNR):  
-        print()
-        print("Runing SNRMap on KLIPed data")
         SNRcube[kcount,:,:] = snr.create_map(isolatedKL, FWHM, smooth = _smooth, planets = maskParams, saveOutput = False)
                 
     kcount += 1
@@ -218,13 +212,13 @@ for k in klmodes:
         
 #write median combination cube to disk 
 print()
-print("Writing median KLIPed images to " + pathToFiles + "_KLIP")
+print("Writing median KLIPed images to " + pathToFiles + "_klip")
 writeData(cube, pre = "med_")
 
   
 if (SNR):
-    print("Writing SNR maps to " + pathToFiles + "_KLIP")
-    writeData(SNRcube, snrmap = True, pre = "SNRMap_")
+    print("Writing SNR maps to " + pathToFiles + "_klip")
+    writeData(SNRcube, snrmap = True, pre = "snrmap_")
 
 
 print()

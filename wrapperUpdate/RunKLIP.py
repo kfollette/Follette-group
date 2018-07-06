@@ -29,39 +29,45 @@ warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 #############                                        #############
 ################################################################## 
  
-def writeData(indiv, filepath, filename, prihdr, annuli, movement, subsections, iwa, klmodes, mask = None, pre = '', suff = "", smooth = None):    
-    #function writes fits files and adds important info to headers
+def writeData(indiv, snrmap = False, pre = ''): 
+    #function writes out fits files and writes important information to fits headers
+    
     hdu = fits.PrimaryHDU(indiv)
     hdulist = fits.HDUList([hdu])
-    
-    #shorten file path to bottom 4 directories so it will fit in header
+ 
+
+    #shortens file path to bottom 4 directories so it will fit in fits header
     pathToFiles_short  = ''
     numdir = 0
-    for n in range (len(filepath)):
-        pathToFiles_short = filepath[-1-n] + pathToFiles_short
-        if (filepath[-1-n] == '/'):
+    for n in range (len(pathToFiles)):
+        pathToFiles_short = pathToFiles[-1-n] + pathToFiles_short
+        if (pathToFiles[-1-n] == '/'):
             numdir += 1
         if (numdir >=4 ):
             break
-    
-    #add info to fits header
+            
+    #adds info to fits headers
     prihdr.set('annuli', str(annuli))
     prihdr.set('movement', str(movement))
     prihdr.set('subsctns', str(subsections))
     prihdr.set('klmodes', str(klmodes))
     prihdr.set('filepath', str(pathToFiles_short))
-    if (not mask == None):
+ 
+    if(snrmap):
         rad, pa, wid = mask 
-        prihdr.set('mask_rad', str(rad))
+        prihdr.set('mask_rad', str(ra))
         prihdr.set('mask_pa', str(pa))
         prihdr.set('mask_wid', str(wid))
-    if (not smooth == None):
-        prihdr.set('smooth_val', str(smooth))     
+  
+        prihdr.set('smooth_val', str(_smooth))
+
+        prihdr.set('FWHM', str(FWHM))
    
     hdulist[0].header = prihdr
     
-    #write fits files
-    hdulist.writeto(str(filepath) + "_KLIP/" + str(pre) + filename + "_a" + str(annuli) + "m" + str(movement) + "s" + str(subsections) + "iwa" + str(iwa) + str(suff) + '_KLmodes-all.fits' , clobber=True)
+    #writes out files
+    hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli) + "m" + str(movement) + "s" + str(subsections) + "iwa" + str(iwa) + '_klmodes-all.fits', clobber=True)
+
 
     
 
@@ -102,14 +108,14 @@ print("  IWA = " + str(iwa))
 klmodes = list(map(int, sys.argv[3+argnum].split(",")))
 print("  KL Modes = " + str(list(map(int, sys.argv[3+argnum].split(",")))))
 
-annuli2 = int(sys.argv[4+argnum])
-print("  Annuli = " + str(annuli2))
+annuli = int(sys.argv[4+argnum])
+print("  Annuli = " + str(annuli))
 
-movement2 = float(sys.argv[5+argnum])
-print("  Movement = " + str(movement2))
+movement = float(sys.argv[5+argnum])
+print("  Movement = " + str(movement))
 
-subsections2 = int(sys.argv[6+argnum])
-print("  Subsections = " + str(subsections2))
+subsections = int(sys.argv[6+argnum])
+print("  Subsections = " + str(subsections))
 
 outputFileName = sys.argv[7+argnum]     
 
@@ -171,7 +177,7 @@ print("Starting KLIP")
 
 
 #run klip for given parameters
-parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "/.."), fileprefix=outputFileName, annuli=annuli2, subsections=subsections2, movement=movement2, numbasis=klmodes, calibrate_flux=True, mode="ADI")
+parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "/.."), fileprefix=outputFileName, annuli=annuli, subsections=subsections, movement=movement, numbasis=klmodes, calibrate_flux=True, mode="ADI")
            
 #cube to hold median combinations of klipped images
 dim = dataset.output.shape[2]
@@ -187,7 +193,7 @@ dataset.output = dataset.output[:,:,:,::-1]
       
 if (saveData):
     print("Writing KLIPed time series 4D cube to " + pathToFiles + "_KLIP")
-    writeData(dataset.output, pathToFiles, outputFileName, prihdr, annuli2, movement2, subsections2, iwa, klmodes, suff = "_uncombined")
+    writeData(dataset.output, pre = "uncombined_")
     
 
 
@@ -213,14 +219,15 @@ for k in klmodes:
 #write median combination cube to disk 
 print()
 print("Writing median KLIPed images to " + pathToFiles + "_KLIP")
-writeData(cube, pathToFiles, outputFileName, prihdr, annuli2, movement2, subsections2, iwa, klmodes, pre = "med_")
+writeData(cube, pre = "med_")
 
   
 if (SNR):
     print("Writing SNR maps to " + pathToFiles + "_KLIP")
-    writeData(SNRcube, pathToFiles, outputFileName, prihdr, annuli2, movement2, subsections2, iwa, klmodes, mask = maskParams, pre = "SNRMap_", smooth = _smooth)
+    writeData(SNRcube, snrmap = True, pre = "SNRMap_")
 
-        
+
+print()
 print("KLIP completed")        
 
   

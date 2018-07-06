@@ -70,14 +70,10 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
         subsections_fname = s
 
     #shortens file path to bottom 4 directories so it will fit in fits header
-    pathToFiles_short  = ''
-    numdir = 0
-    for n in range (len(pathToFiles)):
-        pathToFiles_short = pathToFiles[-1-n] + pathToFiles_short
-        if (pathToFiles[-1-n] == '/'):
-            numdir += 1
-        if (numdir >=4 ):
-            break
+    try:
+        pathToFiles_short = '/'.join(pathToFiles.split(os.path.sep)[-4:])
+    except:
+        pathToFiles_short = pathToFiles
             
     #adds info to fits headers
     prihdr.set('annuli', str(annuli_head))

@@ -50,7 +50,6 @@ def writeData(indiv, snrmap = False, pre = ''):
     prihdr.set('filepath', str(pathToFiles_short))
  
     if(snrmap):
-        rad, pa, wid = mask 
         prihdr.set('mask_rad', str(ra))
         prihdr.set('mask_pa', str(pa))
         prihdr.set('mask_wid', str(wid))

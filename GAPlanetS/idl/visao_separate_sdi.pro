@@ -66,6 +66,9 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   object=strarr(nims)
   vfw3posn=strarr(nims)
   dateobs=strarr(nims)
+  ra = strarr(nims)
+  dec = strarr(nims)
+  inst = strarr(nims)
 
   if keyword_set(flat) then flatim=readfits(flat)
 
@@ -88,6 +91,9 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
     rotoff[i]=sxpar(head, 'ROTOFF')
     object[i]=sxpar(head, 'OBJECT')
     vfw3posn[i]=sxpar(head, 'VFW3POSN')
+    ra[i]=sxpar(head, 'RA')
+    dec[i]=sxpar(head, 'DEC')
+    inst[i]=sxpar(head, 'INSTRUME')
 
     ;dark subtract and flat field (if specified)
     if keyword_set(flat) then begin
@@ -139,6 +145,10 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
 
   ;; add parameters to header
   mkhdr, head_new, Line
+  sxaddpar, head_new, 'INSTRUME', inst[uniq(inst)]
+  sxaddpar, head_new, 'OBJECT', object[uniq(object)]
+  sxaddpar, head_new, 'RA', median(ra)
+  sxaddpar, head_new, 'DEC', median(dec)
   if keyword_set(flat) then begin
     sxaddpar, head_new, 'FLAT', flat
   endif
@@ -147,7 +157,6 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   sxaddpar, head_new, 'WFE_CUT', wfe
   sxaddpar, head_new, 'MED_WFE', median(avgwfe)
   sxaddpar, head_new, 'STD_WFE', stdev(avgwfe)
-  sxaddpar, head_new, 'OBJECT', object[uniq(object)]
   sxaddpar, head_new, 'VFW3POSN', vfw3posn[uniq(vfw3posn)] 
   ;wavelength keyword required for PyKLIP
   sxaddpar, head_new, 'WLENGTH', 0.656

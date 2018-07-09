@@ -15,4 +15,4 @@ try:
         Delete={'Objects': objects_to_delete})
 except:
     for obj in bucket.objects.filter(Prefix='follette-lab/cloud/input/' +dirname + '/'):
-        bucket.delete_key(obj.key)
+        obj.delete()

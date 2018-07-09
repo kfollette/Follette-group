@@ -14,6 +14,8 @@ if(dirname  == 'options/'):
 dirs = []
 if(dirname == ''):
     print('options:' )
+else:
+    print(dirname)
 
 for obj in bucket.objects.filter(Prefix = 'follette-lab/cloud/input/' +dirname):
     filename = obj.key.rsplit('/')
@@ -23,8 +25,8 @@ for obj in bucket.objects.filter(Prefix = 'follette-lab/cloud/input/' +dirname):
             print(filename[-2])
             dirs.append(filename[-2])
     else:
+        print(filename[-1])
         filename = filename[-2] + '/' + filename[-1]
         if not os.path.exists('/data/' + obj.key.rsplit('/')[-2]):
             os.makedirs('/data/' + obj.key.rsplit('/')[-2])
-        print(filename)
         s3.meta.client.download_file('ac-follettelab', obj.key, '/data/' + filename)

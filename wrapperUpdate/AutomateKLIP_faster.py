@@ -1,4 +1,3 @@
-
 #Clare Leonard                                                                
 #Version 1.0 - 6/21/17                                                          
 
@@ -95,7 +94,7 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
     hdulist[0].header = prihdr
     
     #writes out files
-    hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli_fname) + "m" + str(movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + '_1annulus_klmodes-all.fits', clobber=True)
+    hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli_fname) + "m" + str(movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + '_klmodes-all.fits', clobber=True)
 
 
 
@@ -258,87 +257,101 @@ acount = 0
 
 for a in range(annuli_start, annuli_stop+1, annuli_inc):
     
-    #keeps track of number of movement values that have been tested, used for indexing
-    mcount = 0
+    zonewidth = (min(xDim, yDim)/2 - iwa)/a
+    upperbound = iwa+zonewidth
+    lowerbound = iwa
     
-    for m in np.arange(movement_start, movement_stop+1, movement_inc):
-        
-        scount = 0
-        
-        for s in range(subsections_start, subsections_stop+1, subsections_inc):
-            
-            print("Parameters: annuli = %d; movement = %s; subections = %d" %(a, m,s))
-                  
-            #cube to hold median combinations of klipped images
-            cube = np.zeros((len(klmodes),yDim,xDim))
-            #creates cube to hold snr maps 
-            snrMapCube = np.zeros((len(klmodes),yDim,xDim))
+    while(ra > upperbound or ra < lowerbound):
+        upperbound = upperbound + zonewidth
+        lowerbound = lowerbound + zonewidth
+    
+    print("planet at: " + str(ra))
+    print("lower bound: " + str(lowerbound))
+    print("upper bound: " + str(upperbound))
+    
+    if ( (ra-FWHM/2 >= lowerbound)  and (ra+FWHM/2 <= upperbound) ):
+    
+        #keeps track of number of movement values that have been tested, used for indexing
+        mcount = 0
 
-            
-            runKLIP = True
-            
-            if (os.path.isfile(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '_1annulus_klmodes-all.fits')):
-                hdulist = fits.open(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '_1annulus_klmodes-all.fits')
-                klmodes2 = hdulist[0].header['klmodes'][1:-1]
-                klmodes2 = list(map(int, klmodes2.split(",")))
-               
-                if (len([k for k in klmodes if not k in klmodes2]) == 0):
-                    print("Found KLIP processed images for same parameters saved to disk. Reading in data.")
-                    runKLIP = False 
-                    for i in range(len(klmodes)):
-                        cube[i,:,:] = hdulist[0].data[klmodes2.index(klmodes[i]),:,:]
-                       
+        for m in np.arange(movement_start, movement_stop+1, movement_inc):
 
-            
-            if (runKLIP):
-                print("Starting KLIP")
-                #run klip for given parameters
-                parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=[[lowerbound, upperbound]], subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
-                #flips images
-                output = dataset.output[:,:,:,::-1]
-             
-            #keeps track of number of KL mode values that have been tested, used for indexing
-            kcount = 0
-            
-            #iterates over kl modes
-            for k in klmodes:
-                                
+            scount = 0
+
+            for s in range(subsections_start, subsections_stop+1, subsections_inc):
+
+                print("Parameters: annuli = %d; movement = %s; subections = %d" %(a, m,s))
+
+                #cube to hold median combinations of klipped images
+                cube = np.zeros((len(klmodes),yDim,xDim))
+                #creates cube to hold snr maps 
+                snrMapCube = np.zeros((len(klmodes),yDim,xDim))
+
+
+                runKLIP = True
+
+                if (os.path.isfile(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '_klmodes-all.fits')):
+                    hdulist = fits.open(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '_klmodes-all.fits')
+                    klmodes2 = hdulist[0].header['klmodes'][1:-1]
+                    klmodes2 = list(map(int, klmodes2.split(",")))
+
+                    if (len([k for k in klmodes if not k in klmodes2]) == 0):
+                        print("Found KLIP processed images for same parameters saved to disk. Reading in data.")
+                        runKLIP = False 
+                        for i in range(len(klmodes)):
+                            cube[i,:,:] = hdulist[0].data[klmodes2.index(klmodes[i]),:,:]
+
+
+
                 if (runKLIP):
-                    #takes median combination of cube made with given number of KL modes
-                    isolatedKL = np.nanmedian(output[kcount,:,:,:], axis=0)
-                    #adds median image to cube 
-                    cube[kcount,:,:] = isolatedKL
-                    
-                else:
-                    isolatedKL = cube[kcount,:,:]
-                
-                #makes SNR map 
-                snrmap = snr.create_map(isolatedKL,FWHM, smooth = _smooth, planets = mask, saveOutput = False)
-                
-                #adds SNR map to 5d cube 
-                if (saveSNR):
-                    snrMapCube[kcount,:,:] = snrmap 
-                
-      
-                planetSNRs = [snr.getPlanet(snrmap, 0, ra[x], pa[x], int(wid[0]/2)+1) for x in range (len(ra))]
-                planetSNR = np.mean(planetSNRs)
-                
-                #add planet snr value to snrCube
-                snrCube[kcount,scount,acount,mcount] = planetSNR
-                kcount+=1
-                                          
-            if(runKLIP):
-                #write median combination cube to disk 
-                print("Writing median image combinations to " + pathToFiles + "_klip/")
-                writeData(snrCube, pre = 'med_')
+                    print("Starting KLIP")
+                    #run klip for given parameters
+                    parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=a, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
+                    #flips images
+                    output = dataset.output[:,:,:,::-1]
 
-            if (saveSNR):
-                print("Writing SNR maps to " + pathToFiles + "_klip/")
-                writeData(snrCube, snrmap = True, pre = 'snrmap_')
-            print()
-            
-            scount+=1
-        mcount+=1
+                #keeps track of number of KL mode values that have been tested, used for indexing
+                kcount = 0
+
+                #iterates over kl modes
+                for k in klmodes:
+
+                    if (runKLIP):
+                        #takes median combination of cube made with given number of KL modes
+                        isolatedKL = np.nanmedian(output[kcount,:,:,:], axis=0)
+                        #adds median image to cube 
+                        cube[kcount,:,:] = isolatedKL
+
+                    else:
+                        isolatedKL = cube[kcount,:,:]
+
+                    #makes SNR map 
+                    snrmap = snr.create_map(isolatedKL,FWHM, smooth = _smooth, planets = mask, saveOutput = False)
+
+                    #adds SNR map to 5d cube 
+                    if (saveSNR):
+                        snrMapCube[kcount,:,:] = snrmap 
+
+
+                    planetSNRs = [snr.getPlanet(snrmap, 0, ra[x], pa[x], int(wid[0]/2)+1) for x in range (len(ra))]
+                    planetSNR = np.mean(planetSNRs)
+
+                    #add planet snr value to snrCube
+                    snrCube[kcount,scount,acount,mcount] = planetSNR
+                    kcount+=1
+
+                if(runKLIP):
+                    #write median combination cube to disk 
+                    print("Writing median image combinations to " + pathToFiles + "_klip/")
+                    writeData(snrCube, pre = 'med_')
+
+                if (saveSNR):
+                    print("Writing SNR maps to " + pathToFiles + "_klip/")
+                    writeData(snrCube, snrmap = True, pre = 'snrmap_')
+                print()
+
+                scount+=1
+            mcount+=1
     acount+=1
 
 
@@ -350,4 +363,3 @@ writeData(snrCube, allParams = True, snrmap = True, pre = 'paramexplore_')
 print()
 print("KLIP automation complete")  
             
-

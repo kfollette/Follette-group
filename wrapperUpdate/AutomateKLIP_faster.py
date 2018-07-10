@@ -16,7 +16,8 @@ import os
 import instruments.MagAO as MagAO                                   
 import parallelized as parallelized
 import numpy as np
-import sys                                                   
+import sys             
+import pyklip.fm as fm
 import klip as klip
 from astropy.io import fits
 import SNRMap as snr   
@@ -306,7 +307,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                 if (runKLIP):
                     print("Starting KLIP")
                     #run klip for given parameters
-                    parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=[[lowerbound, upperbound]], subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
+                    fm.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=[[lowerbound, upperbound]], subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
                     #flips images
                     output = dataset.output[:,:,:,::-1]
 

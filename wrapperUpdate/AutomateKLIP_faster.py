@@ -261,7 +261,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
     upperbound = iwa+zonewidth
     lowerbound = iwa
     
-    while(ra > upperbound or ra < lowerbound):
+    while(ra[0] > upperbound or ra[0] < lowerbound):
         upperbound = upperbound + zonewidth
         lowerbound = lowerbound + zonewidth
     
@@ -269,7 +269,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
     print("lower bound: " + str(lowerbound))
     print("upper bound: " + str(upperbound))
     
-    if ( (ra-FWHM/2 >= lowerbound)  and (ra+FWHM/2 <= upperbound) ):
+    if ( (ra[0]-FWHM/2 >= lowerbound)  and (ra[0]+FWHM/2 <= upperbound) ):
     
         #keeps track of number of movement values that have been tested, used for indexing
         mcount = 0
@@ -306,7 +306,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                 if (runKLIP):
                     print("Starting KLIP")
                     #run klip for given parameters
-                    parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=a, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
+                    parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=[[lowerbound, upperbound]], subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
                     #flips images
                     output = dataset.output[:,:,:,::-1]
 

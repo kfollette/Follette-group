@@ -423,12 +423,14 @@ public class GetParameters{
 		try{
 		    PrintWriter writer = new PrintWriter("single_reduction_parameters.txt", "UTF-8");
 		    writer.println(filepath2.getText() + "%finish");
-		    writer.println(annuli2.getText());
 		    writer.println(IWA2.getText());
+            writer.println(klmodes2.getText());
+            writer.println(annuli2.getText());
 		    writer.println(movement2.getText());
+            writer.println(subsections2.getText());
 		    writer.println(output2.getText());
-		    writer.println(klmodes2.getText());
-		    writer.println(subsections2.getText());
+		    
+		    
 		    writer.println(snr.isSelected());
             writer.println(save.isSelected());
             if (snr.isSelected()){

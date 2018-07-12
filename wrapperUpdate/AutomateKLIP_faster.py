@@ -261,8 +261,8 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
     
     dr = float(owa-iwa)/a
     all_bounds = [dr*rad+iwa for rad in range(a+1)]
-        upBound = max([b for b in all_bounds if (min(ra)>b)])
-        lowBound = min([b for b in all_bounds if (max(ra)<b)])
+    upBound = max([b for b in all_bounds if (min(ra)>b)])
+    lowBound = min([b for b in all_bounds if (max(ra)<b)])
     
     print("planet at: " + str(ra))
     print("lower bound: " + str(upBound[0]))

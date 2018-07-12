@@ -244,7 +244,7 @@ public class GetParameters{
         filepath2.setLocation(67,30);
         
         
-    wid2 = new JTextField("10,15");
+    wid2 = new JTextField("5,15");
         wid2.setBackground(Color.white);
         wid2.setSize(100,30);
         wid2.setLocation(300-30-2,291+50+29);
@@ -659,7 +659,7 @@ public class GetParameters{
 		}
 	    });
 
-    wid = new JTextField("10,15");
+    wid = new JTextField("5,15");
         wid.setBackground(Color.white);
         wid.setSize(100,30);
         wid.setLocation(300-30,281+2);

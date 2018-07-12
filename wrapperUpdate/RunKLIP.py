@@ -51,10 +51,6 @@ def writeData(indiv, snrmap = False, pre = ''):
     hdr.set('filepath', str(pathToFiles_short))
  
     if(snrmap):
-        if(maskParams == None): 
-            ra = 'none'
-            pa = 'none'
-            wid = 'none'
         hdr.set('mask_rad', str(ra))
         hdr.set('mask_pa', str(pa))
         hdr.set('mask_wid', str(wid))
@@ -128,6 +124,9 @@ if (sys.argv[9+argnum] == 'true' or sys.argv[9+argnum] == 'True'):
     saveData = True    
     
 maskParams = None
+ra = 'none'
+pa = 'none'
+wid = 'none'
 
 if (SNR):
     try: 

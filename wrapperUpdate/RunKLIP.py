@@ -34,6 +34,7 @@ def writeData(indiv, snrmap = False, pre = ''):
     
     hdu = fits.PrimaryHDU(indiv)
     hdulist = fits.HDUList([hdu])
+    hdr = prihdr
  
 
     #shortens file path to bottom 4 directories so it will fit in fits header
@@ -43,22 +44,26 @@ def writeData(indiv, snrmap = False, pre = ''):
         pathToFiles_short = pathToFiles
             
     #adds info to fits headers
-    prihdr.set('annuli', str(annuli))
-    prihdr.set('movement', str(movement))
-    prihdr.set('subsctns', str(subsections))
-    prihdr.set('klmodes', str(klmodes))
-    prihdr.set('filepath', str(pathToFiles_short))
+    hdr.set('annuli', str(annuli))
+    hdr.set('movement', str(movement))
+    hdr.set('subsctns', str(subsections))
+    hdr.set('klmodes', str(klmodes))
+    hdr.set('filepath', str(pathToFiles_short))
  
     if(snrmap):
-        prihdr.set('mask_rad', str(ra))
-        prihdr.set('mask_pa', str(pa))
-        prihdr.set('mask_wid', str(wid))
+        if(maskParams == None): 
+            ra = 'none'
+            pa = 'none'
+            wid = 'none'
+        hdr.set('mask_rad', str(ra))
+        hdr.set('mask_pa', str(pa))
+        hdr.set('mask_wid', str(wid))
   
-        prihdr.set('smooth_val', str(_smooth))
+        hdr.set('smooth_val', str(_smooth))
 
-        prihdr.set('FWHM', str(FWHM))
+        hdr.set('FWHM', str(FWHM))
    
-    hdulist[0].header = prihdr
+    hdulist[0].header = hdr
     
     #writes out files
     hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli) + "m" + str(movement) + "s" + str(subsections) + "iwa" + str(iwa) + '_klmodes-all.fits', clobber=True)

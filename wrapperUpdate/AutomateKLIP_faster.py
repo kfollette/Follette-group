@@ -247,6 +247,7 @@ dataset.IWA = iwa
 
 xDim = dataset._input.shape[2]
 yDim = dataset._input.shape[1]
+owa = min(xDim,yDim)/2
 #creates cube to eventually hold average SNR data
 snrCube = np.zeros((len(klmodes),int((subsections_stop-subsections_start)/subsections_inc+1), int((annuli_stop-annuli_start)/annuli_inc+1),int((movement_stop-movement_start)/movement_inc+1)))
 
@@ -258,19 +259,16 @@ acount = 0
 
 for a in range(annuli_start, annuli_stop+1, annuli_inc):
     
-    zonewidth = (min(xDim, yDim)/2 - iwa)/a
-    upperbound = iwa+zonewidth
-    lowerbound = iwa
-    
-    while(ra[0] > upperbound or ra[0] < lowerbound):
-        upperbound = upperbound + zonewidth
-        lowerbound = lowerbound + zonewidth
+    dr = float(owa-iwa)/a
+    all_bounds = [dr*rad+iwa for rad in range(a+1)]
+        upBound = max([b for b in all_bounds if (min(ra)>b)])
+        lowBound = min([b for b in all_bounds if (max(ra)<b)])
     
     print("planet at: " + str(ra))
-    print("lower bound: " + str(lowerbound))
-    print("upper bound: " + str(upperbound))
+    print("lower bound: " + str(upBound[0]))
+    print("upper bound: " + str(lowBoud[1]))
     
-    if ( (ra[0]-FWHM/2 >= lowerbound)  and (ra[0]+FWHM/2 <= upperbound) ):
+    if ( (min(ra)-FWHM/2 >= lowBound)  and (max(ra)+FWHM/2 <= upBound) ):
     
         #keeps track of number of movement values that have been tested, used for indexing
         mcount = 0
@@ -302,12 +300,14 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                         for i in range(len(klmodes)):
                             cube[i,:,:] = hdulist[0].data[klmodes2.index(klmodes[i]),:,:]
 
-
+                
 
                 if (runKLIP):
                     print("Starting KLIP")
+                    dataset.iwa = lowBound
+                    dataset.owa = upBound
                     #run klip for given parameters
-                    fm.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=[[lowerbound, upperbound]], subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
+                    parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=1, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
                     #flips images
                     output = dataset.output[:,:,:,::-1]
 

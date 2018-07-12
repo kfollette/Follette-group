@@ -128,23 +128,23 @@ wid = 'none'
 
 if (SNR):
     try: 
+        FWHM = float(sys.argv[10+argnum])
+        _smooth = float(sys.argv[11+argnum])
         print()
         print("SNR Map Parameters:")
-        FWHM = float(sys.argv[10+argnum])
         print('  Star FWHM = ' + str(FWHM))
-        _smooth = float(sys.argv[11+argnum])
         print('  Smoothing value = ' + str(_smooth))
-        print('  Planet mask parameters:')
-        print("    Radius = " + str(list(map(int, sys.argv[12+argnum].split(",")))))
         ra = list(map(int, sys.argv[12+argnum].split(",")))
-        print("    Position Angle = " + str(list(map(int, sys.argv[13+argnum].split(",")))))
         pa = list(map(int, sys.argv[13+argnum].split(",")))
-        print("    Mask width (radial, angular): = " + str(list(map(int, sys.argv[14+argnum].split(",")))))
         wid = list(map(int, sys.argv[14+argnum].split(",")))
         maskParams = (ra, pa, wid)
+        print('  Planet mask parameters:')
+        print("    Radius = " + str(ra))
+        print("    Position Angle = " + str(pa))
+        print("    Mask width (radial, angular): = " + str(wid))
         
     except:
-        pass
+        print("Planet mask parameters not specified or incorrectly specified")
         
 
 

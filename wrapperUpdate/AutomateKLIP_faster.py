@@ -261,12 +261,12 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
     
     dr = float(owa-iwa)/a
     all_bounds = [dr*rad+iwa for rad in range(a+1)]
-    upBound = max([b for b in all_bounds if (min(ra)>b)])
-    lowBound = min([b for b in all_bounds if (max(ra)<b)])
+    lowBound = max([b for b in all_bounds if (min(ra)>b)])
+    upBound = min([b for b in all_bounds if (max(ra)<b)])
     
     print("planet at: " + str(ra))
-    print("lower bound: " + str(upBound[0]))
-    print("upper bound: " + str(lowBoud[1]))
+    print("lower bound: " + str(lowBound))
+    print("upper bound: " + str(upBound))
     
     if ( (min(ra)-FWHM/2 >= lowBound)  and (max(ra)+FWHM/2 <= upBound) ):
     
@@ -304,8 +304,8 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
 
                 if (runKLIP):
                     print("Starting KLIP")
-                    dataset.iwa = lowBound
-                    dataset.owa = upBound
+                    dataset.IWA = lowBound
+                    dataset.OWA = upBound
                     #run klip for given parameters
                     parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=1, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
                     #flips images

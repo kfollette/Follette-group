@@ -184,7 +184,7 @@ public class GetParameters{
         klmodes1.setSize(100,40);
         klmodes1.setLocation(128-40-1,90+59-9+1);
 
-        klmodes2 = new JTextField("1,5,10,20,50,100");
+        klmodes2 = new JTextField("1,2,3,4,5,10,20,50,100");
         klmodes2.setBackground(Color.white);
         klmodes2.setSize(130,30);
         klmodes2.setLocation(95-40-1,120+59-9+1);
@@ -717,7 +717,7 @@ public class GetParameters{
         klmodes1.setSize(100,40);
         klmodes1.setLocation(92+4,173);
 
-        klmodes2 = new JTextField("1,5,10,50,100");
+        klmodes2 = new JTextField("1,2,3,4,5,10,20,50,100");
         klmodes2.setBackground(Color.white);
         klmodes2.setSize(110,30);
         klmodes2.setLocation(68+2+2,202);

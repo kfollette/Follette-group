@@ -54,9 +54,7 @@ def writeData(indiv, snrmap = False, pre = ''):
         hdr.set('mask_rad', str(ra))
         hdr.set('mask_pa', str(pa))
         hdr.set('mask_wid', str(wid))
-  
         hdr.set('smooth_val', str(_smooth))
-
         hdr.set('FWHM', str(FWHM))
    
     hdulist[0].header = hdr

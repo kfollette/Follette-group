@@ -100,7 +100,7 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
         suff = '_min-annuli'
     
     #writes out files
-    hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli_fname) + "m" + str(movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + suf + '_klmodes-all.fits', clobber=True)
+    hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli_fname) + "m" + str(movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + suff + '_klmodes-all.fits', clobber=True)
 
 
 

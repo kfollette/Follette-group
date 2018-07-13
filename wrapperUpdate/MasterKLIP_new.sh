@@ -5,7 +5,7 @@
 #Increase limit on maximum open files
 ulimit -n 4096
 
-if ($1 == "cloud")
+if [ "$1" = "cloud" ]; then
     mkdir -p /data/tmp
     export TMPDIR=/data/tmp
 fi

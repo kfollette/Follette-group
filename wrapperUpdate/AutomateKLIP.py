@@ -218,6 +218,10 @@ if (sys.argv[19+argnum] == 'true' or sys.argv[19+argnum] == 'True'):
 
 print()
 
+singleAnn = False
+if (sys.argv[20+argnum] == 'true' or sys.argv[20+argnum] == 'True'):
+    singleAnn = True  
+
 
 
 

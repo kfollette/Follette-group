@@ -96,7 +96,7 @@ public class GetParameters{
     public static void automateGUI() throws FileNotFoundException{   
         final JFrame frame = new JFrame("Automated Parameter Search");
         frame.setIconImage(new ImageIcon("pyklip_logo.png").getImage());
-        frame.setSize(400,400);
+        frame.setSize(400,434);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setBackground(Color.black);
@@ -516,13 +516,13 @@ public class GetParameters{
 
 	JLabel divider = new JLabel("____________________________________________________________");
         divider.setSize(500,20);
-        divider.setLocation(0,280+10+20);
+        divider.setLocation(0,280+10+20+34);
         divider.setVisible(true);
         divider.setForeground(Color.blue);
 	
 	JButton back = new JButton("<--");
         back.setSize(50,30);
-        back.setLocation(20, 325+12);
+        back.setLocation(20, 325+12+34);
         back.setOpaque(true);
         back.setForeground(Color.red);
         back.addActionListener(new ActionListener()
@@ -609,45 +609,45 @@ public class GetParameters{
         output1.setForeground(Color.white);
         output1.setSize(225,40);
         //output1.setLocation(266,173);
-        output1.setLocation(266+4,117);
+        output1.setLocation(266+4,117+28);
 
         output2 = new JTextField("star_date_set");
         output2.setBackground(Color.white);
         output2.setSize(130-10,30);
         //output2.setLocation(256,202);
-        output2.setLocation(256+10,147);
+        output2.setLocation(256+10,147+28);
         
         JLabel smooth1 = new JLabel("Smoothing Value");
         smooth1.setForeground(Color.white);
         smooth1.setSize(225,40);
-        smooth1.setLocation(266+5,173);
+        smooth1.setLocation(266+5,173+32);
         //smooth1.setLocation(266+4,117);
 
         final JTextField smooth2 = new JTextField("2.0");
         smooth2.setBackground(Color.white);
         smooth2.setSize(130-10,30);
-        smooth2.setLocation(256+10,202);
+        smooth2.setLocation(256+10,202+32);
         //smooth2.setLocation(256+10,147);
 
         JLabel filepath1 = new JLabel("Path to Desired Directory");
         filepath1.setForeground(Color.white);
         filepath1.setSize(200,40);
-        filepath1.setLocation(118-10-35,117);
+        filepath1.setLocation(118-10-35,117+28);
 
         filepath2 = new JTextField("example/star_name/date/sliced");
         filepath2.setBackground(Color.white);
         filepath2.setSize(325-109,30);
-        filepath2.setLocation(58-13,147);
+        filepath2.setLocation(58-13,147+28);
 
         snr = new JCheckBox("SNR Analysis");
-        snr.setLocation(135,235);
+        snr.setLocation(135,235+30);
         snr.setSize(120,50);
         snr.setVisible(true);
         snr.setForeground(Color.white);
 
         final JButton searcher = new JButton("!");
         searcher.setSize(20,20);
-        searcher.setLocation(25-6, 152);
+        searcher.setLocation(25-6, 152+28);
         searcher.setOpaque(true);
         searcher.setForeground(Color.blue);
         searcher.addActionListener(new ActionListener()
@@ -664,85 +664,91 @@ public class GetParameters{
     wid = new JTextField("5,15");
         wid.setBackground(Color.white);
         wid.setSize(100,30);
-        wid.setLocation(300-30,281+2);
+        wid.setLocation(300-30,281+2+35);
         
     pa = new JTextField("120");
         pa.setBackground(Color.white);
         pa.setSize(100,30);
-        pa.setLocation(147,281+2);
+        pa.setLocation(147,281+2+35);
         
     rad = new JTextField("13");
         rad.setBackground(Color.white);
         rad.setSize(100,30);
-        rad.setLocation(25,281+2);
+        rad.setLocation(25,281+2+35);
         
         
     JLabel widL = new JLabel("Width");
         widL.setForeground(Color.white);
         widL.setSize(100,40);
-        widL.setLocation(300,254+2);
+        widL.setLocation(300,254+2+35);
 
     JLabel paL = new JLabel("Position Angle");
         paL.setForeground(Color.white);
         paL.setSize(100,40);
-        paL.setLocation(150,254+2);
+        paL.setLocation(150,254+2+35);
         
     JLabel radL = new JLabel("Radius");
         radL.setForeground(Color.white);
         radL.setSize(100,40);
-        radL.setLocation(55,254+2);
+        radL.setLocation(55,254+2+35);
 
 
 	JLabel IWA1 = new JLabel("IWA");
         IWA1.setForeground(Color.white);
         IWA1.setSize(100,40);
-        IWA1.setLocation(27,173);
+        IWA1.setLocation(27,173+32);
 
         IWA2 = new JTextField("10");
         IWA2.setBackground(Color.white);
         IWA2.setSize(50,30);
-        IWA2.setLocation(15,202);
+        IWA2.setLocation(15,202+32);
 
 	final JLabel FWHM1 = new JLabel("FWHM");
         FWHM1.setForeground(Color.white);
         FWHM1.setSize(100,40);
-        FWHM1.setLocation(196+7,173);
+        FWHM1.setLocation(196+7,173+32);
 
         final JTextField FWHM2 = new JTextField("5");
         FWHM2.setBackground(Color.white);
         FWHM2.setSize(70,30);
-        FWHM2.setLocation(182+4+3,202);
+        FWHM2.setLocation(182+4+3,202+32);
 
 
 	JLabel klmodes1 = new JLabel("KL Modes");
         klmodes1.setForeground(Color.white);
         klmodes1.setSize(100,40);
-        klmodes1.setLocation(92+4,173);
+        klmodes1.setLocation(92+4,173+32);
 
         klmodes2 = new JTextField("1,2,3,4,5,10,20,50,100");
         klmodes2.setBackground(Color.white);
         klmodes2.setSize(110,30);
-        klmodes2.setLocation(68+2+2,202);
+        klmodes2.setLocation(68+2+2,202+32);
 
 	JLabel planets = new JLabel("Planet Locations:");
         planets.setForeground(Color.white);
         planets.setSize(190,30);
-        planets.setLocation(117,238);
+        planets.setLocation(117,238+35);
 	planets.setFont(new Font("Serif", Font.BOLD, 20));
         
   
    final JCheckBox save2 = new JCheckBox("Write SNR maps");
-	save2.setLocation(115,328);
+	save2.setLocation(115,328+34);
 	save2.setSize(170,50);
 	save2.setVisible(true);
 	save2.setForeground(Color.white);    
    
+        
+   final JCheckBox singleAnn = new JCheckBox("Minimum number of annuli");
+	singleAnn.setLocation(95,113);
+	singleAnn.setSize(210,50);
+	singleAnn.setVisible(true);
+	singleAnn.setForeground(Color.white);
     
 
        final Color DARK_GREEN = new Color(0x00, 0xC0, 0x00); 
 	JButton launcher = new JButton("Run KLIP");
         launcher.setSize(80,35);
-        launcher.setLocation(298,335);
+        launcher.setLocation(298,335+34);
         launcher.setOpaque(true);
         launcher.setForeground(DARK_GREEN);
         launcher.addActionListener(new ActionListener()
@@ -769,6 +775,7 @@ public class GetParameters{
             writer.println(pa.getText());
             writer.println(wid.getText());
             writer.println(save2.isSelected());
+            writer.println(singleAnn.isSelected());
 			writer.close();
 			System.exit(0);
 		    } catch (Exception e1){}
@@ -815,6 +822,7 @@ public class GetParameters{
         frame.getContentPane().add(smooth1);
         frame.getContentPane().add(smooth2);
 	frame.getContentPane().add(save2);
+        frame.getContentPane().add(singleAnn);
 
 
     }

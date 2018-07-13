@@ -21,21 +21,23 @@ if [ -f single_reduction_parameters.txt ]; then
     echo ""
     python RunKLIP.py `< single_reduction_parameters.txt`
     rm single_reduction_parameters.txt
+    if [ -f "single_reduction_parameters.txt~" ]; then
+       rm single_reduction_parameters.txt~
+    fi
 fi
 if [ -f automation_parameters.txt ]; then
     echo "Performing automation"
     echo ""
     python AutomateKLIP.py `< automation_parameters.txt`
     rm automation_parameters.txt
+    if [ -f "automation_parameters.txt~" ]; then
+       rm automation_parameters.txt~
+    fi
 fi
 
 
-if [ -f "single_reduction_parameters.txt~" ]; then
-   rm single_reduction_parameters.txt~
-fi
 
-if [ -f "automation_parameters.txt~" ]; then
-   rm automation_parameters.txt~
-fi
+
+
 
 

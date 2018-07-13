@@ -216,6 +216,11 @@ saveSNR = False
 if (sys.argv[19+argnum] == 'true' or sys.argv[19+argnum] == 'True'):
     saveSNR = True    
 
+    
+singleAnn = False
+if (sys.argv[20+argnum] == 'true' or sys.argv[20+argnum] == 'True'):
+    singleAnn = True    
+    
 print()
 
 
@@ -261,16 +266,33 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
     
     dr = float(owa-iwa)/a
     all_bounds = [dr*rad+iwa for rad in range(a+1)]
-    lowBound = max([b for b in all_bounds if (min(ra)>b)])
-    upBound = min([b for b in all_bounds if (max(ra)<b)])
-    numAnn = (upBound-lowBound)/dr
+    numAnn = a
     
-    print("planet at: " + str(ra))
-    print("lower bound: " + str(lowBound))
-    print("upper bound: " + str(upBound))
-    print("number of annuli: " + str(numAnn))
+    if(singleAnn):
+        lowBound = max([b for b in all_bounds if (min(ra)>b)])
+        upBound = min([b for b in all_bounds if (max(ra)<b)])
+        all_bounds = [b for b in all_bounds if (b>=lowBound and b<=upBound)]
+        numAnn = int((upBound-lowBound)/dr)
+        dataset.IWA = lowBound
+        dataset.OWA = upBound
+        
+
+        print("planet at: " + str(ra))
+        print("lower bound: " + str(lowBound))
+        print("upper bound: " + str(upBound))
+        print("number of annuli: " + str(numAnn))
+        
+    #check to see if any planets fall very close to a zone boundary    
+    for pl in ra:
+        for b in all_bounds:
+            if (b <= pl+FWHM/2 and b >= pl-FWHM/2):
+                #dont run
     
-    if ( (min(ra)-FWHM/2 >= lowBound)  and (max(ra)+FWHM/2 <= upBound) ):
+    
+    if( len([b for b in all bounds if ((b <= pl+FWHM/2 and b >= pl-FWHM/2) for pl in ra)]) == 0):
+    
+    
+    #if ( (min(ra)-FWHM/2 >= lowBound)  and (max(ra)+FWHM/2 <= upBound) ):
     
         #keeps track of number of movement values that have been tested, used for indexing
         mcount = 0
@@ -306,8 +328,6 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
 
                 if (runKLIP):
                     print("Starting KLIP")
-                    dataset.IWA = lowBound
-                    dataset.OWA = upBound
                     #run klip for given parameters
                     parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
                     #flips images

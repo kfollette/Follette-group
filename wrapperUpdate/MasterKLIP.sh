@@ -101,6 +101,8 @@ else
             wi=$line
 	elif [ $counter = 19 ]; then
             SAVE2=$line
+    elif [ $counter = 20 ]; then
+            oneann=$line
         fi
     done < "automation_parameters.txt"
 fi
@@ -116,7 +118,7 @@ if [[ $RUNTYPE = 1 ]]; then
     #cp $OUTPUTNAME".fits" "temp_klip.fits"
     #rm temp_klip.fits
 else 
-    python AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3 $FWHM $SMOOTH $ra $pa $wi $SAVE2
+    python AutomateKLIP.py $FILEPATH $IWA $KLMODES $OUTPUTNAME $A1 $A2 $A3 $M1 $M2 $M3 $S1 $S2 $S3 $FWHM $SMOOTH $ra $pa $wi $SAVE2 $oneann
 fi
 
 

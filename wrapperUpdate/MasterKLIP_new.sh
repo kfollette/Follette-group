@@ -28,7 +28,7 @@ fi
 if [ -f automation_parameters.txt ]; then
     echo "Performing automation"
     echo ""
-    python AutomateKLIP.py `< automation_parameters.txt`
+    python AutomateKLIP_faster.py `< automation_parameters.txt`
     rm automation_parameters.txt
     if [ -f "automation_parameters.txt~" ]; then
        rm automation_parameters.txt~

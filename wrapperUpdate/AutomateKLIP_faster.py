@@ -94,8 +94,13 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
    
     hdulist[0].header = prihdr
     
+    suff = ''
+    
+    if(singleAnn):
+        suff = '_min-annuli'
+    
     #writes out files
-    hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli_fname) + "m" + str(movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + '_klmodes-all.fits', clobber=True)
+    hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli_fname) + "m" + str(movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + suf + '_klmodes-all.fits', clobber=True)
 
 
 
@@ -276,23 +281,8 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
         dataset.IWA = lowBound
         dataset.OWA = upBound
         
-
-        print("planet at: " + str(ra))
-        print("lower bound: " + str(lowBound))
-        print("upper bound: " + str(upBound))
-        print("number of annuli: " + str(numAnn))
-        
     
     #check to see if any planets fall very close to a zone boundary 
-    #onBound = False
-    #for pl in ra:
-        #for b in all_bounds:
-            #if (b <= pl+FWHM/2 and b >= pl-FWHM/2):
-                #onBound = True
-                   
-    
-    #if(not onBound):
-       
     if (len( [b for b in all_bounds for r in ra if(b <= r+FWHM/2 and b >= r-FWHM/2)] ) == 0):
     
         #keeps track of number of movement values that have been tested, used for indexing
@@ -303,8 +293,12 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
             scount = 0
 
             for s in range(subsections_start, subsections_stop+1, subsections_inc):
-
-                print("Parameters: annuli = %d; movement = %s; subections = %d" %(a, m,s))
+                
+                if(singleAnn):
+                    print("Parameters: movement = %s; subections = %d" %(a, m,s))
+                    print("Running for %d annuli of width %s pixels" %(numAnn, dr))
+                else:
+                    print("Parameters: annuli = %d; movement = %s; subections = %d" %(a, m,s))
 
                 #cube to hold median combinations of klipped images
                 cube = np.zeros((len(klmodes),yDim,xDim))
@@ -380,6 +374,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
             
     else: 
         print("Planet near annulus boundary; skipping KLIP for annuli = " + str(a))
+        print()
         snrCube[:,:,acount,:] = np.nan
                 
                 

@@ -263,10 +263,12 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
     all_bounds = [dr*rad+iwa for rad in range(a+1)]
     lowBound = max([b for b in all_bounds if (min(ra)>b)])
     upBound = min([b for b in all_bounds if (max(ra)<b)])
+    numAnn = (upBound-lowBound)/dr
     
     print("planet at: " + str(ra))
     print("lower bound: " + str(lowBound))
     print("upper bound: " + str(upBound))
+    print("number of annuli: " + str(numAnn))
     
     if ( (min(ra)-FWHM/2 >= lowBound)  and (max(ra)+FWHM/2 <= upBound) ):
     
@@ -307,7 +309,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                     dataset.IWA = lowBound
                     dataset.OWA = upBound
                     #run klip for given parameters
-                    parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=1, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
+                    parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
                     #flips images
                     output = dataset.output[:,:,:,::-1]
 

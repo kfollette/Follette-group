@@ -1,10 +1,14 @@
 #Elijah Spiro
-#Version 2.1 - 3/26/17
 #edited by Clare Leonard - 8/1/2017
 #Version 3.1 - 7/12/2018
 
 #Increase limit on maximum open files
 ulimit -n 4096
+
+if ($1 == "cloud")
+    mkdir -p /data/tmp
+    export TMPDIR=/data/tmp
+fi
 
 #Launch GUI prompting for information
 if  [ ! -f GetParameters.class ]; then
@@ -14,6 +18,7 @@ fi
 #javac GetParameters.java
 java GetParameters
 rm *.class
+
 
 #Determine whether to run single reduction of automated reduction
 if [ -f single_reduction_parameters.txt ]; then

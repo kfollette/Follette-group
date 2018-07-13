@@ -375,9 +375,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
     else: 
         print("Planet near annulus boundary; skipping KLIP for annuli = " + str(a))
         print()
-        snrCube[:,:,acount,:] = np.nan
-                
-                
+        snrCube[:,:,acount,:] = np.nan         
                 
     acount+=1
 

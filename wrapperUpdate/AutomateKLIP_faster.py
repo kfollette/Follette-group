@@ -282,17 +282,16 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
         print("upper bound: " + str(upBound))
         print("number of annuli: " + str(numAnn))
         
-    #check to see if any planets fall very close to a zone boundary    
+    
+    #check to see if any planets fall very close to a zone boundary 
+    onBound = False
     for pl in ra:
         for b in all_bounds:
             if (b <= pl+FWHM/2 and b >= pl-FWHM/2):
-                #dont run
+                onBound = True
+                   
     
-    
-    if( len([b for b in all bounds if ((b <= pl+FWHM/2 and b >= pl-FWHM/2) for pl in ra)]) == 0):
-    
-    
-    #if ( (min(ra)-FWHM/2 >= lowBound)  and (max(ra)+FWHM/2 <= upBound) ):
+    if(not onBound):
     
         #keeps track of number of movement values that have been tested, used for indexing
         mcount = 0
@@ -375,6 +374,14 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
 
                 scount+=1
             mcount+=1
+            
+            
+    else: 
+        print("Planet near annulus boundary; skipping KLIP for annuli = " + str(a))
+        snrCube[kcount,scount,acount,mcount] = np.nan
+                
+                
+                
     acount+=1
 
 

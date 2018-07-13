@@ -295,7 +295,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
             for s in range(subsections_start, subsections_stop+1, subsections_inc):
                 
                 if(singleAnn):
-                    print("Parameters: movement = %s; subections = %d" %(a, m,s))
+                    print("Parameters: movement = %s; subections = %d" %(m,s))
                     print("Running for %d annuli of width %s pixels" %(numAnn, dr))
                 else:
                     print("Parameters: annuli = %d; movement = %s; subections = %d" %(a, m,s))

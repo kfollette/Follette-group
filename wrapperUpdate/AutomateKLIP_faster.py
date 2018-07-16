@@ -277,7 +277,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
         lowBound = max([b for b in all_bounds if (min(ra)>b)])
         upBound = min([b for b in all_bounds if (max(ra)<b)])
         all_bounds = [b for b in all_bounds if (b>=lowBound and b<=upBound)]
-        numAnn = int((upBound-lowBound)/dr)
+        numAnn = int(round((upBound-lowBound)/dr))
         dataset.IWA = lowBound
         dataset.OWA = upBound
         

@@ -361,11 +361,11 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                 if(runKLIP):
                     #write median combination cube to disk 
                     print("Writing median image combinations to " + pathToFiles + "_klip/")
-                    writeData(snrCube, pre = 'med_')
+                    writeData(cube, pre = 'med_')
 
                 if (saveSNR):
                     print("Writing SNR maps to " + pathToFiles + "_klip/")
-                    writeData(snrCube, snrmap = True, pre = 'snrmap_')
+                    writeData(snrMapCube, snrmap = True, pre = 'snrmap_')
                 print()
 
                 scount+=1

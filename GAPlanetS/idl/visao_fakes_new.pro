@@ -89,7 +89,7 @@ pro visao_fakes_new, filename, rotoff_fname, contrast, sep, pa=pa, saturated=sat
       adi_psfmodel, fakes, dim1, dim2, rotoffs+90-0.59, sep, pa, psf0=imcube
       scale = contrast[0]
       inim=imcube+scale*fakes
-      writefits, 'test_fakes.fits', fakes
+      ;writefits, 'test_fakes.fits', fakes
     endif else begin
       numplanets = n_elements(contrast)
       fakes=dblarr(dim1,dim2,(size(imcube))[3])

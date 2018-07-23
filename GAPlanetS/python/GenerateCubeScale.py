@@ -49,7 +49,19 @@ def debug():
 #Establish the directory we want to work from
 def switchDirectories():
     print("Starting in directory: " + os.getcwd())
-    os.chdir(str(sys.argv[1]))
+    global argnum 
+    argnum = 0
+    pathToFiles = sys.argv[1]
+    try:
+        while (not pathToFiles[-5:] == '%done'):
+            argnum += 1
+            pathToFiles = pathToFiles + " " + sys.argv[1+argnum]
+        pathToFiles = pathToFiles[:-5]
+        
+    except:
+        pathToFiles = sys.argv[1]
+        argnum = 0
+    os.chdir(pathToFiles)
     print("Switched into working directory: " + os.getcwd())
     printDivider()
 
@@ -460,9 +472,10 @@ def getMedianScale():
 
 #Prepare for calculations
 debug() #Prompts user whether or not to display progress as program runs
+argnum = 0
 switchDirectories() #Navigates to the proper working directory (NOTE you'll have to change this function to fit your machine)
-readFitsCubeToArray(str(sys.argv[2]), 1)
-readFitsCubeToArray(str(sys.argv[3]), 2)
+readFitsCubeToArray(str(sys.argv[2+argnum]), 1)
+readFitsCubeToArray(str(sys.argv[3+argnum]), 2)
 
 
 #try:

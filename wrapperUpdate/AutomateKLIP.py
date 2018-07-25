@@ -96,8 +96,7 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
     
     suff = ''
     
-    if(singleAnn):
-        suff = '_min-annuli'
+
     
     #writes out files
     hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli_fname) + "m" + str(movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + suff + '_klmodes-all.fits', clobber=True)
@@ -221,10 +220,11 @@ saveSNR = False
 if (sys.argv[19+argnum] == 'true' or sys.argv[19+argnum] == 'True'):
     saveSNR = True    
 
-    
+suff = ''    
 singleAnn = False
 if (sys.argv[20+argnum] == 'true' or sys.argv[20+argnum] == 'True'):
-    singleAnn = True    
+    singleAnn = True   
+    suff = '_min-annuli'
     
 print()
 
@@ -308,8 +308,8 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
 
                 runKLIP = True
 
-                if (os.path.isfile(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '_klmodes-all.fits')):
-                    hdulist = fits.open(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + '_klmodes-all.fits')
+                if (os.path.isfile(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + suff + '_klmodes-all.fits')):
+                    hdulist = fits.open(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + suff + '_klmodes-all.fits')
                     klmodes2 = hdulist[0].header['klmodes'][1:-1]
                     klmodes2 = list(map(int, klmodes2.split(",")))
 

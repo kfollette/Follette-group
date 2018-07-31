@@ -30,3 +30,12 @@ def addstarpeak(dir,amp, fwhm):
         head['STARPEAK']=p[0]
         fits.writeto(filelist[i], im, header=head, clobber=True)
 
+
+def addradec(ra, dec):
+    filelist = glob.glob(dir + '/*.fits')
+    for i in np.arange(len(filelist)):
+        im = fits.getdata(filelist[i])
+        head = fits.getheader(filelist[i])
+        head['RA'] = ra
+        head['DEC'] = dec
+        fits.writeto(filelist[i], im, header=head, clobber=True)

@@ -3,7 +3,7 @@ import numpy as np
 import glob
 import gaussfitter
 
-
+
 def addwl(dir, wl):
     filelist=glob.glob(dir+'/*.fits')
     print('length of file list: ', len(filelist))
@@ -31,7 +31,7 @@ def addstarpeak(dir,amp, fwhm):
         fits.writeto(filelist[i], im, header=head, clobber=True)
 
 
-def addradec(ra, dec):
+def addradec(dir,ra, dec):
     filelist = glob.glob(dir + '/*.fits')
     for i in np.arange(len(filelist)):
         im = fits.getdata(filelist[i])

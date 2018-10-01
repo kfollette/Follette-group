@@ -282,6 +282,7 @@ public class GetParameters{
 	snr.setSize(150,50);
 	snr.setVisible(true);
 	snr.setForeground(Color.white);
+    snr.setOpaque(false);
         snr.addItemListener(new ItemListener() {
 		public void itemStateChanged(ItemEvent itemEvent){
 		    if (snr.isSelected()){
@@ -307,6 +308,7 @@ public class GetParameters{
 	save.setSize(200,50);
 	save.setVisible(true);
 	save.setForeground(Color.white); 
+    save.setOpaque(false);
         
     JLabel params = new JLabel("KLIP Parameters:");
         params.setForeground(Color.white);
@@ -325,6 +327,7 @@ public class GetParameters{
 	adi.setSize(60,20);
 	adi.setVisible(true);
 	adi.setForeground(Color.white); 
+    adi.setOpaque(false);
     
     
         
@@ -334,6 +337,7 @@ public class GetParameters{
 	sdi.setSize(60,20);
 	sdi.setVisible(true);
 	sdi.setForeground(Color.white);
+    sdi.setOpaque(false);
     
     
         
@@ -341,7 +345,8 @@ public class GetParameters{
 	both.setLocation(205,345+85);
 	both.setSize(130,20);
 	both.setVisible(true);
-	both.setForeground(Color.white); 
+	both.setForeground(Color.white);
+    both.setOpaque(false);
     both.addItemListener(new ItemListener() {
 		public void itemStateChanged(ItemEvent itemEvent){
 		    if (both.isSelected()){
@@ -739,11 +744,19 @@ public class GetParameters{
    
         
    final JCheckBox singleAnn = new JCheckBox("Minimum number of annuli");
-	singleAnn.setLocation(95,113);
+	singleAnn.setLocation(95-66,113);
 	singleAnn.setSize(210,50);
 	singleAnn.setVisible(true);
 	singleAnn.setForeground(Color.white);
-    
+    singleAnn.setOpaque(false);
+        
+    final JCheckBox highpass = new JCheckBox("Highpass filter");
+	highpass.setLocation(95+143,113);
+	highpass.setSize(210,50);
+	highpass.setVisible(true);
+	highpass.setForeground(Color.white);
+    highpass.setOpaque(false);
+    highpass.setSelected(true);
 
        final Color DARK_GREEN = new Color(0x00, 0xC0, 0x00); 
 	JButton launcher = new JButton("Run KLIP");
@@ -776,6 +789,7 @@ public class GetParameters{
             writer.println(wid.getText());
             writer.println(save2.isSelected());
             writer.println(singleAnn.isSelected());
+            writer.println(highpass.isSelected());
 			writer.close();
 			System.exit(0);
 		    } catch (Exception e1){}
@@ -823,6 +837,7 @@ public class GetParameters{
         frame.getContentPane().add(smooth2);
 	frame.getContentPane().add(save2);
         frame.getContentPane().add(singleAnn);
+        frame.getContentPane().add(highpass);
 
 
     }

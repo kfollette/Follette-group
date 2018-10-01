@@ -312,15 +312,15 @@ public class GetParameters{
         
     JLabel params = new JLabel("KLIP Parameters:");
         params.setForeground(Color.white);
-        params.setSize(190+15,60);
-        params.setLocation(117-17,72-17);
-	params.setFont(new Font("Serif", Font.BOLD, 25));
+        params.setSize(190+15+50,60);
+        params.setLocation(117-17-10,72-17);
+	params.setFont(new Font("Georgia", Font.BOLD, 25-2));
         
     JLabel SNRparams = new JLabel("SNRMap Parameters:");
         SNRparams.setForeground(Color.white);
-        SNRparams.setSize(190+50,60);
-        SNRparams.setLocation(117-37,72+155);
-	SNRparams.setFont(new Font("Serif", Font.BOLD, 25));
+        SNRparams.setSize(190+50+50,60);
+        SNRparams.setLocation(117-37-10,72+155);
+	SNRparams.setFont(new Font("Georgia", Font.BOLD, 25-2));
         
     final JCheckBox adi = new JCheckBox("ADI");
 	adi.setLocation(105,345+85);
@@ -380,7 +380,7 @@ public class GetParameters{
         planets2.setForeground(Color.white);
         planets2.setSize(190,30);
         planets2.setLocation(120+3,241+50+34);
-	planets2.setFont(new Font("Serif", Font.BOLD, 20));    
+	planets2.setFont(new Font("Georgia", Font.BOLD, 18));    
 
 	final JButton searcher = new JButton("!");
 	searcher.setSize(20,20);
@@ -502,21 +502,21 @@ public class GetParameters{
         annuli.setForeground(Color.white);
         annuli.setSize(140,40);
         annuli.setLocation(40, 2+15);
-	annuli.setFont(new Font("Serif", Font.BOLD, 20));
+	annuli.setFont(new Font("Georgia", Font.BOLD, 18));
 	
 
 	final JLabel movement = new JLabel("Movement");
         movement.setForeground(Color.white);
         movement.setSize(140,40);
         movement.setLocation(40, 30+5+15);
-        movement.setFont(new Font("Serif", Font.BOLD, 20));
+        movement.setFont(new Font("Georgia", Font.BOLD, 18));
         
 
 	final JLabel subsections = new JLabel("Subsections");
         subsections.setForeground(Color.white);
         subsections.setSize(140,40);
         subsections.setLocation(40, 58+10+15);
-        subsections.setFont(new Font("Serif", Font.BOLD, 20));
+        subsections.setFont(new Font("Georgia", Font.BOLD, 18));
 
 
 	JLabel divider = new JLabel("____________________________________________________________");
@@ -649,6 +649,7 @@ public class GetParameters{
         snr.setSize(120,50);
         snr.setVisible(true);
         snr.setForeground(Color.white);
+        snr.setOpaque(false);
 
         final JButton searcher = new JButton("!");
         searcher.setSize(20,20);
@@ -733,14 +734,15 @@ public class GetParameters{
         planets.setForeground(Color.white);
         planets.setSize(190,30);
         planets.setLocation(117,238+35);
-	planets.setFont(new Font("Serif", Font.BOLD, 20));
+	planets.setFont(new Font("Georgia", Font.BOLD, 18));
         
   
    final JCheckBox save2 = new JCheckBox("Write SNR maps");
 	save2.setLocation(115,328+34);
 	save2.setSize(170,50);
 	save2.setVisible(true);
-	save2.setForeground(Color.white);    
+	save2.setForeground(Color.white); 
+    save2.setOpaque(false);
    
         
    final JCheckBox singleAnn = new JCheckBox("Minimum number of annuli");

@@ -227,7 +227,10 @@ if (sys.argv[20+argnum] == 'true' or sys.argv[20+argnum] == 'True'):
     suff = '_min-annuli'
     
     
-highpass = True 
+highpass = False
+if (sys.argv[21+argnum] == 'true' or sys.argv[21+argnum] == 'True'):
+    highpass = True   
+    suff += '_highpass'
     
 print()
 

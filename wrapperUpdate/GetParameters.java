@@ -320,7 +320,7 @@ public class GetParameters{
         SNRparams.setForeground(Color.white);
         SNRparams.setSize(190+50+50,60);
         SNRparams.setLocation(117-37-10,72+155);
-	SNRparams.setFont(new Font("Georgia", Font.BOLD, 25-2));
+	SNRparams.setFont(new Font("Sans Serif", Font.BOLD, 25-2));
         
     final JCheckBox adi = new JCheckBox("ADI");
 	adi.setLocation(105,345+85);

@@ -45,8 +45,8 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
 
   endif else begin
     if not keyword_set(clip) then print, 'must set clip keyword with reg keyword'
-    Line = readfits('Line_clip'+string(clip, format='(i03)')+string(namestr)+'reg.fits')
-    Cont = readfits('Cont_clip'+string(clip, format='(i03)')+string(namestr)+'reg.fits')
+    Line = readfits('Line_clip'+string(clip, format='(i03)')+string(namestr)+'reg.fits', Linehead)
+    Cont = readfits('Cont_clip'+string(clip, format='(i03)')+string(namestr)+'reg.fits', Conthead)
   endelse
 
   dim1 = (size(Line))[1]

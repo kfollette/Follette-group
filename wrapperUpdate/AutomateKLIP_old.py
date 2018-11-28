@@ -222,7 +222,9 @@ singleAnn = False
 if (sys.argv[20+argnum] == 'true' or sys.argv[20+argnum] == 'True'):
     singleAnn = True  
 
-
+_highpass = False
+if (sys.argv[21+argnum] == 'true' or sys.argv[21+argnum] == 'True'):
+    _highpass = True  
 
 
 
@@ -297,7 +299,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
             if (runKLIP):
                 print("Starting KLIP")
                 #run klip for given parameters
-                parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix= 'mean_' + str(outputFileName), annuli= a, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI") 
+                parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix= 'mean_' + str(outputFileName), annuli= a, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI", highpass = _highpass) 
                 #flips images
                 output = dataset.output[:,:,:,::-1]
              

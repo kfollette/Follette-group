@@ -4,10 +4,10 @@ from astropy.io import fits
 
 filename = sys.argv[1]
 kl = list(map(int, sys.argv[2].split(",")))
-file = fits.getdata(filename)
+file = fits.getdata(filename)[:,0,:,:]
 all_kl = list(map(int, fits.open(filename)[0].header['KLMODES'][1:-1].split(",")))
 
-collapsed = np.zeros((1, file.shape[2], file.shape[3]))
+collapsed = np.zeros((1, file.shape[1], file.shape[2]))
 for i in kl:
     collapsed += file[all_kl.index(i)]
 

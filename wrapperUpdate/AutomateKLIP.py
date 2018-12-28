@@ -331,8 +331,9 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                     print("Starting KLIP")
                     #run klip for given parameters
                     parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI", highpass = highpass) 
-                    #flips images
-                    output = dataset.output[:,:,:,::-1]
+                    #take median combo
+                    cube = np.nanmedian(dataset.output, axis=(1,2))
+                    print(cube.shape)
 
                 #keeps track of number of KL mode values that have been tested, used for indexing
                 kcount = 0
@@ -340,17 +341,17 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                 #iterates over kl modes
                 for k in klmodes:
 
-                    if (runKLIP):
+                    #if (runKLIP):
                         #takes median combination of cube made with given number of KL modes
-                        isolatedKL = np.nanmedian(output[kcount,:,:,:], axis=0)
-                        #adds median image to cube 
-                        cube[kcount,:,:] = isolatedKL
+                        #isolatedKL = np.nanmedian(output[kcount,:,:,:], axis=0)
+                        #adds median image to cube
+                        #cube[kcount,:,:] = isolatedKL
 
-                    else:
-                        isolatedKL = cube[kcount,:,:]
+                    #else:
+                        #isolatedKL = cube[kcount,:,:]
 
                     #makes SNR map 
-                    snrmap = snr.create_map(isolatedKL,FWHM, smooth = _smooth, planets = mask, saveOutput = False)
+                    snrmap = snr.create_map(cube[kcount,:,:],FWHM, smooth = _smooth, planets = mask, saveOutput = False)
 
                     #adds SNR map to 5d cube 
                     if (saveSNR):

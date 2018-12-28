@@ -7,14 +7,11 @@
 import glob
 import inspect
 import os
-#import pyklip.instruments.MAGAO as MAGAO
-import instruments.MagAO as MagAO
-#import pyklip.parallelized as parallelized
-import parallelized as parallelized
+import pyklip.instruments.MagAO as MagAO
+import pyklip.parallelized as parallelized
 import numpy as np
 import sys
-#import pyklip.klip as klip
-import klip as klip
+import pyklip.klip as klip
 from astropy.io import fits
 import warnings
 from astropy.utils.exceptions import AstropyWarning
@@ -177,7 +174,7 @@ print("Starting KLIP")
 parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix= ('mean_' + str(outputFileName)), annuli=annuli, subsections=subsections, movement=movement, numbasis=klmodes, calibrate_flux=True, mode="ADI")
            
 #cube to hold median combinations of klipped images
-dim = dataset.output.shape[2]
+dim = dataset.output.shape[3]
 
 cube = np.zeros((len(klmodes),dim,dim))
 
@@ -185,31 +182,23 @@ cube = np.zeros((len(klmodes),dim,dim))
 SNRcube = np.zeros((len(klmodes),dim,dim))
             
 #flips images
-print("Now flipping KLIPed images")
-dataset.output = dataset.output[:,:,:,::-1]
+#print("Now flipping KLIPed images")
+#dataset.output = dataset.output[:,:,:,::-1]
       
 if (saveData):
     print("Writing KLIPed time series 4D cube to " + pathToFiles + "_klip")
     writeData(dataset.output, pre = "uncombined_")
     
+cube = np.nanmedian(dataset.output, axis=(1,2))
+#print(cube.shape)
 
-
-#keeps track of number of KL mode values that have been tested, used for indexing
-kcount = 0                       
-#iterates over kl modes
-for k in klmodes:
-
-    #takes median combination of cube made with given number of KL modes
-    isolatedKL = np.nanmedian(dataset.output[kcount,:,:,:], axis=0)
-    #adds median image to cube 
-    cube[kcount,:,:] = isolatedKL
-    
-    #creates SNR map if designated
-    if (SNR):  
-        SNRcube[kcount,:,:] = snr.create_map(isolatedKL, FWHM, smooth = _smooth, planets = maskParams, saveOutput = False)
-                
-    kcount += 1
-       
+if (SNR):
+    #keeps track of number of KL mode values that have been tested, used for indexing
+    kcount = 0
+    #iterates over kl modes
+    for k in klmodes:
+        SNRcube[kcount,:,:] = snr.create_map(cube[kcount,:,:], FWHM, smooth = _smooth, planets = maskParams, saveOutput = False)
+        kcount += 1
         
 #write median combination cube to disk 
 print()

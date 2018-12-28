@@ -13,12 +13,12 @@
 import glob
 import inspect
 import os                                      
-import instruments.MagAO as MagAO                                   
-import parallelized as parallelized
+import pyklip.instruments.MagAO as MagAO
+import pyklip.parallelized as parallelized
 import numpy as np
 import sys             
 import pyklip.fm as fm
-import klip as klip
+import pyklip.klip as klip
 from astropy.io import fits
 import SNRMap as snr   
 import time

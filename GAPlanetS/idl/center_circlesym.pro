@@ -12,7 +12,7 @@ pro center_circlesym, im, xr, yr, rmax, xc, yc, grid, mask=mask
 ;-
 
    get_cubedims, im, dim1, dim2
-   print, dim1, dim2
+   ;print, dim1, dim2
    
    grid = fltarr(n_elements(xr), n_elements(yr))
    for i=0,n_elements(xr)-1 do begin
@@ -46,8 +46,8 @@ pro center_circlesym, im, xr, yr, rmax, xc, yc, grid, mask=mask
    
    gcntrd, -1*grid, pos[0], pos[1], xcc, ycc, 0.5*n_elements(xr)
    
-   print, xcc
-   print, ycc
+   ;print, xcc
+   ;print, ycc
    xc = xr[0] + xcc*(xr[1]-xr[0]) + 0.5*(dim1-1)
    yc = yr[0] + ycc*(yr[1]-yr[0]) + 0.5*(dim2-1)
    

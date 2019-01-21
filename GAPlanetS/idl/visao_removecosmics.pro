@@ -45,6 +45,8 @@ pro visao_removecosmics, fname, namestr, stp=stp
 
   writefits, 'rotoff_no'+namestr+'cosmics.fits', rotoffs_noc, rothead
 
+  print, 'rejected', zdim-n_elements(idx), 'cosmics'
+
   if keyword_set(stp) then  stop
 
 end

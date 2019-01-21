@@ -26,24 +26,24 @@
 pro visao_removecosmics, fname, namestr, stp=stp
 
   ;;read in image (should be SDI)
-  im=readfits(string(fname)+'.fits')
+  im=readfits(string(fname)+'.fits', imhead)
   zdim=(size(im))[3]
   print, zdim
 
   ds9_imselect, im, index=idx
 
-  writefits, string(fname)+'_nocosmics.fits', im
+  writefits, string(fname)+'_nocosmics.fits', im, imhead
   writefits, namestr+'cosmics.fits', idx
 
   ;; cull rotoff cube as well
-  rotoffs=readfits('rotoff_preproc.fits')
+  rotoffs=readfits('rotoff_preproc.fits', rothead)
   rotoffs_noc=dblarr(n_elements(idx))
 
   for i=0, n_elements(idx)-1 do begin
     rotoffs_noc[i]=rotoffs[idx[i]]
   endfor
 
-  writefits, 'rotoff_no'+namestr+'cosmics.fits', rotoffs_noc
+  writefits, 'rotoff_no'+namestr+'cosmics.fits', rotoffs_noc, rothead
 
   if keyword_set(stp) then  stop
 

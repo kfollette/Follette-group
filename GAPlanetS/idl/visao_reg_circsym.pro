@@ -175,7 +175,7 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
       Line_cropx=clip/2
     endelse
     if dim2/2-abs(Line_shift[1]) lt clip/2 then begin
-      print, 'Line overshoots by', dim2/2-abs(Line_shift[0])-clip/2, 'pixels in y'
+      print, 'Line overshoots by', dim2/2-abs(Line_shift[1])-clip/2, 'pixels in y'
       Line_cropy=floor(dim2/2-abs(Line_shift[1]))
     endif else begin
       Line_cropy=clip/2
@@ -183,13 +183,13 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
 
     ;;Cont adjustments to clip
     if dim1/2-abs(Cont_shift[0]) lt clip/2 then begin
-      print, 'Cont overshoots by', dim1/2-abs(Line_shift[0])-clip/2, 'pixels in x'
-      Cont_cropx=floor(dim1/2-abs(Line_shift[0]))
+      print, 'Cont overshoots by', dim1/2-abs(Cont_shift[0])-clip/2, 'pixels in x'
+      Cont_cropx=floor(dim1/2-abs(Cont_shift[0]))
     endif else begin
       Cont_cropx=clip/2
     endelse
     if dim2/2-abs(Cont_shift[1]) lt clip/2 then begin
-      print, 'Cont overshoots by', dim2/2-abs(Line_shift[0])-clip/2, 'pixels in y'
+      print, 'Cont overshoots by', dim2/2-abs(Cont_shift[1])-clip/2, 'pixels in y'
       Cont_cropy=floor(dim2/2-abs(Cont_shift[1]))
     endif else begin
       Cont_cropy=clip/2

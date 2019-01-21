@@ -2,14 +2,12 @@
 ; NAME: visao_removecosmics
 ;
 ; PURPOSE:
-;  remove cosmic rays from a designated image cube, and apply to other cubes
-;  in the same directory if desired
+;  allows user to reject images with cosmic rays and creates new image and rotoff cubes without the rejected images. also writes out an array 
+;  specifying which indices in original sequence contain cosmics. 
 ;
 ; INPUTS:
-; fname: string file name of image cube that will be used to identify cosmic rays
-;
-; INPUT KEYWORDS:
-; all: cull the same image slices from all other cubes in the same directory
+; fname: string file name of image cube that will be used to identify cosmic rays without the .fits suffix
+; namestr: final file will be named with suffix _no+namestr+cosmics.fits. can be blank, but should generally be 'ha' or 'cont'
 ;
 ; OUTPUTS:
 ;

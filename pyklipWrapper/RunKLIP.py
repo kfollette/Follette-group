@@ -109,14 +109,18 @@ subsections = int(sys.argv[6+argnum])
 print("  Subsections = " + str(subsections))
 
 outputFileName = sys.argv[7+argnum]     
-
-SNR = False
+  
+highpass = False
 if (sys.argv[8+argnum] == 'true' or sys.argv[8+argnum] == 'True'):
-    SNR = True
+    highpass = True     
     
 saveData = False
 if (sys.argv[9+argnum] == 'true' or sys.argv[9+argnum] == 'True'):
-    saveData = True    
+    saveData = True  
+    
+SNR = False
+if (sys.argv[10+argnum] == 'true' or sys.argv[10+argnum] == 'True'):
+    SNR = True
     
 maskParams = None
 ra = 'none'
@@ -125,15 +129,15 @@ wid = 'none'
 
 if (SNR):
     try: 
-        FWHM = float(sys.argv[10+argnum])
-        _smooth = float(sys.argv[11+argnum])
+        FWHM = float(sys.argv[11+argnum])
+        _smooth = float(sys.argv[12+argnum])
         print()
         print("SNR Map Parameters:")
         print('  Star FWHM = ' + str(FWHM))
         print('  Smoothing value = ' + str(_smooth))
-        ra = list(map(int, sys.argv[12+argnum].split(",")))
-        pa = list(map(int, sys.argv[13+argnum].split(",")))
-        wid = list(map(int, sys.argv[14+argnum].split(",")))
+        ra = list(map(int, sys.argv[13+argnum].split(",")))
+        pa = list(map(int, sys.argv[14+argnum].split(",")))
+        wid = list(map(int, sys.argv[15+argnum].split(",")))
         maskParams = (ra, pa, wid)
         print('  Planet mask parameters:')
         print("    Radius = " + str(ra))
@@ -171,7 +175,7 @@ print("Starting KLIP")
 
 
 #run klip for given parameters
-parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix= ('mean_' + str(outputFileName)), annuli=annuli, subsections=subsections, movement=movement, numbasis=klmodes, calibrate_flux=True, mode="ADI")
+parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix= ('mean_' + str(outputFileName)), annuli=annuli, subsections=subsections, movement=movement, numbasis=klmodes, calibrate_flux=True, mode="ADI", highpass = highpass)
            
 #cube to hold median combinations of klipped images
 dim = dataset.output.shape[3]

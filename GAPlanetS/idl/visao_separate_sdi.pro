@@ -87,6 +87,8 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
     endelse
     dateobs[i]=sxpar(head, 'DATE-OBS')
     expt[i]=sxpar(head, 'EXPTIME')
+    ;;round exposure time to nearest hundredth of second to avoid conflicts between gain modes
+    expt[i]=round(expt[i]*100)/100.0d
     avgwfe[i]=sxpar(head, 'AVGWFE')
     rotoff[i]=sxpar(head, 'ROTOFF')
     object[i]=sxpar(head, 'OBJECT')
@@ -134,6 +136,9 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
 
   ;;check that darks and images have same exposure time
   dark_expt=sxpar(darkhead, 'EXPTIME')
+  
+  ;;round exposure time to nearest hundredth of second to be consistent with images
+  dark_expt=round(dark_expt)
 
   if dark_expt ne expt[0] then print, 'WARNING - dark does not have same exposure time as images'
 

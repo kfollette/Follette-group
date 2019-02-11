@@ -104,7 +104,7 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
     ;stop
 
     ;; do line image first
-    ;make 71x71 grid around max coords
+    ;make 51x51 grid around max coords
     xr=indgen(51.)-50/2.-sft[0]
     ;; line below is
     yr=indgen(51.)-50/2.-sft[1]

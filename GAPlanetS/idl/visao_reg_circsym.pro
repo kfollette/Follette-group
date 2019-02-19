@@ -121,6 +121,7 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
 
     ;; record shifts as a check
     Line_shift=[(dim1-1)/2.-Line_xc,(dim2-1)/2.-Line_yc]
+    Line_shift_arr[*,j]=Line_shift
 
     nims=(size(Line))[3]
     print, 'center of circular symmetry for Line image is', Line_xc, Line_yc
@@ -150,6 +151,7 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
 
     ;; record shifts as a check
     Cont_shift=[(dim1-1)/2.-Cont_xc,(dim2-1)/2.-Cont_yc]
+    Cont_shift_arr[*,j]=Cont_shift
 
     nims=(size(Cont))[3]
     print, 'center of circular symmetry for Line image is', Cont_xc, Cont_yc
@@ -238,6 +240,14 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
   endelse
 
   if keyword_set(stp) then  stop
+
+  writefits, 'Line_cicrsym_shifts.fits', Line_shift_arr
+  writefits, 'Cont_cicrsym_shifts.fits', Cont_shift_arr
+  
+  print, 'median line shift was', median(Line_shift_arr[0,*]), median(Line_shift_arr[1,*])
+  print, 'median cont shift was', median(Cont_shift_arr[0,*]), median(Cont_shift_arr[1,*])
+  print, 'standard deviation of line shifts was', stddev(Line_shift_arr[0,*]), stddev(Line_shift_arr[1,*])
+  print, 'standard deviation of cont shifts was', stddev(Cont_shift_arr[0,*]), stddev(Cont_shift_arr[1,*])
 
   print, 'registration complete'
 

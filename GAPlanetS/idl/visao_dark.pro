@@ -1,4 +1,4 @@
-pro visao_dark, dark_imlist, master_dark
+pro visao_dark, dark_imlist, master_dark, writecube=writecube
 
 visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, stp=stp
 
@@ -20,7 +20,7 @@ visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=
     ;print, i, level_ch1[i], level_ch2[i]
   endfor
 
-
+;;compute and print some summary statistics
   if n_elements(uniq(number_formatter(expt,decimals=2))) eq 1 then begin
     if n_elements(dark_imlist) eq 1 then master_dark=darks else master_dark=median(darks, dim=3)
     writefits, 'dark_ch1medians.fits', level_ch1
@@ -36,6 +36,8 @@ visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=
     sxaddpar, hdr, 'CH2_STD', stddev(level_ch2)
     writefits, 'master_dark.fits', master_dark, hdr
   endif else print, 'more than one exposure time in dark list - no dark created'
+
+if keyword_set(writecube) then writefits, 'darks.fits', darks, hdr
   
 if keyword_set(stp) then  stop
 

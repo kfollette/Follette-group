@@ -381,7 +381,7 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
                         indiv[x][y] = indiv[x][y]/stdMap[radius]
 
                     if noisemap == True:
-                        noise[x][y] = stdMap[radius]
+                        noise[x][y] = stdMap[radius]*5
 
 
                 #if no standard deviation has been calculated, pixel is given a nan value

@@ -230,6 +230,21 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
   endif
   sxaddpar, Conthead, 'SMOOTH_FWHM', fwhm
 
+  print, 'median line shift was', median(Line_shift_arr[0,*]), median(Line_shift_arr[1,*])
+  print, 'median cont shift was', median(Cont_shift_arr[0,*]), median(Cont_shift_arr[1,*])
+  print, 'standard deviation of line shifts was', stddev(Line_shift_arr[0,*]), stddev(Line_shift_arr[1,*])
+  print, 'standard deviation of cont shifts was', stddev(Cont_shift_arr[0,*]), stddev(Cont_shift_arr[1,*])
+
+  sxaddpar, Linehead, 'XSHIFT_MED',  median(Line_shift_arr[0,*])
+  sxaddpar, Linehead, 'YSHIFT_MED',  median(Line_shift_arr[1,*])
+  sxaddpar, Linehead, 'XSHIFT_STD',  stddev(Line_shift_arr[0,*])
+  sxaddpar, Linehead, 'YSHIFT_STD',  stddev(Line_shift_arr[1,*])  
+
+  sxaddpar, Conthead, 'XSHIFT_MED',  median(Cont_shift_arr[0,*])
+  sxaddpar, Conthead, 'YSHIFT_MED',  median(Cont_shift_arr[1,*])
+  sxaddpar, Conthead, 'XSHIFT_STD',  stddev(Cont_shift_arr[0,*])
+  sxaddpar, Conthead, 'YSHIFT_STD',  stddev(Cont_shift_arr[1,*])
+
   ;; write files
   if keyword_set(clip) then begin
     writefits, 'Line_clip'+string(clip, format='(i03)')+string(namestr)+'circsymreg.fits', Line_reg, Linehead
@@ -244,11 +259,6 @@ pro visao_reg_circsym, clip=clip, flat=flat, fwhm=fwhm, indiv=indiv, scl=scl, st
   writefits, 'Line_cicrsym_shifts.fits', Line_shift_arr
   writefits, 'Cont_cicrsym_shifts.fits', Cont_shift_arr
   
-  print, 'median line shift was', median(Line_shift_arr[0,*]), median(Line_shift_arr[1,*])
-  print, 'median cont shift was', median(Cont_shift_arr[0,*]), median(Cont_shift_arr[1,*])
-  print, 'standard deviation of line shifts was', stddev(Line_shift_arr[0,*]), stddev(Line_shift_arr[1,*])
-  print, 'standard deviation of cont shifts was', stddev(Cont_shift_arr[0,*]), stddev(Cont_shift_arr[1,*])
-
   print, 'registration complete'
 
 end

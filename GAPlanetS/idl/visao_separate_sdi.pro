@@ -164,9 +164,9 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   dark_expt=sxpar(darkhead, 'EXPTIME')
   
   ;;round exposure time to nearest hundredth of second to be consistent with images
-  dark_expt=round(dark_expt)
+  ;dark_expt=round(dark_expt)
 
-  if dark_expt ne expt[0] then print, 'WARNING - dark does not have same exposure time as images'
+  if dark_expt ne expt[0] then print, 'WARNING - dark does not have same exposure time as images. Dark is ', dark_expt, ' science is ', expt[0]
 
   ;;check that the object is the same in all images
   if n_elements(uniq(object)) ne 1 then print, 'WARNING - more than one object in this cube'

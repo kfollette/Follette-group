@@ -21,9 +21,10 @@
 ;
 ; HISTORY:
 ; 2017-08-16 KBF modified to populate headers
+; 2019-03-14 KBF modified to handle multiple gains
 ;-
 
-pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=stp, wfe=wfe, suffix=suffix
+pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=stp, wfe=wfe, suffix=suffix, toelectrons=toelectrons
 
   visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, mag1=mag1
   ;;create aligned directory if doesn't already exist
@@ -34,9 +35,9 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   nims= n_elements(sci_imlist)
 
   ;;test whether there is already a dark in this directory
-  y=file_test('master_dark.fits')
-  if y eq 0 then print, 'You need to make a master dark first - please run visao_dark'
-  if y eq 1 then master_dark=readfits('master_dark.fits', darkhead, /silent)
+  ;y=file_test('master_dark.fits')
+  ;if y eq 0 then print, 'You need to make a master dark first - please run visao_dark'
+  ;if y eq 1 then master_dark=readfits('master_dark.fits', darkhead, /silent)
 
   ;;create blank arrays
   if not keyword_set(indiv) then begin
@@ -69,6 +70,10 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   ra = strarr(nims)
   dec = strarr(nims)
   inst = strarr(nims)
+  gain = strarr(nims)
+  master_dark=dblarr(1024,1024)
+  gainnamelist = ["LOW","MEDLOW","MEDHIGH","HIGH"]
+  gainlist = [12.3,3.34,1.77,0.47]
 
   if keyword_set(flat) then flatim=readfits(flat)
 
@@ -96,14 +101,35 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
     ra[i]=sxpar(head, 'RA')
     dec[i]=sxpar(head, 'DEC')
     inst[i]=sxpar(head, 'INSTRUME')
-
+    gain[i]=sxpar(head, 'V47GAIN')
+    
+    ;;gains in e-/ADU, used for normalization
+    modecheck = sxpar(head, 'V47PIXRT')
+    if modecheck ne 250 then print, 'CCD speed not 250kHz - gain table invalid' and stop
+    
+    ;;if gain has changed, read in new master dark
+    if (i eq 0) or (gain[i] ne gain[i-1]) then begin
+      print, 'reading new dark for gain ', gain[i]
+      master_dark=readfits('master_dark_'+strcompress(gain[i], /REMOVE_ALL)+'.fits', darkhead)
+      if keyword_set(toelectrons) then begin
+        scalefactor = gainlist[where(gainnamelist eq strcompress(gain[i], /REMOVE_ALL))]
+        print, 'scale factor for this gain is ', scalefactor, ' e- per ADU'
+      endif else begin
+        scalefactor = 1.
+        print, 'not converting to electrons per ADU'
+      endelse
+    endif
+    
+    ;;some catches in case dark not read properly
+    if (size(master_dark))[1] ne 1024 or median(master_dark) lt 300 then print, 'something is wrong here' and stop
+    
     ;dark subtract and flat field (if specified)
     if keyword_set(flat) then begin
       ;raw[*,*]=((raw[*,*]-master_dark)/expt[i])/flatim
-      raw[*,*,j]=(raw[*,*,j]-master_dark)/flatim
+      raw[*,*,j]=(raw[*,*,j]-master_dark)*scalefactor[0]/flatim
     endif else begin
       ;raw[*,*,i]=((raw[*,*,i]-master_dark)/expt[i])
-      raw[*,*,j]=((raw[*,*,j]-master_dark))
+      raw[*,*,j]=((raw[*,*,j]-master_dark))*scalefactor[0]
     endelse
 
     ;separate channels
@@ -169,6 +195,8 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   sxaddpar, head_new, 'TIME-START', strmid(dateobs[0],11,8)
   sxaddpar, head_new, 'DATE-END', strmid(dateobs[nims-1],0,10)  
   sxaddpar, head_new, 'TIME-END', strmid(dateobs[nims-1],11,8)
+  if keyword_set(toelectrons) then unittyp = 'e-' else unittyp = 'ADU'
+  sxaddpar, head_new, 'UNITS', unittyp
 
     if not keyword_set(indiv) then begin
       if keyword_set(flat) then begin

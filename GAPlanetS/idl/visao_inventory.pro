@@ -1,7 +1,7 @@
 pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, sciims, wfe=wfe, mag1=mag1, stp=stp, totrot=totrot
 
   visao_getimtypes, fnames, imtypes, exptime=exptime, vfw3posn=vfw3posn, vfw2posn=vfw2posn, aoloopst=aoloopst, $
-    rotoff=rotoff, avgwfe=avgwfe, region=region, am=am, subdir='raw'
+    rotoff=rotoff, avgwfe=avgwfe, region=region, am=am, gain=gain, mag1fwhm=mag1fehm, dimmfwhm=dimmfwhm, subdir='raw'
 
   sdx = where( imtypes eq 0 and aoloopst eq 1, count1)
   if count1 gt 0 then print, 'Found ', n_elements(sdx), ' closed loop science frames.' else print, 'no science frames'
@@ -79,11 +79,18 @@ pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, 
     rotoff_cont=requad_angles(rotoff_sciims)
     totrot=max(rotoff_cont)-min(rotoff_cont)
     print, 'total rotation of this dataset is   ', totrot, '   degrees'
+    gain_sciims = gain[sciims]
   endif
 
   if count1 ne 0 then sci_imlist=fnames[sciims]
   if count2 ne 0 then dark_imlist=fnames[ddx]
+  if count2 ne 0 then gain_darks = gain[ddx]
   if count3 ne 0 then flat_imlist=fnames[fdx]
+
+  gains_sorted=gain[sort(gain)]
+  gains_uniq = gains_sorted[uniq(gains_sorted)]
+  print, gains_uniq
+  if n_elements(gains_uniq) gt 1 then print, "WARNING: Multiple gains"
 
   if keyword_set(stp) then stop
 

@@ -121,7 +121,7 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
     endif
     
     ;;some catches in case dark not read properly
-    if (size(master_dark))[1] ne 1024 or median(master_dark) lt 300 then print, 'something is wrong here' and stop
+    if (size(master_dark))[1] ne 1024 or median(master_dark) lt 300 then print, 'something may be wrong here - check dark' 
     
     ;dark subtract and flat field (if specified)
     if keyword_set(flat) then begin

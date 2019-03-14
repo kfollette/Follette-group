@@ -41,10 +41,10 @@ pro visao_dark, dark_imlist, master_dark, writecube=writecube
       mkhdr, hdr, master_dark
       sxaddpar, hdr, 'EXPTIME', expt[0]
       sxaddpar, hdr, 'NDARKS', n_elements(dark_imlist)
-      sxaddpar, hdr, 'CH1_MED', median(level_ch1)
-      sxaddpar, hdr, 'CH1_STD', stddev(level_ch1)
-      sxaddpar, hdr, 'CH2_MED', median(level_ch2)
-      sxaddpar, hdr, 'CH2_STD', stddev(level_ch2)
+      sxaddpar, hdr, 'CH1_MED', median(level_ch1[gaindx])
+      sxaddpar, hdr, 'CH1_STD', stddev(level_ch1[gaindx])
+      sxaddpar, hdr, 'CH2_MED', median(level_ch2[gaindx])
+      sxaddpar, hdr, 'CH2_STD', stddev(level_ch2[gaindx])
       writefits, 'master_dark_'+strcompress(gains_uniq[i], /REMOVE_ALL)+'.fits', master_dark, hdr
     endif else print, 'more than one exposure time in dark list - no dark created'
 

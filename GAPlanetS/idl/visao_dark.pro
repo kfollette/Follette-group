@@ -1,6 +1,6 @@
-pro visao_dark, dark_imlist, master_dark, writecube=writecube
+pro visao_dark, dark_imlist, master_dark, writecube=writecube, dir=dir
 
-  visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, stp=stp
+  visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, wfe=wfe, stp=stp, dir=dir
 
   dummy_im=readfits(dark_imlist[0])
   dim1=(size(dummy_im[*,*]))[1]

@@ -405,8 +405,11 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
                     planet_pixels[x][y]=indiv[x][y]
 
         Output[s,:,:] = indiv
-        msks[s,:,:]=msk
-        noises[s,:,:]=noise
+
+        if checkmask==True:
+            msks[s,:,:]=msk
+        if noisemap==True:
+            noises[s,:,:]=noise
         snrs[s]=np.nanmax(planet_pixels)
         print("max SNR under mask for slice", s+1, "is", snrs[s])
     
@@ -425,9 +428,11 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
         if noisemap==True:
             fits.writeto('noisemap.fits', noises, overwrite=True)
 
-    #returns final SNR map            
-    return Output, snrs, maskedims
-    
+    #returns final SNR map
+    if checkmask==True:
+        return Output, snrs, maskedims
+    else:
+        return Output, snrs
     
 
 

@@ -311,9 +311,12 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
     Clare Leonard
 
     Last Modified:
-    6/28/2017
+    Feb 2019 by KBF - added checkmask and noisemap keywords, removed default smooth
+    Mar 2019 by KBF - returning max pixel under mask, adding loop over 3rd dimension so can generate 3D SNRmaps, return snrs and masked images
     """
-    
+
+    print('this is the REPAIRED SNRMap code')
+
     #checks data type of 'filename'
     # if 'filename' is a string, assumes it is a filepath and reads in file
     if(isinstance(filename, str)):
@@ -333,38 +336,47 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
     #stdMap = stdevMap(inp, planets, fwhm)
   
     #gets size of pixel value array
-    try:
-        zDim, yDim, xDim = np.shape(inp)  
-    except:
-        yDim, xDim = np.shape(inp)
-        zDim = 1
-        
+    #try:
+        #zDim, yDim, xDim = np.shape(inp)
+    #except:
+        #yDim, xDim = np.shape(inp)
+        #zDim = 1
+
+    zdim, ydim, xdim = np.shape(inp)
+
     global XCenter
     global YCenter 
-    XCenter = (xDim-1)/2
-    YCenter = (yDim-1)/2
+    XCenter = (xdim-1)/2
+    YCenter = (ydim-1)/2
     
-    Output = np.zeros((zDim,yDim,xDim))
+    Output = np.zeros((zdim,ydim,xdim))
+    if checkmask == True:
+        msks = np.ones((zdim,ydim,xdim))
+        msk = np.ones((ydim, xdim))
 
-    for s in range (zDim):
-        try:
-            indiv = inp[s,:,:]
-        except:
-            indiv = inp
+    if noisemap == True:
+        noises = np.ones((zdim,ydim,xdim))
+        noise = np.ones((ydim, xdim))
 
-        if checkmask==True:
-            msk=np.ones(indiv.shape)
+    snrs = np.zeros(zdim)
 
-        if noisemap==True:
-            noise=np.zeros(indiv.shape)
+    planet_pixels = np.ones((ydim,xdim))*np.nan
+
+    for s in range (zdim):
+        #try:
+        indiv = inp[s,:,:]
+        #except:
+         #   indiv = inp
+
+
 
         #creates dictionary holding the standard deviation of pixlel values at each radius
         stdMap = stdevMap(indiv, planets, fwhm)
         #loops through all pixels in array
-        for x in range (xDim): 
-            for y in range (yDim):
+        for x in range (xdim):
+            for y in range (ydim):
 
-                #converts indeces to polar coordinates
+                #converts indices to polar coordinates
                 radius, angle = toPolar(x,y)
 
                 if checkmask==True:
@@ -388,7 +400,15 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
                 except:
                     indiv[x][y] = np.nan
 
+                # captures an array with just the planet pixels
+                if (isPlanet(radius, angle, planets)):
+                    planet_pixels[x][y]=indiv[x][y]
+
         Output[s,:,:] = indiv
+        msks[s,:,:]=msk
+        noises[s,:,:]=noise
+        snrs[s]=np.nanmax(planet_pixels)
+        print("max SNR under mask for slice", s+1, "is", snrs[s])
     
     #saves output to disk if saveOutput designated True
     if (saveOutput == True):
@@ -399,13 +419,14 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
         print("Wrote %s to "%newname + os.getcwd())
 
         if checkmask==True:
-            fits.writeto('masked_image.fits', msk*indiv, overwrite=True)
+            maskedims = msks*indiv
+            fits.writeto('masked_image.fits', msks*indiv, overwrite=True)
 
         if noisemap==True:
-            fits.writeto('noisemap.fits', noise, overwrite=True)
+            fits.writeto('noisemap.fits', noises, overwrite=True)
 
     #returns final SNR map            
-    return Output
+    return Output, snrs, maskedims
     
     
 

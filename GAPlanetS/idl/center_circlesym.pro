@@ -39,7 +39,7 @@ pro center_circlesym, im, xr, yr, rmax, xc, yc, grid, mask=mask
       endfor
    endfor
 
-  writefits, 'circym_grid_idl.fits', grid
+  ;writefits, 'circym_grid_idl.fits', grid
    ming = min(grid, idx)
    pos = array_indices(grid, idx)
    

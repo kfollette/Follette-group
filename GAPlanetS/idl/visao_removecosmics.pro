@@ -23,7 +23,12 @@
 ;     Added all keyword and genericized to find and appy to any circsym cube
 ;-
 
-pro visao_removecosmics, fname, namestr, stp=stp
+pro visao_removecosmics, fname, namestr=namestr, stp=stp
+
+  if not keyword_set(namestr) then begin
+    print, "pleaase specify a name string. For example Line or Cont"
+    stop
+  endif
 
   ;;read in image (should be SDI)
   im=readfits(string(fname)+'.fits', imhead)

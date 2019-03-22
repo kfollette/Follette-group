@@ -70,18 +70,18 @@ endfor
 
 if keyword_set(fits) then begin
  if keyword_set(clip) then begin
-  writefits, 'Line_clip'+string(clip, format='(i03)')+'_reg_medcircsym.fits', Line_cent, Linehead
-  writefits, 'Cont_clip'+string(clip, format='(i03)')+'_reg_medcircsym.fits', Cont_cent, Conthead
+  writefits, 'Line_clip'+string(clip, format='(i03)')+'_flat_reg_medcircsym.fits', Line_cent, Linehead
+  writefits, 'Cont_clip'+string(clip, format='(i03)')+'_flat_reg_medcircsym.fits', Cont_cent, Conthead
     if keyword_set(sdi) then begin
-      writefits, 'SDI_sc'+string(sdi, format='(f05.2)')+'_clip'+string(clip, format='(i03)')+'_reg_medcircsym.fits',SDI1_cent
-      writefits, 'SDI_sc'+string(1, format='(f05.2)')+'_clip'+string(clip, format='(i03)')+'_reg_medcircsym.fits',SDI2_cent
+      writefits, 'SDI_sc'+string(sdi, format='(f05.2)')+'_clip'+string(clip, format='(i03)')+'_flat_reg_medcircsym.fits',SDI1_cent
+      writefits, 'SDI_sc'+string(1, format='(f05.2)')+'_clip'+string(clip, format='(i03)')+'_flat_reg_medcircsym.fits',SDI2_cent
     endif
  endif else begin
-  writefits, 'Line_reg_medcircsym.fits', Line_cent, Linehead
-  writefits, 'Cont_reg_medcircsym.fits', Cont_cent, Conthead
+  writefits, 'Line_flat_reg_medcircsym.fits', Line_cent, Linehead
+  writefits, 'Cont_flat_reg_medcircsym.fits', Cont_cent, Conthead
   if keyword_set(sdi) then begin
-    writefits, 'SDI_sc'+string(sdi, format='(f05.2)')+'_reg_medcircsym.fits',SDI1_cent
-    writefits, 'SDI_sc'+string(1, format='(f05.2)')+'_reg_medcircsym.fits',SDI2_cent
+    writefits, 'SDI_sc'+string(sdi, format='(f05.2)')+'_flat_reg_medcircsym.fits',SDI1_cent
+    writefits, 'SDI_sc'+string(1, format='(f05.2)')+'_flat_reg_medcircsym.fits',SDI2_cent
   endif
  endelse
 endif

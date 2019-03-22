@@ -58,8 +58,9 @@ pro ds9_imselect, ims, index=index, usm=usm, sm=sm, iminfo=iminfo
 
     if(n_elements(usm) eq 1) then im = im - filter_image(im, smooth=usm);fwhm_g=usm)
     if(n_elements(sm) eq 1) then im = filter_image(im, smooth=sm);fwhm_g=sm)
-
-      ds9, im
+      frame=1
+      ds9, im, frame=frame
+      print,frame
 
     prog = 'IMAGE: ' + strcompress(string(i+1) + '/' + string(nims), /rem)
     print, prog

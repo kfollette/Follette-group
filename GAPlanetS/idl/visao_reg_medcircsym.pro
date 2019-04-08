@@ -1,4 +1,4 @@
-pro visao_reg_medcircsym, Line_cent, Cont_cent, msk=msk, clip=clip, fits=fits, sdi=sdi, rmax=rmax, indiv=indiv
+pro visao_reg_medcircsym, Line_cent, Cont_cent, mask=mask, clip=clip, fits=fits, sdi=sdi, rmax=rmax, indiv=indiv
 
 ;;finds center of circular symmetry of median combinations of registered images, and shifts this center to the center of the image cube
 
@@ -11,11 +11,6 @@ else Cont=readfits('Cont_reg.fits')
   Linemed=median(Line, dim=3)
   Contmed=median(Cont, dim=3)
   
-  if keyword_set(msk) then begin
-    print, 'constructing mask with radius of', msk, ' pixels'
-    mkmask, (size(Linemed))[1], (size(Linemed))[2], msk, mask
-  endif
-  
  dim1=(size(Line))[1]
  dim2=(size(Line))[2]
   
@@ -26,7 +21,7 @@ yr=indgen(51.)-50/2.
 
 if keyword_set(rmax) then lim=rmax else lim=dim1/2.
  
-if keyword_set(msk) then begin
+if keyword_set(mask) then begin
   center_circlesym, Linemed, xr, yr, lim, Line_xc, Line_yc, Line_grid, mask=mask
   center_circlesym, Contmed, xr, yr, lim, Cont_xc, Cont_yc, Cont_grid, mask=mask
 endif else begin

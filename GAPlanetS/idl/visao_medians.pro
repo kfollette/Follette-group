@@ -22,11 +22,12 @@
   ; HISTORY:
   ;  Written 2019-02-12 by Kate Follette kfollette@amherst.edu
 
-pro visao_medians, reg=reg, circsymreg=circsymreg, medreg=medreg, clip=clip, stp=stp
+pro visao_medians, reg=reg, circsymreg=circsymreg, medreg=medreg, ref=ref, clip=clip, stp=stp
 
   if keyword_set(reg) then namestr='_reg'
   if keyword_set(circsymreg) then namestr='_circsymreg'
   if keyword_set(medreg) then namestr='_reg_medcircsym'
+  if keyword_set(ref) then namestr='_reg_refined'
 
   lineim = readfits('Line_clip'+string(clip, format='(i03)')+'_flat'+namestr+'.fits', linehead)
   linemed = median(lineim, dim=3)

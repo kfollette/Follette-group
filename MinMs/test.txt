@@ -1,3 +1,5 @@
 this is a
 
-Here is some new information. 
+Here is some new information.
+
+this is a line that Kim added. 

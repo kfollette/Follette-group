@@ -1,0 +1,16 @@
+iiithis is a
+
+Here is some new information.
+
+this is a line that Kim added. 
+Today is Thursday. 
+
+<<<<<<< HEAD
+More changes on this lovely day 
+
+Here is the information that is added by Arpit. Learning something new everyday 
+=======
+Here is the information that is added by Arpit. 
+
+This message is from Sebastian. 
+>>>>>>> 96b23a7845f7499cc9c6d620b3eda0022980e3a8

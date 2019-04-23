@@ -336,38 +336,47 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
     #stdMap = stdevMap(inp, planets, fwhm)
   
     #gets size of pixel value array
-    try:
-        zDim, yDim, xDim = np.shape(inp)  
-    except:
-        yDim, xDim = np.shape(inp)
-        zDim = 1
-        
+    #try:
+        #zDim, yDim, xDim = np.shape(inp)
+    #except:
+        #yDim, xDim = np.shape(inp)
+        #zDim = 1
+
+    zdim, ydim, xdim = np.shape(inp)
+
     global XCenter
     global YCenter 
-    XCenter = (xDim-1)/2
-    YCenter = (yDim-1)/2
+    XCenter = (xdim-1)/2
+    YCenter = (ydim-1)/2
     
-    Output = np.zeros((zDim,yDim,xDim))
+    Output = np.zeros((zdim,ydim,xdim))
+    if checkmask == True:
+        msks = np.ones((zdim,ydim,xdim))
+        msk = np.ones((ydim, xdim))
 
-    for s in range (zDim):
-        try:
-            indiv = inp[s,:,:]
-        except:
-            indiv = inp
+    if noisemap == True:
+        noises = np.ones((zdim,ydim,xdim))
+        noise = np.ones((ydim, xdim))
 
-        if checkmask==True:
-            msk=np.ones(indiv.shape)
+    snrs = np.zeros(zdim)
 
-        if noisemap==True:
-            noise=np.zeros(indiv.shape)
+    planet_pixels = np.ones((ydim,xdim))*np.nan
+
+    for s in range (zdim):
+        #try:
+        indiv = inp[s,:,:]
+        #except:
+         #   indiv = inp
+
+
 
         #creates dictionary holding the standard deviation of pixlel values at each radius
         stdMap = stdevMap(indiv, planets, fwhm)
         #loops through all pixels in array
-        for x in range (xDim): 
-            for y in range (yDim):
+        for x in range (xdim):
+            for y in range (ydim):
 
-                #converts indeces to polar coordinates
+                #converts indices to polar coordinates
                 radius, angle = toPolar(x,y)
 
                 if checkmask==True:

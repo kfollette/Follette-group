@@ -40,8 +40,8 @@ def slice(dirPath, filename, output='sliced', rotoff='rotoff_nocosmics.fits'):
             hdulist = fits.HDUList([hdu])
             header.set('rotoff', str(rotoffs[z]))
             hdulist[0].header = header
-            hdulist.writeto("sliced_"+str(z+1)+".fits", clobber=True)
-            print("Sliced image " + str(z+1))
+            hdulist.writeto("sliced_"+str(z+1)+".fits", overwrite=True)
+            #print("Sliced image " + str(z+1))
 
     print("Done slicing")
     os.chdir(current)

@@ -25,7 +25,7 @@ pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, 
   if keyword_set(mag1) then mag1max=mag1 else mag1max=1000.
 
   for l=0, n_elements(exp_use)-1 do begin ;exposure time loop
-    print, 'l', l
+    ;print, 'l', l
 
     ;;select only closed loop images with same filter and exposure time, and with wfe cutoff if /WFE keyword is set
 
@@ -91,7 +91,6 @@ pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, 
 
   gains_sorted=gain[sort(gain)]
   gains_uniq = gains_sorted[uniq(gains_sorted)]
-  print, gains_uniq
   if n_elements(gains_uniq) gt 1 then print, "WARNING: Multiple gains"
 
   if keyword_set(stp) then stop

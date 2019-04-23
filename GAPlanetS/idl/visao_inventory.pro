@@ -1,7 +1,9 @@
-pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, sciims, wfe=wfe, mag1=mag1, stp=stp, totrot=totrot
+pro visao_inventory, sci_imlist, dark_imlist, flat_imlist, rotoff_sciims, filt, sciims, wfe=wfe, mag1=mag1, stp=stp, totrot=totrot, dir=dir
+
+  if not keyword_set(dir) then dir='raw'
 
   visao_getimtypes, fnames, imtypes, exptime=exptime, vfw3posn=vfw3posn, vfw2posn=vfw2posn, aoloopst=aoloopst, $
-    rotoff=rotoff, avgwfe=avgwfe, region=region, am=am, gain=gain, mag1fwhm=mag1fehm, dimmfwhm=dimmfwhm, subdir='raw'
+    rotoff=rotoff, avgwfe=avgwfe, region=region, am=am, gain=gain, mag1fwhm=mag1fehm, dimmfwhm=dimmfwhm, subdir=dir
 
   sdx = where( imtypes eq 0 and aoloopst eq 1, count1)
   if count1 gt 0 then print, 'Found ', n_elements(sdx), ' closed loop science frames.' else print, 'no science frames'

@@ -311,9 +311,12 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
     Clare Leonard
 
     Last Modified:
-    6/28/2017
+    Feb 2019 by KBF - added checkmask and noisemap keywords, removed default smooth
+    Mar 2019 by KBF - returning max pixel under mask, adding loop over 3rd dimension so can generate 3D SNRmaps, return snrs and masked images
     """
-    
+
+    print('this is the REPAIRED SNRMap code')
+
     #checks data type of 'filename'
     # if 'filename' is a string, assumes it is a filepath and reads in file
     if(isinstance(filename, str)):
@@ -388,7 +391,18 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
                 except:
                     indiv[x][y] = np.nan
 
+                # captures an array with just the planet pixels
+                if (isPlanet(radius, angle, planets)):
+                    planet_pixels[x][y]=indiv[x][y]
+
         Output[s,:,:] = indiv
+
+        if checkmask==True:
+            msks[s,:,:]=msk
+        if noisemap==True:
+            noises[s,:,:]=noise
+        snrs[s]=np.nanmax(planet_pixels)
+        print("max SNR under mask for slice", s+1, "is", snrs[s])
     
     #saves output to disk if saveOutput designated True
     if (saveOutput == True):
@@ -399,14 +413,17 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
         print("Wrote %s to "%newname + os.getcwd())
 
         if checkmask==True:
-            fits.writeto('masked_image.fits', msk*indiv, overwrite=True)
+            maskedims = msks*indiv
+            fits.writeto('masked_image.fits', msks*indiv, overwrite=True)
 
         if noisemap==True:
-            fits.writeto('noisemap.fits', noise, overwrite=True)
+            fits.writeto('noisemap.fits', noises, overwrite=True)
 
-    #returns final SNR map            
-    return Output
-    
+    #returns final SNR map
+    if checkmask==True:
+        return Output, snrs, maskedims
+    else:
+        return Output, snrs
     
 
 

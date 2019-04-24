@@ -33,7 +33,7 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
 
   ;;naming specifications
   if keyword_set(flat) then namestr='_flat_' else namestr='_'
-  if keyword_set(clip) then outstr = string(clip, format='(i03)')+string(namestr) else outstr=namestr
+  if keyword_set(clip) then outstr = '_clip'+string(clip, format='(i03)')+string(namestr) else outstr=namestr
 
   ;;default values for rmax, pad, clip, and fwhm if not set in call
   if not keyword_set(rmax) then rmax=25

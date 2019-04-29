@@ -40,7 +40,8 @@ pro center_circlesym, im, xr, yr, rmax, xc, yc, grid, mask=mask
       endfor
    endfor
 
-   writefits, 'circsym_grid_idl.fits', grid
+   ;writefits, 'circsym_grid.fits', grid
+   writefits, 'circsym_grid_reversed.fits', 1./grid
    ming = min(grid, idx)
    pos = array_indices(grid, idx)
    

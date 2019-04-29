@@ -35,7 +35,7 @@ pro center_circlesym, im, xr, yr, rmax, xc, yc, grid, mask=mask
             sd = stddev(im[idx], /nan)
             if(~finite(sd)) then sd = 0
             ;; modified to be sum of squares (squared second term) to match Jared's most recent C version
-            grid[i,j] = grid[i,j] + (sd/abs(median(im[idx])))^2
+            grid[i,j] = grid[i,j] + (sd/abs(median(im[idx])))
          endfor
       endfor
    endfor

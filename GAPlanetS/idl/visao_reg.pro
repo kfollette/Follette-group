@@ -49,6 +49,8 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
   dim1=(size(Line))[1]
   dim2=(size(Line))[2]
   nims=(size(Line))[3]
+ 
+  print, 'original image size is', dim1, dim2, nims
 
   ;;pad the preprocessed images for later clipping
   ;;padding with NaNs. This makes the registration process a little slower but should avoid edge issues.
@@ -66,6 +68,8 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
   dim2=dim2+pad*2
   xcen=(dim1-1)/2.
   ycen=(dim2-1)/2.
+  
+  print, 'geometric center of padded image is', xcen, ycen
 
   ;;define geometry for clipping
   ;;shift into a single pixel for odd clip (+0.5,+0.5) from geometric center of 1024x512 array
@@ -73,6 +77,8 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
   xcen=xcen+offset
   ycen=ycen+offset
   trim = clip/2.-0.5
+  print, 'modified center of padded image is', xcen, ycen
+  print, 'cropping from', xcen-trim, 'to', xcen+trim, 'in x and from', ycen-trim, 'to', ycen+trim, 'in y'
 
   ;;grab reference image to register against
   center_ref_line=Line_pad[*,*,ref-1]
@@ -135,7 +141,6 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     ;;trim centered images to specified clip
     Line_reg[*,*,i] = Line_pad[xcen-trim:xcen+trim,ycen-trim:ycen+trim,i]
     Cont_reg[*,*,i] = Cont_pad[xcen-trim:xcen+trim,ycen-trim:ycen+trim,i]
-    print, xcen, ycen, trim
 
     print, 'processed image', i+1, '        of', nims
 
@@ -182,6 +187,7 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     dim1=(size(Line))[1]
     dim2=(size(Line))[2]
     nims=(size(Line))[3]
+    print, 'original image size is', dim1, dim2, nims
 
     ;;pad the original images again
     Line_pad = dblarr(dim1+pad*2, dim2+pad*2, nims)*!Values.F_NAN
@@ -198,21 +204,24 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     dim2=dim2+pad*2
     xcen=(dim1-1)/2.
     ycen=(dim2-1)/2.
+    print, 'geometric center of padded image is', xcen, ycen
 
     ;;define geometry for clipping
     ;;shift into a single pixel for odd clip (-0.5,-0.5) from geometric center of 1024x512 array
     if clip mod 2 eq 0 then offset=0 else offset = -0.5
-    xcen=xcen-offset
-    ycen=ycen-offset
+    xcen=xcen+offset
+    ycen=ycen+offset
     trim = clip/2.-0.5
+    print, 'modified center of padded image is', xcen, ycen
+    print, 'cropping from', xcen-trim, 'to', xcen+trim, 'in x and from', ycen-trim, 'to', ycen+trim, 'in y'
 
     ;;make medians of registered images from earlier loop
     Linemed=median(Line_reg, dim=3)
     Contmed=median(Cont_reg, dim=3)
 
     ;;make grid of possible centers to examine
-    xr=indgen(101.)-100/2.
-    yr=indgen(101.)-100/2.
+    xr=indgen(101.)-50.
+    yr=indgen(101.)-50.
 
     ;;run center of circular symmetry
     if keyword_set(mask) then begin ;for saturated images
@@ -240,14 +249,14 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
       Line_reg[*,*,i] = Line_pad[xcen-trim:xcen+trim,ycen-trim:ycen+trim,i]
       Cont_reg[*,*,i] = Cont_pad[xcen-trim:xcen+trim,ycen-trim:ycen+trim,i]
     endfor
-
+    
     ;;add things to headers
     sxaddpar, Linehead, 'RMAX', rmax
     sxaddpar, Conthead, 'RMAX', rmax
-    sxaddpar, Linehead, 'CENSHIFTX', Line_censhift[0]
-    sxaddpar, Conthead, 'CENSHIFTX', Cont_censhift[0]
-    sxaddpar, Linehead, 'CENSHIFTY', Line_censhift[1]
-    sxaddpar, Conthead, 'CENSHIFTY', Cont_censhift[1]
+    sxaddpar, Linehead, 'CSHIFTX', Line_censhift[0]
+    sxaddpar, Conthead, 'CSHIFTX', Cont_censhift[0]
+    sxaddpar, Linehead, 'CSHIFTY', Line_censhift[1]
+    sxaddpar, Conthead, 'CSHIFTY', Cont_censhift[1]
     sxaddpar, Linehead, 'PAD', pad
     sxaddpar, Conthead, 'PAD', pad
 

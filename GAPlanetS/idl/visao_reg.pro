@@ -41,6 +41,8 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
       print, 'reading in registered image offsets'
       Line_shift_arr=readfits('Line'+string(outstr)+'reg_shifts.fits')
       Cont_shift_arr=readfits('Cont'+string(outstr)+'reg_shifts.fits')
+      Line_reg=readfits('Line'+string(outstr)+'reg.fits')
+      Cont_reg=readfits('Cont'+string(outstr)+'reg.fits')
     endif else begin
       print, 'registered images already exist. please delete them and rerun if you wish to reregister'
       stop

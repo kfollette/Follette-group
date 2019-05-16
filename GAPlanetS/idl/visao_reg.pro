@@ -159,30 +159,10 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
 
     endfor
 
-    if keyword_set(fixpix) then begin
-      print, "interpolating over NaN pixels using radial profile"
-      for i=0, nims-1 do begin
-        Lineim=Line_reg[*,*,i]
-        Contim=Cont_reg[*,*,i]
-        Line_rp = radprofim(Lineim)
-        Cont_rp = radprofim(Contim)
-        Line_idx = where(finite(Lineim) ne 1)
-        Cont_idx = where(finite(Contim) ne 1)
-        Lineim[Line_idx]=Line_rp[Line_idx]
-        Contim[Cont_idx]=Cont_rp[Cont_idx]
-        Line_reg[*,*,i]=Lineim
-        Cont_reg[*,*,i]=Contim
-      endfor
-      ;;add interpolation method to headers
-      sxaddpar, Linehead, 'FIXPIX', 'rpinterp'
-      sxaddpar, Conthead, 'FIXPIX', 'rpinterp'
-    endif
-
-    ;;add to headers
     sxaddpar, Linehead, 'REFIM', ref
     sxaddpar, Conthead, 'REFIM', ref
-    sxaddpar, Linehead, 'FWHM', fwhm
-    sxaddpar, Conthead, 'FWHM', fwhm
+    sxaddpar, Linehead, 'REGFWHM', fwhm
+    sxaddpar, Conthead, 'REGFWHM', fwhm   
 
     ;;write out registered cube
     writefits, 'Line'+string(outstr)+'reg.fits', Line_reg, Linehead
@@ -191,9 +171,8 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     ;;write out shifts
     writefits, 'Line'+string(outstr)+'reg_shifts.fits', Line_shift_arr
     writefits, 'Cont'+string(outstr)+'reg_shifts.fits', Cont_shift_arr
-    
   endelse
-  
+
   ;;if keyword is specified, run center of circular symmetry algorithm to refine centers
   if keyword_set(refine_cen) then begin
     print, 'refining centers - this will take a few minutes'
@@ -239,8 +218,8 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     Contmed=median(Cont_reg, dim=3)
 
     ;;make grid of possible centers to examine
-    xr=indgen(21.)-10.
-    yr=indgen(21.)-10.
+    xr=indgen(51.)-25.
+    yr=indgen(51.)-25.
 
     ;;run center of circular symmetry
     if keyword_set(mask) then begin ;for saturated images
@@ -278,29 +257,36 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     sxaddpar, Conthead, 'CSHIFTY', Cont_censhift[1]
     sxaddpar, Linehead, 'PAD', pad
     sxaddpar, Conthead, 'PAD', pad
-
-    if keyword_set(fixpix) then begin
-      print, "interpolating over NaN pixels using radial profile"
-      for i=0, nims-1 do begin
-        Lineim=Line_reg[*,*,i]
-        Contim=Cont_reg[*,*,i]
-        Line_rp = radprofim(Lineim)
-        Cont_rp = radprofim(Contim)
-        Line_idx = where(finite(Lineim) ne 1)
-        Cont_idx = where(finite(Contim) ne 1)
-        Lineim[Line_idx]=Line_rp[Line_idx]
-        Contim[Cont_idx]=Cont_rp[Cont_idx]
-        Line_reg[*,*,i]=Lineim
-        Cont_reg[*,*,i]=Contim
-      endfor
-      ;;add interpolation method to headers
-      sxaddpar, Linehead, 'FIXPIX', 'rpinterp'
-      sxaddpar, Conthead, 'FIXPIX', 'rpinterp'
-    endif
-
-    ;;write files
     writefits, 'Line'+string(outstr)+'reg_refined.fits', Line_reg, Linehead
     writefits, 'Cont'+string(outstr)+'reg_refined.fits', Cont_reg, Conthead
+
+  endif
+
+  if keyword_set(fixpix) then begin
+    print, "interpolating over NaN pixels using radial profile"
+    for i=0, nims-1 do begin
+      Lineim=Line_reg[*,*,i]
+      Contim=Cont_reg[*,*,i]
+      Line_rp = radprofim(Lineim)
+      Cont_rp = radprofim(Contim)
+      Line_idx = where(finite(Lineim) ne 1)
+      Cont_idx = where(finite(Contim) ne 1)
+      Lineim[Line_idx]=Line_rp[Line_idx]
+      Contim[Cont_idx]=Cont_rp[Cont_idx]
+      Line_reg[*,*,i]=Lineim
+      Cont_reg[*,*,i]=Contim
+    endfor
+    ;;add interpolation method to headers
+    sxaddpar, Linehead, 'FIXPIX', 'rpinterp'
+    sxaddpar, Conthead, 'FIXPIX', 'rpinterp'
+    if keyword_set(refine_cen) then begin
+      writefits, 'Line'+string(outstr)+'reg_refined_fixpix.fits', Line_reg, Linehead
+      writefits, 'Cont'+string(outstr)+'reg_refined_fixpix.fits', Cont_reg, Conthead
+    endif else begin
+      writefits, 'Line'+string(outstr)+'reg_fixpix.fits', Line_reg, Linehead
+      writefits, 'Cont'+string(outstr)+'reg_fixpix.fits', Cont_reg, Conthead
+    endelse
+
   endif
 
   if keyword_set(stp) then  stop

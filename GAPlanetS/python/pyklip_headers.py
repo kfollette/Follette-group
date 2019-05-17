@@ -32,7 +32,7 @@ def addstarpeak(dir,amp, fwhm, debug=False):
     for i in np.arange(len(filelist)):
         im = fits.getdata(filelist[i])
         head = fits.getheader(filelist[i])
-        p = gaussfitter.moments(im, circle=False, rotate=False, vheight=False)
+        p = gaussfitter.moments(im, circle=False, rotate=False, vheight=False, estimator=np.ma.median)
         head['STARPEAK']=p[0]
         fits.writeto(filelist[i], im, header=head, overwrite=True)
 

@@ -41,11 +41,17 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
       print, 'reading in registered image offsets'
       Line_shift_arr=readfits('Line'+string(outstr)+'reg_shifts.fits')
       Cont_shift_arr=readfits('Cont'+string(outstr)+'reg_shifts.fits')
-      Line_reg=readfits('Line'+string(outstr)+'reg.fits')
-      Cont_reg=readfits('Cont'+string(outstr)+'reg.fits')
+      Line_reg=readfits('Line'+string(outstr)+'reg.fits', Linehead)
+      Cont_reg=readfits('Cont'+string(outstr)+'reg.fits', Conthead)
     endif else begin
+      if keyword_set(fixpix) then begin
+         print, 'registered images found. proceeding to fixing bad pixels'
+         Line_reg=readfits('Line'+string(outstr)+'reg.fits', Linehead)
+         Cont_reg=readfits('Cont'+string(outstr)+'reg.fits', Conthead)
+      endif else begin
       print, 'registered images already exist. please delete them and rerun if you wish to reregister'
       stop
+      endelse
     endelse
   endif else begin
     ;;default values for rmax, pad, clip, and fwhm if not set in call
@@ -162,7 +168,7 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     sxaddpar, Linehead, 'REFIM', ref
     sxaddpar, Conthead, 'REFIM', ref
     sxaddpar, Linehead, 'REGFWHM', fwhm
-    sxaddpar, Conthead, 'REGFWHM', fwhm   
+    sxaddpar, Conthead, 'REGFWHM', fwhm
 
     ;;write out registered cube
     writefits, 'Line'+string(outstr)+'reg.fits', Line_reg, Linehead
@@ -262,7 +268,7 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
 
   endif
 
-  if keyword_set(fixpix) then begin
+  if fixpix eq 'rpinterp' then begin
     print, "interpolating over NaN pixels using radial profile"
     for i=0, nims-1 do begin
       Lineim=Line_reg[*,*,i]
@@ -280,13 +286,28 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     sxaddpar, Linehead, 'FIXPIX', 'rpinterp'
     sxaddpar, Conthead, 'FIXPIX', 'rpinterp'
     if keyword_set(refine_cen) then begin
-      writefits, 'Line'+string(outstr)+'reg_refined_fixpix.fits', Line_reg, Linehead
-      writefits, 'Cont'+string(outstr)+'reg_refined_fixpix.fits', Cont_reg, Conthead
+      writefits, 'Line'+string(outstr)+'reg_refined_fixpix_rpinterp.fits', Line_reg, Linehead
+      writefits, 'Cont'+string(outstr)+'reg_refined_fixpix_rpinterp.fits', Cont_reg, Conthead
     endif else begin
-      writefits, 'Line'+string(outstr)+'reg_fixpix.fits', Line_reg, Linehead
-      writefits, 'Cont'+string(outstr)+'reg_fixpix.fits', Cont_reg, Conthead
+      writefits, 'Line'+string(outstr)+'reg_fixpix_rpinterp.fits', Line_reg, Linehead
+      writefits, 'Cont'+string(outstr)+'reg_fixpix_rpinterp.fits', Cont_reg, Conthead
     endelse
+  endif
 
+  if fixpix eq 'neighbors' then begin
+    print, "interpolating over NaN pixels using fixpix"
+    fixpix, Line_reg, badpix, Line_reg, /NaN, npix=40, /weight
+    fixpix, Cont_reg, badpix, Cont_reg, /NaN, npix=40, /weight
+    ;;add interpolation method to headers
+    sxaddpar, Linehead, 'FIXPIX', 'nearest neighbors'
+    sxaddpar, Conthead, 'FIXPIX', 'nearest neighbors'
+    if keyword_set(refine_cen) then begin
+      writefits, 'Line'+string(outstr)+'reg_refined_fixpix_neighbors.fits', Line_reg, Linehead
+      writefits, 'Cont'+string(outstr)+'reg_refined_fixpix_neighbors.fits', Cont_reg, Conthead
+    endif else begin
+      writefits, 'Line'+string(outstr)+'reg_fixpix_neighbors.fits', Line_reg, Linehead
+      writefits, 'Cont'+string(outstr)+'reg_fixpix_neighbors.fits', Cont_reg, Conthead
+    endelse
   endif
 
   if keyword_set(stp) then  stop

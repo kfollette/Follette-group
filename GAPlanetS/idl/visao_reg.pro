@@ -29,11 +29,15 @@
 ;-
 
 pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=scl, stp=stp, $
-  fixpix=fixpix, refine_cen=refine_cen, mask=mask, rmax=rmax, pad=pad
+  fixpix=fixpix, refine_cen=refine_cen, mask=mask, pad=pad
 
   ;;naming specifications
   if keyword_set(flat) then namestr='_flat_' else namestr='_'
   if keyword_set(clip) then outstr = '_clip'+string(clip, format='(i03)')+string(namestr) else outstr=namestr
+  if not keyword_set(fixpix) then fixpix='none'
+  if not keyword_set(fwhm) and not keyword_set(mask) then begin
+    print, 'please set either FWHM (for unsaturated data) or mask (saturated data)'
+  endif
 
   if file_test('Line'+string(outstr)+'reg.fits') then begin
     if keyword_set(refine_cen) then begin
@@ -54,8 +58,7 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
       endelse
     endelse
   endif else begin
-    ;;default values for rmax, pad, clip, and fwhm if not set in call
-    if not keyword_set(rmax) then rmax=25
+    ;;default values for pad, clip, and fwhm if not set in call
     if not keyword_set(pad) then pad=0
     if not keyword_set(FWHM) then fwhm=10.
     ;;if clip keyword not defined (not recommended), image size is full array (10254x512)
@@ -223,9 +226,15 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     Linemed=median(Line_reg, dim=3)
     Contmed=median(Cont_reg, dim=3)
 
+    if not keyword_set(fwhm) then begin
+      print, 'must set fwhm to run circsym'
+      stop
+    endif
+    gridsz=round(2.5*fwhm*2) 
     ;;make grid of possible centers to examine
-    xr=indgen(51.)-25.
-    yr=indgen(51.)-25.
+    xr=indgen(gridsz)-(gridsz-1)/2.
+    yr=indgen(gridsz)-(gridsz-1)/2.
+    rmax = round(gridsz/2.)+5
 
     ;;run center of circular symmetry
     if keyword_set(mask) then begin ;for saturated images
@@ -255,6 +264,8 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
     endfor
 
     ;;add things to headers
+    sxaddpar, Linehead, 'CSYMGRID', gridsz
+    sxaddpar, Conthead, 'CSYMGRID', gridsz    
     sxaddpar, Linehead, 'RMAX', rmax
     sxaddpar, Conthead, 'RMAX', rmax
     sxaddpar, Linehead, 'CSHIFTX', Line_censhift[0]

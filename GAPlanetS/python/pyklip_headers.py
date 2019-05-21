@@ -14,9 +14,10 @@ def addwl(dir, wl):
         hdulist[0].header=header
         hdulist.writeto(filelist[i],overwrite=True)
 
-def addstarpeak(dir,amp, fwhm, debug=False):
+def addstarpeak(dir,amp, fwhm, debug=False, mask=False):
     filelist = glob.glob(dir + '/*.fits')
-    filelist = sorted(filelist, key=len)
+    ##sort sequentially
+    filelist.sort(key=lambda f: int(''.join(filter(str.isdigit, f))))
     dummy_im = fits.getdata(filelist[0])
     size = dummy_im.shape
     xcen = int((size[0]-1)/2)
@@ -28,23 +29,37 @@ def addstarpeak(dir,amp, fwhm, debug=False):
     dim=dummyim.shape[1]
     cen = int((dim-1)/2)
     diff=np.zeros(len(filelist))
+	peaks=[]
 
     for i in np.arange(len(filelist)):
         im = fits.getdata(filelist[i])
         head = fits.getheader(filelist[i])
-        p = gaussfitter.moments(im, circle=False, rotate=False, vheight=False, estimator=numpy.ma.median)
+        if mask==True:
+        	#replace nans in image with zeros, just for the purposes of fitting (median should be robust)
+        	maskedim=np.copy(im)
+        	maskedim[np.isnan(im)==True]=0.
+        	#fits.writeto('test.fits',maskedim,overwrite=True)
+        	p = gaussfitter.moments(maskedim, circle=False, rotate=False, vheight=False, estimator=np.nanmedian)
+        else:
+        	p = gaussfitter.moments(im, circle=False, rotate=False, vheight=False)
+        #print(p)
         head['STARPEAK']=p[0]
+        peaks.append(p[0])
         fits.writeto(filelist[i], im, header=head, overwrite=True)
 
         if debug==True:
             #print(filelist[i])
             #print('fit peak is:', p[0], '. max pixel is: ', np.nanmax(im[cen-10:cen+10,cen-10:cen+10]))
             diff[i] = p[0]-np.nanmax(im[cen-10:cen+10,cen-10:cen+10])
-
+	
+	fits.writeto('peaks.fits', peaks, overwrite=True)
+	
     if debug==True:
-        print('standard deviation of differences is: ', np.std(diff))
+        print('standard deviation of difference between fit peak and max pixel is: ', np.std(diff))
         print('max difference is:', np.max(abs(diff)))
         print('median difference is:', np.median(diff))
+
+	
 
 def addradec(dir,ra, dec):
     filelist = glob.glob(dir + '/*.fits')

@@ -855,11 +855,11 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
     t0 = time.time()
 
     # Make list of science frames and check exposure time 
-    scilist = glob.glob(path_to_raw_sci + 'qim*.fits')
+    scilist = glob.glob(path_to_raw_sci + 'im*.fits')
     
     print(f"Number of science frames found: {len(scilist)} \n")
 
-    scitimes = [fits.getheader(im)['EXPTIME'] for im in scilist]
+    scitimes = [fits.getheader(im, ignore_missing_end = True)['EXPTIME'] for im in scilist]
 
     # check if all of the exposure times in the current directory are the same:
     if all(x == scitimes[0] for x in scitimes):
@@ -892,8 +892,8 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
     im_index = 0
     
     for ii in range(0, n):
-        im = fits.getdata(scilist[ii])
-        header = fits.getheader(scilist[ii])
+        im = fits.getdata(scilist[ii], ignore_missing_end=True)
+        header = fits.getheader(scilist[ii],ignore_missing_end=True)
         if len(im.shape) == 3: # check for data cubes of science frames
             assert not np.any(np.isnan(im))
             for jj in range(0, im.shape[0]):
@@ -903,7 +903,7 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
         else: 
             sciarray[:,:,ii] = im  
             angle[ii] = (header['PA'] - header['ROT']) * (np.pi/180.0)
-        header = fits.getheader(scilist[ii])
+        header = fits.getheader(scilist[ii], ignore_missing_end=True)
         
 
 

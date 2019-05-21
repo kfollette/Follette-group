@@ -35,7 +35,7 @@ pro center_circlesym, im, xr, yr, rmax, xc, yc, grid, mask=mask
             sd = stddev(im[idx], /nan)
             if(~finite(sd)) then sd = 0
             ;; modified to be sum of squares (squared second term) to match Jared's most recent C version
-            grid[i,j] = grid[i,j] + (sd/abs(median(im[idx])))
+            grid[i,j] = grid[i,j] + (sd/abs(median(im[idx])))^2
          endfor
       endfor
    endfor
@@ -44,7 +44,6 @@ pro center_circlesym, im, xr, yr, rmax, xc, yc, grid, mask=mask
    writefits, 'circsym_grid_reversed.fits', 1./grid
    ming = min(grid, idx)
    pos = array_indices(grid, idx)
-   
    
    gcntrd, -1*grid, pos[0], pos[1], xcc, ycc, 0.5*n_elements(xr)
    

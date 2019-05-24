@@ -18,7 +18,7 @@ mmt_reduce_module.py:
 Arguments: sys.argv[1] = object name 
            sys.argv[2] = type of flat (1 if lamp, 0 if sky)
            sys.argv[3] = flag for saturated data (1 if saturated, 0 if unsaturated)
-           sys.argv[4] = flag for alignment (1 if equal mass binary, 0 if single star or faint companion)     
+           sys.argv[4] = flag for alignment (1 if equal mass binary or difficult to align, 0 if single star or faint companion)     
            sys.argv[5] = flag for SHORT or LONG exposures
 History:
 (v1) 2018-06-01 - KWD: Updated from original script (vlt_reduce_new) to implement the following:
@@ -35,6 +35,8 @@ python mmt_reduce_module.py 'HIP100_SHORT' 1 0 0 'SHORT'
     - would perform a reduction with lamp flats, unsaturated exposures, and no need for alignment
     
 TODO (5/23/19):
+* Update example usage to reflect standardized data sorting/directory structure
+* Get alignment flag working with ds9 interface
 * Rotation angle correction and image flip for MMT data (appears to be same VLT conventions)
 * Be flexible about twilight flats with different exptimes
 * More sophisticated sky-subtraction for multiple position angles
@@ -577,7 +579,7 @@ def measure_star_centers(skysub_science_array, scinames_list, sciheader, saturat
     ycen = np.zeros(n)
     
     # ensure that idl thinks we're in the same place the console does
-    idl = pidly.IDL('/Applications/exelis/idl/bin/idl')
+    idl = pidly.IDL('/Applications/exelis/idl85/bin/idl')
     idl_changedir = 'cd, ' + f'"{current_dir}"'
     idl(idl_changedir)
 

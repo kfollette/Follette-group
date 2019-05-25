@@ -40,6 +40,8 @@ TODO (5/23/19):
 * Rotation angle correction and image flip for MMT data (appears to be same VLT conventions)
 * Be flexible about twilight flats with different exptimes
 * More sophisticated sky-subtraction for multiple position angles
+* Consistent doc strings for calibration structure 
+* Consistent structure for command line
 """
 
 
@@ -78,8 +80,9 @@ def dark_combine(path_to_raw_darks, sci_exptime, imsize, objname):
     (v1) 2018-06-19 - KWD: Updated from original script for Python 3 compatibility and astropy updates.
     (v2) 2018-06-20 - SGC: Added objname parameter.
     (v3) 2018-06-22 - KWD: Updated input variables for compatibility with process_flats function.
+    (v4) 2019-05-24 - AJ: Added recursive path for glob function
     '''
-    darklist = glob.glob(path_to_raw_darks + 'q*fits')
+    darklist = glob.glob(path_to_raw_darks + '**/q*fits',recursive = True)
     n = len(darklist)
 
     im = fits.open(darklist[0], ignore_missing_end=True)
@@ -158,7 +161,7 @@ def process_flats(path_to_raw_flats, path_to_raw_darks, imsize, flatcategory, ob
     dark_combine            : (function)
     '''
 
-    flatlist = glob.glob(path_to_raw_flats + 'q*fits')
+    flatlist = glob.glob(path_to_raw_flats + '**/q*fits',recursive = True)
     n = len(flatlist)
     
 

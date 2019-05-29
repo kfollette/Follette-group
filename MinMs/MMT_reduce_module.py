@@ -972,7 +972,7 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
     print("Creating master sky from science frames...\n") 
     
     # create median sky from stack of science images
-    rotflag, sky_output = create_sky_frames(reduced_sciarray, sciheader, objname, angle)
+    sky_output = create_sky_frames(reduced_sciarray, sciheader, objname, angle)
     
     # apply sky subtraction to each science image 
     skysub_science_array, rot_flag = sky_subtract(reduced_sciarray, sky_output, angle)

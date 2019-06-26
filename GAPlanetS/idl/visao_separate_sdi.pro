@@ -50,7 +50,7 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
     Cont=dblarr(dim1, dim2/2,1)
     x=file_test('./indiv', /DIRECTORY)
     if x eq 0 then spawn, 'mkdir indiv'
-    if x eq 1 then begin 
+    if x eq 1 then begin
       ok_str = 'ok'
       ;;count files that begin with the string 'Line'
       spawn, 'ls -l indiv/* | wc -l', nfile
@@ -60,7 +60,7 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
       if(ok_str eq 'n' or ok_str eq 'N') then stop
     endif
   endelse
-  
+
   expt=dblarr(nims)
   avgwfe=dblarr(nims)
   rotoff=dblarr(nims)
@@ -81,7 +81,7 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   for i=0,nims-1 do begin
     if keyword_set(indiv) then typ='individually' else typ='in bulk'
     status='processing image number'+string(i+1)+'  of'$
-           +string(nims)+'  '+string(typ)
+      +string(nims)+'  '+string(typ)
     statusline, status, 0
     if not keyword_set(indiv) then begin
       j=i
@@ -102,11 +102,11 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
     dec[i]=sxpar(head, 'DEC')
     inst[i]=sxpar(head, 'INSTRUME')
     gain[i]=sxpar(head, 'V47GAIN')
-    
+
     ;;gains in e-/ADU, used for normalization
     modecheck = sxpar(head, 'V47PIXRT')
     if modecheck ne 250 then print, 'CCD speed not 250kHz - gain table invalid' and stop
-    
+
     ;;if gain has changed, read in new master dark
     if (i eq 0) or (gain[i] ne gain[i-1]) then begin
       print, 'reading new dark for gain ', gain[i]
@@ -119,10 +119,10 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
         print, 'not converting to electrons per ADU'
       endelse
     endif
-    
+
     ;;some catches in case dark not read properly
-    if (size(master_dark))[1] ne 1024 or median(master_dark) lt 300 then print, 'something may be wrong here - check dark' 
-    
+    if (size(master_dark))[1] ne 1024 or median(master_dark) lt 300 then print, 'something may be wrong here - check dark'
+
     ;dark subtract and flat field (if specified)
     if keyword_set(flat) then begin
       ;raw[*,*]=((raw[*,*]-master_dark)/expt[i])/flatim
@@ -158,15 +158,15 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   ;;BASIC CHECKS
 
   ;;check that all images have same exposure time
-  if n_elements(uniq(expt)) ne 1 then print, 'WARNING - more than one exposure time in this cube'
-
+  if n_elements(uniq(expt)) ne 1 then print, 'WARNING - more than one exposure time in this cube. scaling by exposure time'
+  
   ;;check that darks and images have same exposure time
   dark_expt=sxpar(darkhead, 'EXPTIME')
-  
-  ;;round exposure time to nearest hundredth of second to be consistent with images
-  ;dark_expt=round(dark_expt)
 
-  if dark_expt ne expt[0] then print, 'WARNING - dark does not have same exposure time as images. Dark is ', dark_expt, ' science is ', expt[0]
+  ;;round exposure time to nearest hundredth of second to be consistent with images
+  dark_expt=round(dark_expt*100)/100.0d
+
+  if expt[0] ne dark_expt then print, 'WARNING - dark exposure time is different from science. Dark is', dark_expt, ' science is ', expt[0]
 
   ;;check that the object is the same in all images
   if n_elements(uniq(object)) ne 1 then print, 'WARNING - more than one object in this cube'
@@ -183,39 +183,38 @@ pro visao_separate_sdi, Line, Cont, avgwfe, rotoff, flat=flat, indiv=indiv, stp=
   if keyword_set(flat) then begin
     sxaddpar, head_new, 'FLAT', flat
   endif
-  sxaddpar, head_new, 'EXPTIME', expt[uniq(expt)]
   if not keyword_set(wfe) then wfe='No cut'
   sxaddpar, head_new, 'WFE_CUT', wfe
   sxaddpar, head_new, 'MED_WFE', median(avgwfe)
   sxaddpar, head_new, 'STD_WFE', stdev(avgwfe)
-  sxaddpar, head_new, 'VFW3POSN', vfw3posn[uniq(vfw3posn)] 
+  sxaddpar, head_new, 'VFW3POSN', vfw3posn[uniq(vfw3posn)]
   ;wavelength keyword required for PyKLIP
   sxaddpar, head_new, 'WLENGTH', 0.656
   sxaddpar, head_new, 'DATE-START', strmid(dateobs[0],0,10)
   sxaddpar, head_new, 'TIME-START', strmid(dateobs[0],11,8)
-  sxaddpar, head_new, 'DATE-END', strmid(dateobs[nims-1],0,10)  
+  sxaddpar, head_new, 'DATE-END', strmid(dateobs[nims-1],0,10)
   sxaddpar, head_new, 'TIME-END', strmid(dateobs[nims-1],11,8)
   if keyword_set(toelectrons) then unittyp = 'e-' else unittyp = 'ADU'
   sxaddpar, head_new, 'UNITS', unittyp
 
-    if not keyword_set(indiv) then begin
-      if keyword_set(flat) then begin
-        writefits, 'Line_flat_preproc.fits', Line, head_new
-        ;modify WLENGTH before writing continuum header
-        sxaddpar, head_new, 'WLENGTH', 0.642
-        writefits, 'Cont_flat_preproc.fits', Cont, head_new
-      endif else begin
-        writefits, 'Line_preproc.fits', Line, head_new
-        sxaddpar, head_new, 'WLENGTH', 0.642
-        writefits, 'Cont_preproc.fits', Cont, head_new
-      endelse
-    endif
-    writefits, 'avgwfe_preproc.fits', avgwfe
-    writefits, 'rotoff_preproc.fits', rotoff
-    writefits, 'exptime_preproc.fits', expt
+  if not keyword_set(indiv) then begin
+    if keyword_set(flat) then begin
+      writefits, 'Line_flat_preproc.fits', Line, head_new
+      ;modify WLENGTH before writing continuum header
+      sxaddpar, head_new, 'WLENGTH', 0.642
+      writefits, 'Cont_flat_preproc.fits', Cont, head_new
+    endif else begin
+      writefits, 'Line_preproc.fits', Line, head_new
+      sxaddpar, head_new, 'WLENGTH', 0.642
+      writefits, 'Cont_preproc.fits', Cont, head_new
+    endelse
+  endif
+  writefits, 'avgwfe_preproc.fits', avgwfe
+  writefits, 'rotoff_preproc.fits', rotoff
+  writefits, 'exptime_preproc.fits', expt
 
-if keyword_set(stp) then stop
+  if keyword_set(stp) then stop
 
-print, '        separate sdi complete            '
+  print, '        separate sdi complete            '
 
 end

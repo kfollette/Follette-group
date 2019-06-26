@@ -41,7 +41,7 @@ PRO ds9::update_wcs, hdr
 END
 
 PRO ds9::new_frame
-	self->cmd, 'frame new'
+	;self->cmd, 'frame new'
 END 
 
 PRO ds9::cleanup
@@ -222,17 +222,19 @@ PRO ds9::dispimage, $
 
    ; -- 3
 	if (n_elements(frame) eq 1) then begin
+		; kwd/kf edit to force frame 1 each time (mar 2019)
+		spawn, p + 'xpaset -p ' + self.title + ' frame ' + 'delete'
 		spawn, p + 'xpaset -p ' + self.title + ' frame ' + string(frame)
 	endif
 	
 	if (n_elements(frame) ne 1 and keyword_set(newframe)) then begin
-                spawn, p + 'xpaset -p ' + self.title + ' frame new'
+                ;spawn, p + 'xpaset -p ' + self.title + ' frame new'
         endif
 	
 	if keyword_set(preserve) then begin
-		spawn, p + 'xpaset -p ' + self.title + ' preserve scale yes'
+		;spawn, p + 'xpaset -p ' + self.title + ' preserve scale yes'
 	endif else begin
-		spawn, p + 'xpaset -p ' + self.title + ' preserve scale no'
+		;spawn, p + 'xpaset -p ' + self.title + ' preserve scale no'
 	endelse
 	
 	if((size(img))[0] eq 2) then begin

@@ -13,13 +13,12 @@ import time
 
 
 """
-vlt_reduce_module.py:  
-Usage: From within directory with science-only frames of a single exposure time: 
-        python vlt_reduce_module.py objname
+mmt_reduce_module.py:  
+        
 Arguments: sys.argv[1] = object name 
            sys.argv[2] = type of flat (1 if lamp, 0 if sky)
            sys.argv[3] = flag for saturated data (1 if saturated, 0 if unsaturated)
-           sys.argv[4] = flag for alignment (1 if equal mass binary, 0 if single star or faint companion)     
+           sys.argv[4] = flag for alignment (1 if equal mass binary or difficult to align, 0 if single star or faint companion)     
            sys.argv[5] = flag for SHORT or LONG exposures
 History:
 (v1) 2018-06-01 - KWD: Updated from original script (vlt_reduce_new) to implement the following:
@@ -28,9 +27,21 @@ History:
                         * modularization
                         * separation of individual frames from datacubes  
 (v2) 2018-07-03 - KWD: Now usable with command line interface.
+(v3) Fall 2019  - SGC: Modified from vlt_reduce_module.py to handle MMT data
+(v4) 2019-05-23 - KWD: Update file selection to force quadrant cross-talk corrected images ("q" prefix)
+
 Example usage: 
-python vlt_reduce_module.py 'HIP100_SHORT' 1 0 0 'SHORT'
+python mmt_reduce_module.py 'HIP100_SHORT' 1 0 0 'SHORT'
     - would perform a reduction with lamp flats, unsaturated exposures, and no need for alignment
+    
+TODO (5/23/19):
+* Update example usage to reflect standardized data sorting/directory structure
+* Get alignment flag working with ds9 interface
+* Rotation angle correction and image flip for MMT data (appears to be same VLT conventions)
+* Be flexible about twilight flats with different exptimes
+* More sophisticated sky-subtraction for multiple position angles
+* Consistent doc strings for calibration structure 
+* Consistent structure for command line
 """
 
 
@@ -69,8 +80,9 @@ def dark_combine(path_to_raw_darks, sci_exptime, imsize, objname):
     (v1) 2018-06-19 - KWD: Updated from original script for Python 3 compatibility and astropy updates.
     (v2) 2018-06-20 - SGC: Added objname parameter.
     (v3) 2018-06-22 - KWD: Updated input variables for compatibility with process_flats function.
+    (v4) 2019-05-24 - AJ: Added recursive path for glob function
     '''
-    darklist = glob.glob(path_to_raw_darks + '*fits')
+    darklist = glob.glob(path_to_raw_darks + '**/q*fits',recursive = True)
     n = len(darklist)
 
     im = fits.open(darklist[0], ignore_missing_end=True)
@@ -149,8 +161,9 @@ def process_flats(path_to_raw_flats, path_to_raw_darks, imsize, flatcategory, ob
     dark_combine            : (function)
     '''
 
-    flatlist = glob.glob(path_to_raw_flats + '*fits')
+    flatlist = glob.glob(path_to_raw_flats + '**/q*fits',recursive = True)
     n = len(flatlist)
+    
 
     flatheader = fits.getheader(flatlist[0], ignore_missing_end=True)
 
@@ -168,11 +181,12 @@ def process_flats(path_to_raw_flats, path_to_raw_darks, imsize, flatcategory, ob
         else:
             raise Exception("Exposure times for given list of lamp flats do not match.")
 
-
+        print(f'Found {n} lamp flats with exposure times of {flattimes[0]}. \n')
+        
         flatarray = np.zeros([imsize, imsize, n])
 
         for ii in range(0,n):
-            flatdata = fits.getdata(flatlist[ii], ignore_missing_end=True)
+            flatdata = fits.getdata(flatlist[ii], ignore_missing_end = True)
             if len(flatdata.shape) == 3: #check for data cubes
                 assert not np.any(np.isnan(flatdata))
                 flatdata = np.median(flatdata, axis=0) #if data cube, then median frames
@@ -213,6 +227,8 @@ def process_flats(path_to_raw_flats, path_to_raw_darks, imsize, flatcategory, ob
         exptime = flatheader['EXPTIME']
         masterdark = glob.glob('*masterdark*'+str(exptime)+'*fits')
         
+        print(f'Found {n} twilight flats with exposure times of {exptime}. \n')
+        
         flatarray = np.zeros([imsize, imsize, n])
         
         if len(masterdark) == 0:
@@ -226,27 +242,31 @@ def process_flats(path_to_raw_flats, path_to_raw_darks, imsize, flatcategory, ob
             med_dark = fits.getdata(masterdark[0])
 
         # subtract off the median dark frame from each of the twiflats, IF median dark is the same exposure length as the twilight flats. 
-        for i in range (0,n):
-            flatarray[:,:,i] -= med_dark
-        
+        for ii in range (0,n):
+            flatarray[:,:,ii] = fits.getdata(flatlist[ii], ignore_missing_end = True)
+            flatarray[:,:,ii] -= med_dark
+            
+        # take the median of the first flat in the stack to rescale all median pixel values of subsequent flats
         median_flat1 = np.median(flatarray[:,:,0])
         
-        for i in range(0,n):
-            flatmedian = np.median(flatarray[:,:,i])
-            flatarray[:,:,i] *= (median_flat1/flatmedian)
+        for ii in range(0,n):
+            # get median of each flat
+            flatmedian = np.median(flatarray[:,:,ii])
+            # rescale that flat to the median of the first in the stack
+            flatarray[:,:,ii] *= (median_flat1/flatmedian)
 
+        # median combine all flats    
         med_flat = np.median(flatarray,axis=2)
         flatname = objname + '_' + date + '_medianskyflat.fits'
         fits.writeto(flatname, med_flat, flatheader, overwrite = True, output_verify='silentfix')
 
         # some housekeeping to free up memory (at some point)
         del flatarray
-        del flaton
-        del flatoff
-    
+            
     else: 
         raise Exception("Type of flat not understood.")
     
+    # check for zero-valued arrays
     ind = np.where(med_flat == 0)
     if np.sum(ind) > 0:    
         med_flat[ind] = 0.001
@@ -425,12 +445,23 @@ def create_sky_frames(reduced_science_array, sciheader, objname, angle):
     date = sciheader['UTSTART']
     date = date[0:10]
 
+    # check if all angles are zero (one rotation angle):        
     if np.sum(np.where(angle != 0.0)) == 0:
         rot_flag = 0
         medskyframe = np.median(reduced_science_array, axis=2)
         skyname = objname + '_' + date + '_mastersky.fits'
         fits.writeto(skyname, medskyframe, sciheader, overwrite = True, output_verify='silentfix')
         return rot_flag, medskyframe
+    
+    # check if there are more than two rotation angles:
+    elif len(np.unique(angle)) > 2:
+        rot_flag = 0
+        medskyframe = np.median(reduced_science_array, axis=2)
+        skyname = objname + '_' + date + '_mastersky.fits'
+        fits.writeto(skyname, medskyframe, sciheader, overwrite = True, output_verify='silentfix')
+        return rot_flag, medskyframe        
+    
+    # otherwise, if there are two rotation angles, one of which is zero:
     else:
         rot_flag = 1
 
@@ -494,9 +525,9 @@ def sky_subtract(reduced_science_array, sky_output, angle):
     if rot_flag == 0:
         for ii in range(0, n):
             scifactor = np.median(skysub_science_array[:,:,ii])
-            if skyfactor == 0:
-                scifactor = 1
-                skyfactor = 1
+#             if skyfactor == 0:
+#                 scifactor = 1
+#                 skyfactor = 1
                 
             skysub_science_array[:,:,ii] -= medskyframe/(skyfactor/scifactor)
             
@@ -551,7 +582,7 @@ def measure_star_centers(skysub_science_array, scinames_list, sciheader, saturat
     ycen = np.zeros(n)
     
     # ensure that idl thinks we're in the same place the console does
-    idl = pidly.IDL('/Applications/exelis/idl/bin/idl')
+    idl = pidly.IDL('/Applications/exelis/idl85/bin/idl')
     idl_changedir = 'cd, ' + f'"{current_dir}"'
     idl(idl_changedir)
 
@@ -750,11 +781,11 @@ def rotate_shift_align(xcen, ycen, angle, skysub_science_array, objname, scihead
         big_im[:,:,ii] = shifted_tmp
         print(f"Shifting image {ii} of {n}...") 
 
-        shiftname = objname + '-' + date + '-NACO-00' + str(ii) + '.fits'
+        shiftname = objname + '-' + date + '-MMT-00' + str(ii) + '.fits'
         if ii >= 10:
-            shiftname = objname + '-'+ date + '-NACO-0' + str(ii) + '.fits'
+            shiftname = objname + '-'+ date + '-MMT-0' + str(ii) + '.fits'
         if ii >= 100:
-            shiftname = objname + '-' + date + '-NACO-' + str(ii) + '.fits'
+            shiftname = objname + '-' + date + '-MMT-' + str(ii) + '.fits'
 
         sciheader['CRPIX1A'] = (star[1],'primary star X-center')
         sciheader['CRPIX2A'] = (star[0],'primary star Y-center')
@@ -855,7 +886,7 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
     t0 = time.time()
 
     # Make list of science frames and check exposure time 
-    scilist = glob.glob(path_to_raw_sci + 'im*.fits')
+    scilist = glob.glob(path_to_raw_sci + 'q*.fits')
     
     print(f"Number of science frames found: {len(scilist)} \n")
 

@@ -59,7 +59,8 @@ for i=0,nims-1 do begin
    if(n_elements(usm) eq 1) then im = im - filter_image(im, fwhm_g=usm)
    if(n_elements(sm) eq 1) then im = filter_image(im, fwhm_g=sm)
    
-   ds9, im
+   frame=1
+   ds9, im, frame=frame
         
    prog = 'IMAGE: ' + strcompress(string(i+1) + '/' + string(nims), /rem)
    print, prog
@@ -71,9 +72,10 @@ for i=0,nims-1 do begin
    
    ok_str = 'ok'
 
-   read, ok_str, prompt='Good image? [y/n/b] (y) '
+   read, ok_str, prompt='Good image? [y/n/b/q] (y) '
    if(ok_str eq 'n' or ok_str eq 'N' ) then sel[i] = 0
    if(ok_str eq 'b' or ok_str eq 'B' ) then i = i - 2
+   if(ok_str eq 'q' or ok_str eq 'Q' ) then stop
       
 endfor
 

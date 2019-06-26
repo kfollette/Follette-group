@@ -3,6 +3,7 @@
 *.class
 *.DS_Store
 *-checkpoint.ipynb
+*cpython*
 #*
 automation_parameters.txt
 

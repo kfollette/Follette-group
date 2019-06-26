@@ -1,7 +1,8 @@
 #ignore all .pyc files
-*.pyc
+*.pyc*
 *.class
 *.DS_Store
+*-checkpoint.ipynb
 #*
 automation_parameters.txt
 

@@ -35,8 +35,11 @@ pro visao_reg, ref, clip=clip, flat=flat, fwhm=fwhm, sdi=sdi, indiv=indiv, scl=s
   if keyword_set(flat) then namestr='_flat_' else namestr='_'
   if keyword_set(clip) then outstr = '_clip'+string(clip, format='(i03)')+string(namestr) else outstr=namestr
   if not keyword_set(fixpix) then fixpix='none'
-  if not keyword_set(fwhm) and not keyword_set(mask) then begin
-    print, 'please set either FWHM (for unsaturated data) or mask (saturated data)'
+  if keyword_set(refine_cen) then begin
+    if not keyword_set(fwhm) and not keyword_set(mask) then begin
+      print, 'please set either FWHM (for unsaturated data) or mask (saturated data)'
+      stop
+    endif
   endif
 
   if file_test('Line'+string(outstr)+'reg.fits') then begin

@@ -185,7 +185,7 @@ public class GetParameters{
         klmodes1.setSize(100,40);
         klmodes1.setLocation(128-40-1,90+59-9+1);
 
-        klmodes2 = new JTextField("1,2,3,4,5,10,20,50,100");
+        klmodes2 = new JTextField("1,2,5,10,20,50,100");
         klmodes2.setBackground(Color.white);
         klmodes2.setSize(130,30);
         klmodes2.setLocation(95-40-1,120+59-9+1);
@@ -227,7 +227,7 @@ public class GetParameters{
         smooth1.setLocation(266+5-83,262+25);
   
 
-        final JTextField smooth2 = new JTextField("2.0");
+        final JTextField smooth2 = new JTextField("0.0");
         smooth2.setBackground(Color.white);
         smooth2.setSize(130-10,30);
         smooth2.setLocation(256-74,292+25);

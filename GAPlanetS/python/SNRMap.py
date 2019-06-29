@@ -18,7 +18,7 @@ def nameOutput(filename, output):
         
         #if data type is not a string (file name), names output file after date and time 
         else:
-            outputName = "SNRMap_"  +(time.strftime("%d-%m-%Y")) +"_" +(time.strftime("%H-%M-%S")) + ".fits"
+            outputName = "SNRMap_"  +(time.strftime("%d-%m-%Y")) +"_" +(time.strftime("%H-%M-%S"))+".fits" 
         
     else: 
         outputName = output
@@ -423,7 +423,7 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
 
         if checkmask==True:
             maskedims = msks*indiv
-            fits.writeto('masked_image.fits', msks*indiv, overwrite=True)
+            fits.writeto(newname[:-5]+'_masked.fits', msks*indiv, overwrite=True)
 
         if noisemap==True:
             fits.writeto('noisemap.fits', noises, overwrite=True)

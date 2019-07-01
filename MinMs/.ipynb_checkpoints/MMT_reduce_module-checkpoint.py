@@ -29,6 +29,7 @@ History:
 (v2) 2018-07-03 - KWD: Now usable with command line interface.
 (v3) Fall 2019  - SGC: Modified from vlt_reduce_module.py to handle MMT data
 (v4) 2019-05-23 - KWD: Update file selection to force quadrant cross-talk corrected images ("q" prefix)
+(v5) 2019-07-01 - KWD: Various updates, including writing images to matching path location of science frames
 
 Example usage: 
 python mmt_reduce_module.py 'HIP100_SHORT' 1 0 0 'SHORT'
@@ -40,6 +41,8 @@ TODO (5/23/19):
 * Rotation angle correction and image flip for MMT data (appears to be same VLT conventions)
 * Be flexible about twilight flats with different exptimes
 * More sophisticated sky-subtraction for multiple position angles
+* Consistent doc strings for calibration structure 
+* Consistent structure for command line
 """
 
 
@@ -78,8 +81,9 @@ def dark_combine(path_to_raw_darks, sci_exptime, imsize, objname):
     (v1) 2018-06-19 - KWD: Updated from original script for Python 3 compatibility and astropy updates.
     (v2) 2018-06-20 - SGC: Added objname parameter.
     (v3) 2018-06-22 - KWD: Updated input variables for compatibility with process_flats function.
+    (v4) 2019-05-24 - AJ: Added recursive path for glob function
     '''
-    darklist = glob.glob(path_to_raw_darks + 'q*fits')
+    darklist = glob.glob(path_to_raw_darks + '**/q*fits',recursive = True)
     n = len(darklist)
 
     im = fits.open(darklist[0], ignore_missing_end=True)
@@ -158,7 +162,7 @@ def process_flats(path_to_raw_flats, path_to_raw_darks, imsize, flatcategory, ob
     dark_combine            : (function)
     '''
 
-    flatlist = glob.glob(path_to_raw_flats + 'q*fits')
+    flatlist = glob.glob(path_to_raw_flats + '**/q*fits',recursive = True)
     n = len(flatlist)
     
 
@@ -969,7 +973,7 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
     print("Creating master sky from science frames...\n") 
     
     # create median sky from stack of science images
-    rotflag, sky_output = create_sky_frames(reduced_sciarray, sciheader, objname, angle)
+    sky_output = create_sky_frames(reduced_sciarray, sciheader, objname, angle)
     
     # apply sky subtraction to each science image 
     skysub_science_array, rot_flag = sky_subtract(reduced_sciarray, sky_output, angle)

@@ -10,10 +10,17 @@ import os
 import glob
 import time
 
+from shift_methods import * 
+
+from astropy.stats import sigma_clipping
+
 
 
 """
 mmt_reduce_module.py:  
+
+Dependencies: 
+shift_methods.py - includes centroiding and cross-correlation functions
         
 Arguments: sys.argv[1] = object name 
            sys.argv[2] = type of flat (1 if lamp, 0 if sky)
@@ -38,12 +45,14 @@ python mmt_reduce_module.py 'HIP100_SHORT' 1 0 0 'SHORT'
     
 TODO (5/23/19):
 * Update example usage to reflect standardized data sorting/directory structure
-* Get alignment flag working with ds9 interface
-* Rotation angle correction and image flip for MMT data (appears to be same VLT conventions)
+* Get alignment flag working with ds9 interface - DONE
+* Rotation angle correction and image flip for MMT data (appears to be same VLT conventions) - DONE
 * Be flexible about twilight flats with different exptimes
 * More sophisticated sky-subtraction for multiple position angles
 * Consistent doc strings for calibration structure 
 * Consistent structure for command line
+
+
 """
 
 
@@ -121,6 +130,7 @@ def dark_combine(path_to_raw_sci, path_to_raw_darks, sci_exptime, imsize, objnam
         # check to add only those those darks with correct exptime
         if header['EXPTIME'] == sci_exptime:
             im = fits.getdata(matching_darks[ii]) 
+            im = np.fliplr(im)
             if len(im.shape) == 3: # check for data cubes
                 assert not np.any(np.isnan(im))
                 im = np.median(im, axis=0) # if data cube, then median frames
@@ -202,6 +212,7 @@ def process_flats(path_to_raw_sci, path_to_raw_flats, path_to_raw_darks, imsize,
 
         for ii in range(0,n):
             flatdata = fits.getdata(flatlist[ii], ignore_missing_end = True)
+            flatdata = np.fliplr(flatdata)
             if len(flatdata.shape) == 3: #check for data cubes
                 assert not np.any(np.isnan(flatdata))
                 flatdata = np.median(flatdata, axis=0) #if data cube, then median frames
@@ -258,7 +269,7 @@ def process_flats(path_to_raw_sci, path_to_raw_flats, path_to_raw_darks, imsize,
 
         # subtract off the median dark frame from each of the twiflats, IF median dark is the same exposure length as the twilight flats. 
         for ii in range (0,n):
-            flatarray[:,:,ii] = fits.getdata(flatlist[ii], ignore_missing_end = True)
+            flatarray[:,:,ii] = np.fliplr(fits.getdata(flatlist[ii], ignore_missing_end = True))
             flatarray[:,:,ii] -= med_dark
             
         # take the median of the first flat in the stack to rescale all median pixel values of subsequent flats
@@ -465,7 +476,17 @@ def create_sky_frames(path_to_raw_sci, reduced_science_array, sciheader, objname
     # check if all angles are zero (one rotation angle):        
     if np.sum(np.where(angle != 0.0)) == 0:
         rot_flag = 0
-        medskyframe = np.median(reduced_science_array, axis=2)
+
+        # totally experimental stuff
+        clipped_array = sigma_clipping.sigma_clip(reduced_science_array, sigma=1, axis=2)
+        median_clipped_array = np.ma.median(clipped_array, axis=2)
+        output_clipped = median_clipped_array.filled(0.) # set masked values = 0 so subtraction doesn't do anything
+
+        medskyframe = output_clipped
+
+        # # original: 
+        #medskyframe = np.median(reduced_science_array, axis=2)
+        
         skyname = objname + '_' + date + '_mastersky.fits'
         fits.writeto(path_to_raw_sci+skyname, medskyframe, sciheader, overwrite = True, output_verify='silentfix')
         return rot_flag, medskyframe
@@ -473,7 +494,17 @@ def create_sky_frames(path_to_raw_sci, reduced_science_array, sciheader, objname
     # check if there are more than two rotation angles:
     elif len(np.unique(angle)) > 2:
         rot_flag = 0
-        medskyframe = np.median(reduced_science_array, axis=2)
+
+        # totally experimental stuff
+        clipped_array = sigma_clipping.sigma_clip(reduced_science_array, sigma=1, axis=2)
+        median_clipped_array = np.ma.median(clipped_array, axis=2)
+        output_clipped = median_clipped_array.filled(0.) # set masked values = 0 so subtraction doesn't do anything
+
+        medskyframe = output_clipped
+
+        # original: 
+        #medskyframe = np.median(reduced_science_array, axis=2)
+
         skyname = objname + '_' + date + '_mastersky.fits'
         fits.writeto(path_to_raw_sci+skyname, medskyframe, sciheader, overwrite = True, output_verify='silentfix')
         return rot_flag, medskyframe        
@@ -560,7 +591,73 @@ def sky_subtract(reduced_science_array, sky_output, angle):
             scifactor = np.median(skysub_science_array[:,:,ind[ii]])
             skysub_science_array[:,:,ind[ii]] -= medskyframe_b/(skyfactor_b/scifactor)
 
-    return skysub_science_array, rot_flag        
+    return skysub_science_array, rot_flag   
+
+
+def cross_correlate_centers(path_to_raw_sci, skysub_science_array, scinames_list, ref_imagex, ref_imagey):
+    """
+    cross_correlate_centers
+    ----------
+    For a list of reduced FITS file names, uses image cross-correlation to determine the offset between the 
+    subsequent images in a stack, then calculates the x-center and y-center of the star in each image. Requires 
+    a rought estimate of the star position for the first image to calculate relative offsets. 
+    Overwrites the existing reduced science FITS file headers with the new star position information into 
+    the header keywords:
+    CRPIX1A - x center of the star in pixels
+    CRPIX2A - y center of the star in pixels
+
+    If the align flag is checked, requires manual intervention to select star in a ds9 interface.
+        
+    Inputs
+    ----------
+    path_to_raw_sci         : (string) path to location of raw science frame directory for given target; usu. './OBJECT/'
+    skysub_science_array    : (array) stacked (x by y by n) array of reduced, sky-subtracted science image data 
+    scinames_list           : (list) list of FITS file names of the reduced science data
+    ref_imagex              : (float) initial x-position of star in reference image
+    ref_imagey              : (float) initial x-position of star in reference image
+    
+    Returns
+    ----------
+    xcen                    : (array) array of x-centers for each image
+    ycen                    : (array) array of y-centers for each image
+    
+    Dependents
+    ----------
+    reduced_science_array   : this should be the output from the sky_subtract function
+    """
+    n = len(scinames_list)
+    
+    sciheader = fits.getheader(path_to_raw_sci+scinames_list[0])
+    
+    xcen = np.zeros(n)
+    ycen = np.zeros(n)
+    
+    ref_im = skysub_science_array[:,:,0]
+    
+    for ii in range(0,n):
+        yshift, xshift = cross_image(ref_im, skysub_science_array[:,:,ii], boxsize=10000)
+        
+        print(xshift, yshift)
+        xcen[ii] = ref_imagex - xshift
+        ycen[ii] = ref_imagey - yshift
+        
+        sciheader['CRPIX1A'] = (xcen[ii],'primary star X-center')
+        sciheader['CRPIX2A'] = (ycen[ii],'primary star Y-center')
+        sciheader['CRVAL1A'] = (0,'')
+        sciheader['CRVAL2A'] = (0,'')
+        sciheader['CTYPE1A'] = ('Xprime','')
+        sciheader['CTYPE2A'] = ('Yprime','')
+        sciheader['CD1_1A'] = (1,'')
+        sciheader['CD1_2A'] = (0,'')
+        sciheader['CD2_1A'] = (0,'')
+        sciheader['CD2_2A'] = (1,'')
+        sciheader['BZERO'] = (0,'')
+        #del sciheader['NAXIS3']
+
+        print(f"Overwriting existing science frames with star position values: {scinames_list[ii]}")
+        fits.writeto(path_to_raw_sci+scinames_list[ii], skysub_science_array[:,:,ii], sciheader, overwrite = True, output_verify = 'silentfix')        
+
+    return xcen, ycen         
 
 
 def measure_star_centers(path_to_raw_sci, skysub_science_array, scinames_list, sciheader, saturated, alignflag, current_dir, saveframes = True):
@@ -573,6 +670,8 @@ def measure_star_centers(path_to_raw_sci, skysub_science_array, scinames_list, s
     new star position information into the header keywords:
     CRPIX1A - x center of the star in pixels
     CRPIX2A - y center of the star in pixels
+
+    If the align flag is checked, requires manual intervention to select star in a ds9 interface.
         
     Inputs
     ----------
@@ -620,10 +719,19 @@ def measure_star_centers(path_to_raw_sci, skysub_science_array, scinames_list, s
         # get star position manually if there are two bright stars to choose from:
         if alignflag == 1:
             idl('ds9')
-            idl('!v->im,im')
+            idl('!v->im, im, frame=1') # force frame to overwrite each time (frame=1)
+            idl('!v-> cmd, "scale log"') 
             idl('!v->imexam,x,y')
-            idl('ind[0]=x')
-            idl('ind[1]=y')
+            print(idl.x, idl.y)
+            # handle case where image does not send to ds9 successfully, just use the image max:
+            if (idl.x < 0) or (idl.y < 0): 
+                idl('ind[0]=ind[0]') # max in images
+                idl('ind[1]=ind[1]') # max in images                
+            else:
+                idl('ind[0]=x')
+                idl('ind[1]=y')   
+            idl('!v-> cmd, "frame delete"') # delete frame to save some memory here
+   
 
         # handle unsaturated/saturated data    
         if saturated == 0:
@@ -867,7 +975,7 @@ def rotate_shift_align(path_to_raw_sci, xcen, ycen, angle, skysub_science_array,
     return
 
 
-def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objname, flattype, saturated, alignflag, saveframes=True, imsize = 1024):
+def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objname, flattype, saturated, alignflag, ref_imagex, ref_imagey, saveframes=True, imsize = 1024):
     '''
     IN PROGRESS:NEED TO UPDATE DOCSTRING
     reduce_raw_sci
@@ -942,9 +1050,15 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
     
     im_index = 0
     
+    # This is the section that needs to be updated! Update in the testing notebook accordingly!
+
     for ii in range(0, n):
         im = fits.getdata(scilist[ii], ignore_missing_end=True)
         header = fits.getheader(scilist[ii],ignore_missing_end=True)
+
+        # flip image left-right, as required for MMT data:
+        im = np.fliplr(im)
+
         if len(im.shape) == 3: # check for data cubes of science frames
             assert not np.any(np.isnan(im))
             for jj in range(0, im.shape[0]):
@@ -1016,7 +1130,14 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
     current_dir = path_to_raw_sci
 
     # measure star positions in all of the images
-    xcen, ycen = measure_star_centers(path_to_raw_sci, skysub_science_array, scinames_list, sciheader, saturated, alignflag, current_dir, saveframes = True)
+    if saturated == 0:
+        xcen, ycen = measure_star_centers(path_to_raw_sci, skysub_science_array, scinames_list, sciheader, saturated, alignflag, current_dir, saveframes = True)
+    
+    elif saturated == 1:    
+        xcen, ycen = cross_correlate_centers(path_to_raw_sci, skysub_science_array, scinames_list, ref_imagex, ref_imagey)    
+
+    else:
+        raiseException("Saturated flag not recognized.")
 
     # final step (!) - shift and combine all of the images.
     rotate_shift_align(path_to_raw_sci, xcen, ycen, angle, skysub_science_array, objname, sciheader, current_dir, imsize=1024)

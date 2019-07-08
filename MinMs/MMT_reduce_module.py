@@ -1015,6 +1015,9 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
 
     # Make list of science frames and check exposure time 
     scilist = glob.glob(path_to_raw_sci + 'q*.fits')
+
+    # Sort the list of science frames in case glob doesn't grab them in order
+    scilist.sort()
     
     print(f"Number of science frames found: {len(scilist)} \n")
 

@@ -328,6 +328,7 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
     
     #smooth input image by specified amount
     if smooth > 0:
+        print("smoothing")
         gauss = conv.Gaussian2DKernel(stddev=smooth)
         inpsm =conv.convolve(inp, gauss, preserve_nan=True)
         inp = inpsm
@@ -336,13 +337,11 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
     #stdMap = stdevMap(inp, planets, fwhm)
   
     #gets size of pixel value array
-    #try:
-        #zDim, yDim, xDim = np.shape(inp)
-    #except:
-        #yDim, xDim = np.shape(inp)
-        #zDim = 1
-
-    zdim, ydim, xdim = np.shape(inp)
+    try:
+        zdim, ydim, xdim = np.shape(inp)
+    except:
+        ydim, xdim = np.shape(inp)
+        zdim = 1
 
     global XCenter
     global YCenter 
@@ -350,6 +349,7 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
     YCenter = (ydim-1)/2
     
     Output = np.zeros((zdim,ydim,xdim))
+
     if checkmask == True:
         msks = np.ones((zdim,ydim,xdim))
         msk = np.ones((ydim, xdim))
@@ -363,12 +363,10 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
     planet_pixels = np.ones((ydim,xdim))*np.nan
 
     for s in range (zdim):
-        #try:
-        indiv = inp[s,:,:]
-        #except:
-         #   indiv = inp
-
-
+        try:
+            indiv = inp[s,:,:]
+        except:
+            indiv = inp
 
         #creates dictionary holding the standard deviation of pixlel values at each radius
         stdMap = stdevMap(indiv, planets, fwhm)
@@ -395,7 +393,6 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
                     if noisemap == True:
                         noise[x][y] = stdMap[radius]*5
 
-
                 #if no standard deviation has been calculated, pixel is given a nan value
                 except:
                     indiv[x][y] = np.nan
@@ -411,7 +408,7 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
         if noisemap==True:
             noises[s,:,:]=noise
         snrs[s]=np.nanmax(planet_pixels)
-        print("max SNR under mask for slice", s+1, "is", snrs[s])
+        print("max SNR under mask is", snrs[s])
     
     #saves output to disk if saveOutput designated True
     if (saveOutput == True):
@@ -432,7 +429,7 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
     if checkmask==True:
         return Output, snrs, maskedims
     else:
-        return Output, snrs
+        return Output
     
 
 

@@ -1,4 +1,6 @@
 #ignore all .pyc files
+*.xml*
+*.iml*
 *.pyc*
 *.class
 *.DS_Store

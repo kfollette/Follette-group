@@ -99,7 +99,8 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
 
     
     #writes out files
-    hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli_fname) + "m" + str(movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + suff + '_klmodes-all.fits', clobber=True)
+    hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli_fname) + "m" + str(
+        movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + suff + '_klmodes-all.fits', clobber=True)
 
 
 
@@ -151,8 +152,6 @@ if(annuli_start == annuli_stop):
 else:
     print("Annuli: start = %s; end = %s; increment = %s " %(str(annuli_start), str(annuli_stop), str(annuli_inc)))
 
-
-
 movement_start = float(sys.argv[8+argnum])
 movement_stop = float(sys.argv[9+argnum])
 movement_inc = float(sys.argv[10+argnum])
@@ -165,8 +164,8 @@ if(movement_start == movement_stop):
     print("Movement = " +str(movement_start))
     
 else:
-    print("Movement: start = %s; end = %s; increment = %s " %(str(movement_start), str(movement_stop), str(movement_inc)))
-
+    print("Movement: start = %s; end = %s; increment = %s " %(
+        str(movement_start), str(movement_stop), str(movement_inc)))
 
 subsections_start = int(sys.argv[11+argnum])
 subsections_stop = int(sys.argv[12+argnum])
@@ -179,7 +178,8 @@ if(subsections_start == subsections_stop):
     subsections = subsections_start
     print("Subsections = " +str(subsections_start))    
 else:
-    print("Subsections: start = %s; end = %s; increment = %s " %(str(subsections_start), str(subsections_stop), str(subsections_inc)))
+    print("Subsections: start = %s; end = %s; increment = %s " %(
+        str(subsections_start), str(subsections_stop), str(subsections_inc)))
 
 print()
     
@@ -204,6 +204,11 @@ print("Radius = " + str(ra))
 pa = list(map(int, sys.argv[17+argnum].split(",")))
 print("Position Angle = " + str(pa))
 
+#catch in case don't specify enough ras
+if len(ra) != len(pa):
+    print("list of separations is not equal in length to list of position angles. Duplicating to match.")
+    ra=np.repeat(ra,len(pa))
+
 wid = list(map(int, sys.argv[18+argnum].split(",")))
 print("Mask width (radial, angular): = " + str(wid))
 
@@ -215,7 +220,6 @@ print()
 outputFileName = sys.argv[4+argnum]
 print("Output FileName = " + outputFileName)
 
-
 saveSNR = False
 if (sys.argv[19+argnum] == 'true' or sys.argv[19+argnum] == 'True'):
     saveSNR = True    
@@ -225,18 +229,13 @@ singleAnn = False
 if (sys.argv[20+argnum] == 'true' or sys.argv[20+argnum] == 'True'):
     singleAnn = True   
     suff = '_min-annuli'
-    
-    
+
 highpass = False
 if (sys.argv[21+argnum] == 'true' or sys.argv[21+argnum] == 'True'):
     highpass = True   
     suff += '_highpass'
     
 print()
-
-
-
-
 
 ##################################################################
 #############                                        #############
@@ -286,8 +285,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
         numAnn = int(round((upBound-lowBound)/dr))
         dataset.IWA = lowBound
         dataset.OWA = upBound
-        
-    
+
     #check to see if any planets fall very close to a zone boundary 
     if (len( [b for b in all_bounds for r in ra if(b <= r+FWHM/2 and b >= r-FWHM/2)] ) == 0):
     
@@ -325,12 +323,12 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                         for i in range(len(klmodes)):
                             cube[i,:,:] = hdulist[0].data[klmodes2.index(klmodes[i]),:,:]
 
-                
-
                 if (runKLIP):
                     print("Starting KLIP")
                     #run klip for given parameters
-                    parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, mode="ADI", highpass = highpass) 
+                    parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"),
+                                              fileprefix=outputFileName, annuli=numAnn, subsections=s, movement=m,
+                                              numbasis=klmodes, calibrate_flux=True, mode="ADI", highpass = highpass)
                     #take median combo
                     cube = np.nanmedian(dataset.output, axis=(1,2))
                     print(cube.shape)

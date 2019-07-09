@@ -193,6 +193,11 @@ print("Radius = " + str(ra))
 pa = list(map(int, sys.argv[17 + argnum].split(",")))
 print("Position Angle = " + str(pa))
 
+#catch in case don't specify enough ras
+if len(ra) != len(pa):
+    print("list of separations is not equal in length to list of position angles. Duplicating to match.")
+    ra=np.repeat(ra,len(pa))
+
 wid = list(map(int, sys.argv[18 + argnum].split(",")))
 print("Mask width (radial, angular): = " + str(wid))
 
@@ -234,7 +239,7 @@ prihdr = hdulist[0].header
 hdulist.close()
 prihdr['rotoff'] = None
 
-# reads in files
+# reads in
 filelist = glob.glob(pathToFiles + '/*.fits')
 dataset = MagAO.MagAOData(filelist)
 
@@ -244,7 +249,7 @@ dataset.IWA = iwa
 xDim = dataset._input.shape[2]
 yDim = dataset._input.shape[1]
 # creates cube to eventually hold average SNR data
-snrCube = np.zeros((len(klmodes), int((subsections_stop - subsections_start) / subsections_inc + 1),
+snrCube = np.zeros((int((subsections_stop - subsections_start) / subsections_inc + 1), len(klmodes),
                     int((annuli_stop - annuli_start) / annuli_inc + 1),
                     int((movement_stop - movement_start) / movement_inc + 1)))
 
@@ -292,17 +297,19 @@ for a in range(annuli_start, annuli_stop + 1, annuli_inc):
                 print("Starting KLIP")
                 # run klip for given parameters
                 parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"),
-                                          fileprefix='mean_' + str(outputFileName), annuli=a, subsections=s, movement=m,
+                                          fileprefix=str(outputFileName), annuli=a, subsections=s, movement=m,
                                           numbasis=klmodes, calibrate_flux=True, mode="ADI", highpass=_highpass)
                 # flips images
-                output = dataset.output[:, :, :, ::-1]
+                #shouldn't need to flip anymore
+                output = dataset.output
+                #output = dataset.output[:, :, :, ::-1]
 
             # keeps track of number of KL mode values that have been tested, used for indexing
             kcount = 0
 
             # iterates over kl modes
             for k in klmodes:
-
+                print("KL mode", k)
                 if (runKLIP):
                     # takes median combination of cube made with given number of KL modes
                     isolatedKL = np.nanmedian(output[kcount, :, :, :], axis=0)
@@ -320,10 +327,12 @@ for a in range(annuli_start, annuli_stop + 1, annuli_inc):
                     snrMapCube[kcount, :, :] = snrmap
 
                 planetSNRs = [snr.getPlanet(snrmap, 0, ra[x], pa[x], int(wid[0] / 2) + 1) for x in range(len(ra))]
-                planetSNR = np.mean(planetSNRs)
+                print("planet SNRs are", planetSNRs)
+                planetSNR = np.nanmean(planetSNRs)
+                print("average planet SNR is", planetSNR)
 
                 # add planet snr value to snrCube
-                snrCube[kcount, scount, acount, mcount] = planetSNR
+                snrCube[scount, kcount, acount, mcount] = planetSNR
                 kcount += 1
 
             if (runKLIP):
@@ -342,9 +351,9 @@ for a in range(annuli_start, annuli_stop + 1, annuli_inc):
 
 print("Writing average SNR values to " + pathToFiles + "_klip/")
 # write snr cube to disk
+
 writeData(snrCube, allParams=True, snrmap=True, pre='paramexplore_')
 
-print()
 print("KLIP automation complete")
 
 

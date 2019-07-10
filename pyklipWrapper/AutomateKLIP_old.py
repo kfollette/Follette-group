@@ -231,6 +231,12 @@ if (sys.argv[21 + argnum] == 'true' or sys.argv[21 + argnum] == 'True'):
 
 print("reading: " + pathToFiles + "/*.fits")
 
+start_time = time.time()
+print("start clock time is", time.time())
+
+start_process_time = time.process_time()
+print("start process time is", time.process_time())
+
 print()
 
 # grab header
@@ -245,9 +251,9 @@ dataset = MagAO.MagAOData(filelist)
 
 # set iwa
 dataset.IWA = iwa
-
 xDim = dataset._input.shape[2]
-yDim = dataset._input.shape[1]
+yDim = dataset._input.shape[1
+
 # creates cube to eventually hold average SNR data
 snrCube = np.zeros((int((subsections_stop - subsections_start) / subsections_inc + 1), len(klmodes),
                     int((annuli_stop - annuli_start) / annuli_inc + 1),
@@ -351,10 +357,12 @@ for a in range(annuli_start, annuli_stop + 1, annuli_inc):
 
 print("Writing average SNR values to " + pathToFiles + "_klip/")
 # write snr cube to disk
-
 writeData(snrCube, allParams=True, snrmap=True, pre='paramexplore_')
 
+print()
 print("KLIP automation complete")
 
-
-
+print("end clock time is", time.time())
+print("end process time is", time.process_time())
+print("total clock runtime: ", time.time()- start_time)
+print("total process runtime:", time.process_time()-start_process_time)

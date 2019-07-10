@@ -1,7 +1,5 @@
 #Clare Leonard                                                                
-#Version 1.0 - 6/21/17                                                          
-
-
+#Version 1.0 - 6/21/17
 
 
 ##################################################################
@@ -12,12 +10,11 @@
 
 import glob
 import inspect
-import os                                      
+import os
 import pyklip.instruments.MagAO as MagAO
 import pyklip.parallelized as parallelized
 import numpy as np
-import sys             
-import pyklip.fm as fm
+import sys
 import pyklip.klip as klip
 from astropy.io import fits
 import SNRMap as snr   
@@ -40,7 +37,6 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
     
     hdu = fits.PrimaryHDU(indiv)
     hdulist = fits.HDUList([hdu])
- 
     
     if (allParams):
     #creates new strings to add parameter information to file names
@@ -93,16 +89,12 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
         prihdr.set('FWHM', str(FWHM))
    
     hdulist[0].header = prihdr
-    
-    suff = ''
-    
 
-    
+    suff = ''
+
     #writes out files
     hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli_fname) + "m" + str(
         movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + suff + '_klmodes-all.fits', clobber=True)
-
-
 
 
 ##################################################################
@@ -113,7 +105,6 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
 
 #value adjusts argument numbering in case of white space in file path 
 argnum = 0
-
 
 pathToFiles = sys.argv[1]
 
@@ -245,6 +236,12 @@ print()
 
 print("reading: " + pathToFiles + "/*.fits")
 
+start_time = time.time()
+print("start clock time is", time.time())
+
+start_process_time = time.process_time()
+print("start process time is", time.process_time())
+
 print()
 
 #grab header
@@ -257,15 +254,16 @@ prihdr['rotoff'] = None
 filelist = glob.glob(pathToFiles + '/*.fits')
 dataset = MagAO.MagAOData(filelist)
 
-#set iwa
+#set iwa and owa
 dataset.IWA = iwa
-
 xDim = dataset._input.shape[2]
 yDim = dataset._input.shape[1]
 owa = min(xDim,yDim)/2
-#creates cube to eventually hold average SNR data
-snrCube = np.zeros((len(klmodes),int((subsections_stop-subsections_start)/subsections_inc+1), int((annuli_stop-annuli_start)/annuli_inc+1),int((movement_stop-movement_start)/movement_inc+1)))
 
+#creates cube to eventually hold average SNR data
+snrCube = np.zeros((int((subsections_stop-subsections_start)/subsections_inc+1), len(klmodes),
+                    int((annuli_stop-annuli_start)/annuli_inc+1),
+                    int((movement_stop-movement_start)/movement_inc+1)))
 
 #loop over annuli, movement, and subsection parameters
 
@@ -273,22 +271,29 @@ snrCube = np.zeros((len(klmodes),int((subsections_stop-subsections_start)/subsec
 acount = 0
 
 for a in range(annuli_start, annuli_stop+1, annuli_inc):
-    
+
+    #size of annular zones
     dr = float(owa-iwa)/a
+    #creates list of zone radii
     all_bounds = [dr*rad+iwa for rad in range(a+1)]
+    print('annuli bounds are', all_bounds)
     numAnn = a
     
     if(singleAnn):
+        #find maximum annulus boundary radius that is still inside innermost planet injection radius
         lowBound = max([b for b in all_bounds if (min(ra)>b)])
+        #find minimum exterior boundary radius that is outside outermost planet injection radius
         upBound = min([b for b in all_bounds if (max(ra)<b)])
+        #list of zone boundaries for planets between the two bounds
         all_bounds = [b for b in all_bounds if (b>=lowBound and b<=upBound)]
         numAnn = int(round((upBound-lowBound)/dr))
+        #reset iwa and owa to correspond to annulus
         dataset.IWA = lowBound
         dataset.OWA = upBound
 
     #check to see if any planets fall very close to a zone boundary 
     if (len( [b for b in all_bounds for r in ra if(b <= r+FWHM/2 and b >= r-FWHM/2)] ) == 0):
-    
+
         #keeps track of number of movement values that have been tested, used for indexing
         mcount = 0
 
@@ -309,7 +314,6 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                 #creates cube to hold snr maps 
                 snrMapCube = np.zeros((len(klmodes),yDim,xDim))
 
-
                 runKLIP = True
 
                 if (os.path.isfile(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + suff + '_klmodes-all.fits')):
@@ -329,9 +333,10 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                     parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"),
                                               fileprefix=outputFileName, annuli=numAnn, subsections=s, movement=m,
                                               numbasis=klmodes, calibrate_flux=True, mode="ADI", highpass = highpass)
+                    output=dataset.output
                     #take median combo
-                    cube = np.nanmedian(dataset.output, axis=(1,2))
-                    print(cube.shape)
+                    #cube = np.nanmedian(dataset.output, axis=(1,2))
+                    #print(cube.shape)
 
                 #keeps track of number of KL mode values that have been tested, used for indexing
                 kcount = 0
@@ -339,28 +344,30 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                 #iterates over kl modes
                 for k in klmodes:
 
-                    #if (runKLIP):
+                    if (runKLIP):
                         #takes median combination of cube made with given number of KL modes
-                        #isolatedKL = np.nanmedian(output[kcount,:,:,:], axis=0)
+                        isolatedKL = np.nanmedian(output[kcount,:,:,:], axis=0)
                         #adds median image to cube
-                        #cube[kcount,:,:] = isolatedKL
+                        cube[kcount,:,:] = isolatedKL
 
-                    #else:
-                        #isolatedKL = cube[kcount,:,:]
+                    else:
+                        isolatedKL = cube[kcount,:,:]
 
                     #makes SNR map 
-                    snrmap = snr.create_map(cube[kcount,:,:],FWHM, smooth = _smooth, planets = mask, saveOutput = False)
+                    snrmap = snr.create_map(isolatedKL,FWHM, smooth = _smooth, planets = mask, saveOutput = False)
 
                     #adds SNR map to 5d cube 
                     if (saveSNR):
-                        snrMapCube[kcount,:,:] = snrmap 
+                        snrMapCube[kcount,:,:] = snrmap
 
-
-                    planetSNRs = [snr.getPlanet(snrmap, 0, ra[x], pa[x], int(wid[0]/2)+1) for x in range (len(ra))]
-                    planetSNR = np.mean(planetSNRs)
+                    planetSNRs = [snr.getPlanet(snrmap, 0, ra[x], pa[x], int(FWHM / 2) + 1) for x in range(len(ra))]
+#                    planetSNRs = [snr.getPlanet(snrmap, 0, ra[x], pa[x], int(wid[0]/2)+1) for x in range (len(ra))]
+                    print("planet SNRs are", planetSNRs)
+                    planetSNR = np.nanmean(planetSNRs)
+                    print("average planet SNR is", planetSNR)
 
                     #add planet snr value to snrCube
-                    snrCube[kcount,scount,acount,mcount] = planetSNR
+                    snrCube[scount,kcount,acount,mcount] = planetSNR
                     kcount+=1
 
                 if(runKLIP):
@@ -375,15 +382,14 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
 
                 scount+=1
             mcount+=1
-            
-            
+
     else: 
         print("Planet near annulus boundary; skipping KLIP for annuli = " + str(a))
         print()
-        snrCube[:,:,acount,:] = np.nan         
+        #assign a unique value as a flag for these cases in the parameter explorer map
+        snrCube[:,:,acount,:] = -1000
                 
     acount+=1
-
 
          
 print("Writing average SNR values to " + pathToFiles + "_klip/")    
@@ -391,5 +397,9 @@ print("Writing average SNR values to " + pathToFiles + "_klip/")
 writeData(snrCube, allParams = True, snrmap = True, pre = 'paramexplore_')
 
 print()
-print("KLIP automation complete")  
-            
+print("KLIP automation complete")
+
+print("end clock time is", time.time())
+print("end process time is", time.process_time())
+print("total clock runtime: ", time.time()- start_time)
+print("total process runtime:", time.process_time()-start_process_time)

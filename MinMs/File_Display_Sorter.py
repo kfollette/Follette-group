@@ -49,6 +49,10 @@ def sorter(keyword1, keyword2, header_keyword):
         if header[header_keyword] == keyword2:      #if the subtitle header input is equal to keyword2 then print the subtitle 
             print(header[header_keyword])           #header input and move the mathcing file to the corresponding subdirectory
             os.rename(files, keyword2 + '/' + files)
+
+    keyword2_nospace = keyword2.split(' ')[0] + keyword2.split(' ')[1]
+    print('Renaming directory to', keyword2_nospace)
+    os.rename(keyword2, keyword2_nospace)
             
 def exptime(keyword, time, time_file):
     '''
@@ -71,3 +75,4 @@ def exptime(keyword, time, time_file):
         if header['EXPTIME'] == time:    #Moves the corresponding fies to subdirectory
             print(header['EXPTIME'])
             os.rename(files, time_file + '/' + files)
+

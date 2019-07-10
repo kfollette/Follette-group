@@ -478,14 +478,15 @@ def create_sky_frames(path_to_raw_sci, reduced_science_array, sciheader, objname
         rot_flag = 0
 
         # totally experimental stuff
-        clipped_array = sigma_clipping.sigma_clip(reduced_science_array, sigma=1, axis=2)
+        # clipped_array = sigma_clipping.sigma_clip(reduced_science_array, sigma=1, axis=2)
+        clipped_array = sigma_clipping.sigma_clip(reduced_science_array, maxiters=20, cenfunc='mean', sigma_upper=1, axis=2)
         median_clipped_array = np.ma.median(clipped_array, axis=2)
         output_clipped = median_clipped_array.filled(0.) # set masked values = 0 so subtraction doesn't do anything
 
         medskyframe = output_clipped
 
         # # original: 
-        #medskyframe = np.median(reduced_science_array, axis=2)
+        # medskyframe = np.median(reduced_science_array, axis=2)
         
         skyname = objname + '_' + date + '_mastersky.fits'
         fits.writeto(path_to_raw_sci+skyname, medskyframe, sciheader, overwrite = True, output_verify='silentfix')
@@ -496,14 +497,15 @@ def create_sky_frames(path_to_raw_sci, reduced_science_array, sciheader, objname
         rot_flag = 0
 
         # totally experimental stuff
-        clipped_array = sigma_clipping.sigma_clip(reduced_science_array, sigma=1, axis=2)
+        # clipped_array = sigma_clipping.sigma_clip(reduced_science_array, sigma=1, axis=2)
+        clipped_array = sigma_clipping.sigma_clip(reduced_science_array, maxiters=20, cenfunc='mean', sigma_upper=1, axis=2)
         median_clipped_array = np.ma.median(clipped_array, axis=2)
         output_clipped = median_clipped_array.filled(0.) # set masked values = 0 so subtraction doesn't do anything
 
         medskyframe = output_clipped
 
         # original: 
-        #medskyframe = np.median(reduced_science_array, axis=2)
+        # medskyframe = np.median(reduced_science_array, axis=2)
 
         skyname = objname + '_' + date + '_mastersky.fits'
         fits.writeto(path_to_raw_sci+skyname, medskyframe, sciheader, overwrite = True, output_verify='silentfix')

@@ -1022,6 +1022,7 @@ def reduce_raw_sci(path_to_raw_sci, path_to_raw_darks, path_to_raw_flats, objnam
     scilist.sort()
     
     print(f"Number of science frames found: {len(scilist)} \n")
+                            
 
     scitimes = [fits.getheader(im, ignore_missing_end = True)['EXPTIME'] for im in scilist]
 

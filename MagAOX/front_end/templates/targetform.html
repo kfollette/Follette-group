@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="content-section">
+  <form method="POST" action="">
+    {{ form.hidden_tag() }}
+    <fieldset class="form-group">
+      <legend class="border-bottom mb-4">Enter Targets Here</legend>
+      <div class="form-group">
+        {{ form.targets.label(class="form-control-label") }}
+        {% if form.targets.errors %}
+        {{ form.targets(class="form-control form-control-lg is-invalid") }}
+        <div class="invalid-feedback">
+          {% for error in form.targets.errors %}
+          <span>{{ error }}</span>
+          {% endfor %}
+        </div>
+        {% else %}
+        {{ form.targets(class="form-control form-control-lg") }}
+        {% endif %}
+      </div>
+      <div class="dropdown">
+	<button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+	  Instrument Rotator Mode
+	</button>
+	<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+	  <a class="dropdown-item" href="#">OFF</a>
+	  <a class="dropdown-item" href="#">EQU</a>
+	  <a class="dropdown-item" href="#">HRZ</a>
+	  <a class="dropdown-item" href="#">GRV</a>
+	</div>
+	<div class="">
+          <small class="text-muted">
+            For more information on Instrument Rotator Modes,<a class="ml-2" href="http://www.lco.cl/telescopes-information/magellan/operations-homepage/magellan-telescope-operators-homepage/clay-parameters" target="_blank">click here.</a>
+          </small>
+	</div>
+      </div>
+    </fieldset>
+    <div class="form-group">
+      {{ form.submit(class="btn btn-outline-info") }}
+    </div>
+  </form>
+</div>
+<div class="border-top pt-3">
+</div>
+{% endblock content %}

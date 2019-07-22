@@ -1,5 +1,6 @@
 pro cand_click_sat, unsatflux, narrowband, broadband, age_gyr, dist_in_pc, primary_appmag, path_to_cond
 
+; +
 ; NAME: cand_click_sat
 ;
 ; PURPOSE:
@@ -17,12 +18,15 @@ pro cand_click_sat, unsatflux, narrowband, broadband, age_gyr, dist_in_pc, prima
 ;
 ; HISTORY:
 ; Based on cand_click, by RDR (~2012?)
-; 2019-07-20: KWD updated for saturated data and mass estimation.
+; 2019-07-21: KWD updated for saturated data and mass estimation.
 ;
 ;
-; TODO: (7/20)
+; TODO: (7/21)
 ;  - Add other options for bands and COND models at different ages
 ;  - Propagate errors from unsat_phot.pro
+;  - Make the code a little more forgiving if you click the wrong object
+;
+; +
 
   print, "Unsaturated flux from star per second:", unsatflux
 
@@ -126,12 +130,16 @@ pro cand_click_sat, unsatflux, narrowband, broadband, age_gyr, dist_in_pc, prima
    ENDFOR
 
 median_delmag = median(deltamag_array)
+
+print, string(10B)
+
 print,'Median delta mag:', median_delmag
 print,'Error on delta mag: ', stddev(deltamag_array)
 
 print, 'Separation in pixels: ', median(sep_array), ' +/- ', stddev(sep_array) 
 print, 'Position angle in degrees: ', median(pa_array), ' +/- ', stddev(pa_array) 
 
+print, string(10B)
 
 ; Start the estimation of the mass from the delta magnitude:
 
@@ -153,8 +161,9 @@ IF ((age_gyr eq 5) AND (broadband eq 'Ks')) THEN BEGIN
 
   est_comp_mass = mass_interp[index]
 
-
+  print, string(10B)
   print, 'Estimated companion mass for abs. ' + broadband + ' mag. of ' + strn(comp_absmag) + ' and age of ' + strn(age_gyr) + ' Gyr: ' + strn(est_comp_mass) + ' Msun / ' + strn(1000*est_comp_mass) + ' MJup'
+  print, string(10B)
 
 ENDIF
 

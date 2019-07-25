@@ -1,10 +1,16 @@
 {% extends "layout.html" %}
 {% block content %}
+
 <div class="content-section">
   <form method="POST" action="">
     {{ form.hidden_tag() }}
+    
     <fieldset class="form-group">
-      <legend class="border-bottom mb-4">Enter Targets Here</legend>
+      <legend class="border-bottom mb-4">
+	<p></p>
+	Enter Target Information Here</legend>
+
+      <!--user inputs targets as string (csv) here-->
       <div class="form-group">
         {{ form.targets.label(class="form-control-label") }}
         {% if form.targets.errors %}
@@ -17,29 +23,134 @@
         {% else %}
         {{ form.targets(class="form-control form-control-lg") }}
         {% endif %}
+	<small class="text-muted">
+          Enter as comma separated values
+        </small>
       </div>
-      <div class="dropdown">
-	<button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-	  Instrument Rotator Mode
-	</button>
-	<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-	  <a class="dropdown-item" href="#">OFF</a>
-	  <a class="dropdown-item" href="#">EQU</a>
-	  <a class="dropdown-item" href="#">HRZ</a>
-	  <a class="dropdown-item" href="#">GRV</a>
-	</div>
-	<div class="">
-          <small class="text-muted">
-            For more information on Instrument Rotator Modes,<a class="ml-2" href="http://www.lco.cl/telescopes-information/magellan/operations-homepage/magellan-telescope-operators-homepage/clay-parameters" target="_blank">click here.</a>
-          </small>
-	</div>
+
+      <!--user inputs start time as string here-->
+      <div class="form-group">
+        {{ form.starttime.label(class="form-control-label") }}
+        {% if form.starttime.errors %}
+        {{ form.starttime(class="form-control form-control-lg is-invalid") }}
+        <div class="invalid-feedback">
+          {% for error in form.starttime.errors %}
+          <span>{{ error }}</span>
+          {% endfor %}
+        </div>
+        {% else %}
+        {{ form.starttime(class="form-control form-control-lg") }}
+        {% endif %}
+	<small class="text-muted">
+          Enter as YYYY-MM-DD HH:MM:SS
+        </small>
       </div>
+
+      <!--user inputs end time as string here-->
+      <div class="form-group">
+        {{ form.endtime.label(class="form-control-label") }}
+        {% if form.endtime.errors %}
+        {{ form.endtime(class="form-control form-control-lg is-invalid") }}
+        <div class="invalid-feedback">
+          {% for error in form.endtime.errors %}
+          <span>{{ error }}</span>
+          {% endfor %}
+        </div>
+        {% else %}
+        {{ form.endtime(class="form-control form-control-lg") }}
+        {% endif %}
+	<small class="text-muted">
+          Enter as YYYY-MM-DD HH:MM:SS
+        </small>
+      </div>
+
+      <!--user inputs rotator mode as string here-->
+      <div class="form-group">
+        {{ form.mode.label(class="form-control-label") }}
+        {% if form.mode.errors %}
+        {{ form.mode(class="form-control form-control-lg is-invalid") }}
+        <div class="invalid-feedback">
+          {% for error in form.mode.errors %}
+          <span>{{ error }}</span>
+          {% endfor %}
+        </div>
+        {% else %}
+        {{ form.mode(class="form-control form-control-lg") }}
+        {% endif %}
+	<small class="text-muted"> Enter "OFF", "EQU", "HRZ", or "GRV". For more information on Instrument Rotator Modes,<a class="ml-2" style="color: #94667a" href="http://www.lco.cl/telescopes-information/magellan/operations-homepage/magellan-telescope-operators-homepage/clay-parameters" target="_blank">click here</a>
+	</small>
+      </div>
+
+      <!--user inputs rotator angle as string here-->
+      <div class="form-group">
+        {{ form.angle.label(class="form-control-label") }}
+        {% if form.angle.errors %}
+        {{ form.angle(class="form-control form-control-lg is-invalid") }}
+        <div class="invalid-feedback">
+          {% for error in form.angle.errors %}
+          <span>{{ error }}</span>
+          {% endfor %}
+        </div>
+        {% else %}
+        {{ form.angle(class="form-control form-control-lg") }}
+        {% endif %}
+	<small class="text-muted">
+          Enter as decimal value from 0.0 to 360.0
+        </small>
+      </div>
+
+      <!--user inputs guide star 1 as string here-->
+      <div class="form-group">
+        {{ form.guide1.label(class="form-control-label") }}
+        {% if form.guide1.errors %}
+        {{ form.guide1(class="form-control form-control-lg is-invalid") }}
+        <div class="invalid-feedback">
+          {% for error in form.guides.errors %}
+          <span>{{ error }}</span>
+          {% endfor %}
+        </div>
+        {% else %}
+        {{ form.guide1(class="form-control form-control-lg") }}
+        {% endif %}
+      </div>
+
+      <!--user inputs guide star 2 as string here-->
+      <div class="form-group">
+        {{ form.guide2.label(class="form-control-label") }}
+        {% if form.guide2.errors %}
+        {{ form.guide2(class="form-control form-control-lg is-invalid") }}
+        <div class="invalid-feedback">
+          {% for error in form.guides.errors %}
+          <span>{{ error }}</span>
+          {% endfor %}
+        </div>
+        {% else %}
+        {{ form.guide2(class="form-control form-control-lg") }}
+        {% endif %}
+      </div>
+
+      <!--user inputs PM Epoch as string here-->
+      <div class="form-group">
+        {{ form.pmepoch.label(class="form-control-label") }}
+        {% if form.pmepoch.errors %}
+        {{ form.pmepoch(class="form-control form-control-lg is-invalid") }}
+        <div class="invalid-feedback">
+          {% for error in form.angle.errors %}
+          <span>{{ error }}</span>
+          {% endfor %}
+        </div>
+        {% else %}
+        {{ form.pmepoch(class="form-control form-control-lg") }}
+        {% endif %}
+      </div>
+
     </fieldset>
+
+    <!--submit button-->
     <div class="form-group">
-      {{ form.submit(class="btn btn-outline-info") }}
+      {{ form.submit(class="btn btn-outline-secondary text-white", style="background-color: #94667a") }}
     </div>
+
   </form>
-</div>
-<div class="border-top pt-3">
 </div>
 {% endblock content %}

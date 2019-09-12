@@ -86,11 +86,11 @@ def addstarpeak(dir, debug=False, mask=False, ghost=False, wl=False):
 			imcen = int((imsz-1)/2.)
 			diff[i] = p[0]-np.nanmax(im[imcen-10:imcen+10,imcen-10:imcen+10])
 
-	#write out list of peaks
+	#write out list of peaks one directory up so KLIP doesn't try to pull it
 	if ghost==True:
-		fits.writeto(dir+'ghsotpeaks.fits', np.array(peaks), overwrite=True)
+		fits.writeto(dir+'../'+wl+'ghostpeaks.fits', np.array(peaks), overwrite=True)
 	else:
-		fits.writeto(dir+'starpeaks.fits', np.array(peaks), overwrite=True)
+		fits.writeto(dir+'../'+wl+'starpeaks.fits', np.array(peaks), overwrite=True)
 	
 	if debug==True:
 		print('standard deviation of difference between fit peak and max pixel is: ', np.std(diff))

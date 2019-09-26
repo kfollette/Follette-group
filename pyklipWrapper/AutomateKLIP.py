@@ -1,6 +1,15 @@
 #Clare Leonard                                                                
 #Version 1.0 - 6/21/17
 
+#Kate Follette
+#Version 2.0 - 9/25/19
+#Various Modifications.
+# 1) Sped up with 3D SNR maps instead of loop through KL modes.
+# 2) Added additional parameters to a 5th cube dimension. Now separate maps for peak SNR derived with noise = Standard Deviation,
+#peak SNR with noise = median, and the total SNR under the mask for those two cases.
+# 3) Runtime printed to terminal
+# 4) cleaned up file reading and writing to use fits.getdata and fits.getheader rather than hdulist stuff
+# 5) added comments, removed redundancies
 
 ##################################################################
 #############                                        #############
@@ -17,13 +26,12 @@ import numpy as np
 import sys
 import pyklip.klip as klip
 from astropy.io import fits
-import SNRMap as snr   
+import SNRMap_new as snr
 import time
 import warnings
 from astropy.utils.exceptions import AstropyWarning
 
 warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
-
 
 ##################################################################
 #############                                        #############
@@ -32,14 +40,11 @@ warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 ################################################################## 
  
 
-def writeData(indiv, allParams = False, snrmap = False, pre = ''): 
-    #function writes out fits files and writes important information to fits headers
-    
-    hdu = fits.PrimaryHDU(indiv)
-    hdulist = fits.HDUList([hdu])
+def writeData(im, prihdr, allParams = False, snrmap = False, pre = ''):
+    #function writes out fits files with important info captured in fits headers
     
     if (allParams):
-    #creates new strings to add parameter information to file names
+    #for parameter explorer cube output - capture full range of parameter values
         annuli_fname = annuli
         annuli_head = annuli
         movement_fname = movement
@@ -58,6 +63,7 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
             subsections_head = str(subsections[0]) + 'to' + str(subsections[1]) + 'by' + str(subsections[2])
             subsections_fname = str(subsections[0]) + '-' + str(subsections[1]) + '-' + str(subsections[2])
     else:
+        #for individual images and SNR maps, capture the single parameter values used
         annuli_head = a
         movement_head = m
         subsections_head = s
@@ -72,34 +78,30 @@ def writeData(indiv, allParams = False, snrmap = False, pre = ''):
         pathToFiles_short = pathToFiles
             
     #adds info to fits headers
-    prihdr.set('annuli', str(annuli_head))
-    prihdr.set('movement', str(movement_head))
-    prihdr.set('subsctns', str(subsections_head))
-    prihdr.set('klmodes', str(klmodes))
-    prihdr.set('filepath', str(pathToFiles_short))
+    prihdr['ANNULI']=str(annuli_head)
+    prihdr['MOVEMENT']=str(movement_head)
+    prihdr['SUBSCTNS']=str(subsections_head)
+    prihdr['KLMODES']=str(klmodes)
+    prihdr['FILEPATH']=str(pathToFiles_short)
  
     if(snrmap):
         rad, pa, wid = mask 
-        prihdr.set('mask_rad', str(rad))
-        prihdr.set('mask_pa', str(pa))
-        prihdr.set('mask_wid', str(wid))
-  
-        prihdr.set('smooth_val', str(_smooth))
+        prihdr['MASK_RAD']=str(rad)
+        prihdr['MASK_PA']=str(pa)
+        prihdr['MASK_WID']=str(wid)
+        prihdr['SNRSMTH']=str(_smooth)
+        prihdr['SNRFWHM']=str(FWHM)
 
-        prihdr.set('FWHM', str(FWHM))
-   
-    hdulist[0].header = prihdr
-
-    suff = ''
+    #suff = ''
 
     #writes out files
-    hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli_fname) + "m" + str(
-        movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + suff + '_klmodes-all.fits', clobber=True)
+    fits.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli_fname) + "m" + str(
+        movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + suff + '_klmodes-all.fits', im, prihdr, overwrite=True)
 
 
 ##################################################################
 #############                                        #############
-#############               GET INPUTS               #############
+#############       GET INPUTS  FROM GUI             #############
 #############                                        #############
 ################################################################## 
 
@@ -244,11 +246,13 @@ print("start process time is", time.process_time())
 
 print()
 
-#grab header
-hdulist = fits.open(pathToFiles + '/sliced_1.fits')
-prihdr = hdulist[0].header
-hdulist.close()
-prihdr['rotoff'] = None 
+#grab generic header from a generic single image
+hdr = fits.getheader(pathToFiles + '/sliced_1.fits')
+#erase values that change through image cube
+del hdr['ROTOFF']
+del hdr['GSTPEAK']
+del hdr['STARPEAK']
+
 
 #reads in files
 filelist = glob.glob(pathToFiles + '/*.fits')
@@ -260,12 +264,14 @@ xDim = dataset._input.shape[2]
 yDim = dataset._input.shape[1]
 owa = min(xDim,yDim)/2
 
-#creates cube to eventually hold average SNR data
-snrCube = np.zeros((int((subsections_stop-subsections_start)/subsections_inc+1), len(klmodes),
+#creates cube to eventually hold parameter explorer data
+PECube = np.zeros((6,int((subsections_stop-subsections_start)/subsections_inc+1), len(klmodes),
                     int((annuli_stop-annuli_start)/annuli_inc+1),
                     int((movement_stop-movement_start)/movement_inc+1)))
 
-#loop over annuli, movement, and subsection parameters
+
+
+###BEGIN LOOPS OVER ANNULI, MOVEMENT AND SUBSECTION PARAMETERS
 
 #keeps track of number of annuli values that have been tested, used for indexing
 acount = 0
@@ -309,23 +315,23 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                 else:
                     print("Parameters: annuli = %d; movement = %s; subections = %d" %(a, m,s))
 
-                #cube to hold median combinations of klipped images
-                cube = np.zeros((len(klmodes),yDim,xDim))
                 #creates cube to hold snr maps 
-                snrMapCube = np.zeros((len(klmodes),yDim,xDim))
+                #snrMapCube = np.zeros((2,len(klmodes),yDim,xDim))
 
                 runKLIP = True
 
                 if (os.path.isfile(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + suff + '_klmodes-all.fits')):
-                    hdulist = fits.open(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + suff + '_klmodes-all.fits')
-                    klmodes2 = hdulist[0].header['klmodes'][1:-1]
+                    print("match")
+                    incube = fits.getdata(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + suff + '_klmodes-all.fits')
+                    head = fits.getheader(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + suff + '_klmodes-all.fits')
+                    klmodes2 = head['KLMODES'][1:-1]
                     klmodes2 = list(map(int, klmodes2.split(",")))
+                    print(klmodes, klmodes2)
 
                     if (len([k for k in klmodes if not k in klmodes2]) == 0):
                         print("Found KLIP processed images for same parameters saved to disk. Reading in data.")
-                        runKLIP = False 
-                        for i in range(len(klmodes)):
-                            cube[i,:,:] = hdulist[0].data[klmodes2.index(klmodes[i]),:,:]
+                        #don't re-run KLIP
+                        runKLIP = False
 
                 if (runKLIP):
                     print("Starting KLIP")
@@ -333,51 +339,45 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                     parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"),
                                               fileprefix=outputFileName, annuli=numAnn, subsections=s, movement=m,
                                               numbasis=klmodes, calibrate_flux=True, mode="ADI", highpass = highpass)
-                    output=dataset.output
-                    #take median combo
-                    #cube = np.nanmedian(dataset.output, axis=(1,2))
-                    #print(cube.shape)
 
-                #keeps track of number of KL mode values that have been tested, used for indexing
+                    #collapse in time dimension
+                    incube = np.nanmedian(dataset.output, axis=1)
+                    #truncates wavelength dimension, which we don't use
+                    incube = incube[:,0,:,:]
+                    #print('check: input image shape goes from', dataset.output.shape, 'to', incube.shape)
+
+                #list of noise calculation methods
+                methods = ['stddev', 'med']
+
+                # makes SNR map
+                snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(incube, FWHM, smooth=_smooth, planets=mask, saveOutput=False)
+
+                #klmode index
                 kcount = 0
-
-                #iterates over kl modes
+                # iterates over kl modes
                 for k in klmodes:
+                    for methodctr in np.arange(2):
+                        #loops over planets specified and returns their SNRs
+                        planetSNRs = [snr.getPlanet_peak(snrmaps[methodctr,kcount,:,:], ra[x], pa[x], int(FWHM / 2) + 1) for x in range(len(ra))]
+                        #print("planet SNRs are", planetSNRs, 'for', methods[methodctr])
+                        planetSNR = np.nanmean(planetSNRs)
+                        #print("average planet SNR is", planetSNR, 'for', methods[methodctr])
 
-                    if (runKLIP):
-                        #takes median combination of cube made with given number of KL modes
-                        isolatedKL = np.nanmedian(output[kcount,:,:,:], axis=0)
-                        #adds median image to cube
-                        cube[kcount,:,:] = isolatedKL
-
-                    else:
-                        isolatedKL = cube[kcount,:,:]
-
-                    #makes SNR map 
-                    snrmap = snr.create_map(isolatedKL,FWHM, smooth = _smooth, planets = mask, saveOutput = False)
-
-                    #adds SNR map to 5d cube 
-                    if (saveSNR):
-                        snrMapCube[kcount,:,:] = snrmap
-
-                    planetSNRs = [snr.getPlanet(snrmap, 0, ra[x], pa[x], int(FWHM / 2) + 1) for x in range(len(ra))]
-#                    planetSNRs = [snr.getPlanet(snrmap, 0, ra[x], pa[x], int(wid[0]/2)+1) for x in range (len(ra))]
-                    print("planet SNRs are", planetSNRs)
-                    planetSNR = np.nanmean(planetSNRs)
-                    print("average planet SNR is", planetSNR)
-
-                    #add planet snr value to snrCube
-                    snrCube[scount,kcount,acount,mcount] = planetSNR
+                        #adds peak values from getPlanet_peak to PE cube
+                        PECube[methodctr,scount,kcount,acount,mcount] = planetSNR
                     kcount+=1
+                    # adds sums under mask from snr.create_map to PE cube
+                    PECube[2:4, scount, :, acount, mcount] = snrsums
+                    PECube[4:6, scount, :, acount, mcount] = snrspurious
 
                 if(runKLIP):
                     #write median combination cube to disk 
                     print("Writing median image combinations to " + pathToFiles + "_klip/")
-                    writeData(cube, pre = 'med_')
+                    writeData(incube, hdr, pre = 'med_')
 
                 if (saveSNR):
                     print("Writing SNR maps to " + pathToFiles + "_klip/")
-                    writeData(snrMapCube, snrmap = True, pre = 'snrmap_')
+                    writeData(snrmaps, hdr, snrmap = True, pre = 'snrmap_')
                 print()
 
                 scount+=1
@@ -387,14 +387,16 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
         print("Planet near annulus boundary; skipping KLIP for annuli = " + str(a))
         print()
         #assign a unique value as a flag for these cases in the parameter explorer map
-        snrCube[:,:,acount,:] = -1000
+        PECube[:,:,:,acount,:] = -1000
                 
     acount+=1
 
          
-print("Writing average SNR values to " + pathToFiles + "_klip/")    
-#write snr cube to disk 
-writeData(snrCube, allParams = True, snrmap = True, pre = 'paramexplore_')
+print("Writing parameter explorer file to " + pathToFiles + "_klip/")
+#write parameter explorer cube to disk
+writeData(PECube, hdr, allParams = True, snrmap = True, pre = 'paramexplore_')
+
+
 
 print()
 print("KLIP automation complete")

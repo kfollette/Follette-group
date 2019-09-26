@@ -15,7 +15,7 @@ import pyklip.klip as klip
 from astropy.io import fits
 import warnings
 from astropy.utils.exceptions import AstropyWarning
-import SNRMap as snr
+import SNRMap_new as snr
 
 warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
@@ -26,12 +26,12 @@ warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 #############                                        #############
 ################################################################## 
  
-def writeData(indiv, snrmap = False, pre = ''): 
+def writeData(indiv, hdr, snrmap = False, pre = ''):
     #function writes out fits files and writes important information to fits headers
     
-    hdu = fits.PrimaryHDU(indiv)
-    hdulist = fits.HDUList([hdu])
-    hdr = prihdr
+    #hdu = fits.PrimaryHDU(indiv)
+    #hdulist = fits.HDUList([hdu])
+    #hdr = prihdr
  
 
     #shortens file path to bottom 4 directories so it will fit in fits header
@@ -54,17 +54,17 @@ def writeData(indiv, snrmap = False, pre = ''):
         hdr.set('smooth_val', str(_smooth))
         hdr.set('FWHM', str(FWHM))
    
-    hdulist[0].header = hdr
-    
+    #hdulist[0].header = hdr
     #writes out files
-    hdulist.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli) + "m" + str(movement) + "s" + str(subsections) + "iwa" + str(iwa) + '_klmodes-all.fits', clobber=True)
+    fits.writeto(str(pathToFiles) + "_klip/" + str(pre)  + outputFileName + "_a" + str(annuli) + "m" + str(movement) +
+                 "s" + str(subsections) + "iwa" + str(iwa) + '_klmodes-all.fits', indiv, hdr, overwrite=True)
 
 
     
 
 ##################################################################
 #############                                        #############
-#############               GET INPUTS               #############
+#############         GET INPUTS FROM GUI            #############
 #############                                        #############
 ################################################################## 
 
@@ -156,10 +156,8 @@ if (SNR):
 #############                                        #############
 ##################################################################
 #grab header
-hdulist = fits.open(pathToFiles + '/sliced_1.fits')
-prihdr = hdulist[0].header
-hdulist.close()
-prihdr['rotoff'] = None 
+hdr = fits.getheader(pathToFiles + '/sliced_1.fits')
+hdr['rotoff'] = None
 
 
 print()
@@ -178,12 +176,9 @@ print("Starting KLIP")
 parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix= ('mean_' + str(outputFileName)), annuli=annuli, subsections=subsections, movement=movement, numbasis=klmodes, calibrate_flux=True, mode="ADI", highpass = highpass)
            
 #cube to hold median combinations of klipped images
-dim = dataset.output.shape[3]
+#dim = dataset.output.shape[3]
 
-cube = np.zeros((len(klmodes),dim,dim))
-
-#cube to hold SNR maps
-SNRcube = np.zeros((len(klmodes),dim,dim))
+#cube = np.zeros((len(klmodes),dim,dim))
             
 #flips images
 #print("Now flipping KLIPed images")
@@ -191,28 +186,24 @@ SNRcube = np.zeros((len(klmodes),dim,dim))
       
 if (saveData):
     print("Writing KLIPed time series 4D cube to " + pathToFiles + "_klip")
-    writeData(dataset.output, pre = "uncombined_")
-    
+    writeData(dataset.output, hdr, pre = "uncombined_")
+
+#collapse KLIP output cube in time dimension
 cube = np.nanmedian(dataset.output, axis=(1,2))
 #print(cube.shape)
 
 if (SNR):
-    #keeps track of number of KL mode values that have been tested, used for indexing
-    kcount = 0
-    #iterates over kl modes
-    for k in klmodes:
-        SNRcube[kcount,:,:] = snr.create_map(cube[kcount,:,:], FWHM, smooth = _smooth, planets = maskParams, saveOutput = False)
-        kcount += 1
+     SNRcube, snrs, snrsums, snr_spurious = snr.create_map(cube, FWHM, smooth = _smooth, planets = maskParams, saveOutput = False)
         
 #write median combination cube to disk 
 print()
 print("Writing median KLIPed images to " + pathToFiles + "_klip")
-writeData(cube, pre = "med_")
+writeData(cube, hdr, pre = "med_")
 
   
 if (SNR):
     print("Writing SNR maps to " + pathToFiles + "_klip")
-    writeData(SNRcube, snrmap = True, pre = "snrmap_")
+    writeData(SNRcube, hdr, snrmap = True, pre = "snrmap_")
 
 
 print()

@@ -42,12 +42,11 @@ def read_file(filename):
 
     Last Modified:
     6/19/2017
-    """ 
-    hdulist = fits.open(filename)
-    indivData = hdulist[0].data
-    hdulist.close()
+    """
+    Data = fits.getdata(filename)
+    Head = fits.getheader(filename)
     print("Read " + filename  + " in to memory")
-    return indivData
+    return Data, Head
 
 
 
@@ -198,10 +197,6 @@ def toPolar(x, y):
     
     #defines pixel radius as the distance from said pixel to the center pixel rounded to an integer
     r = int(np.sqrt((x-XCenter)**2+(y-YCenter)**2))
-    #if (r-int(r)>=.5):
-        #r = int(r)+1
-    #elif (r-int(r)<.5): 
-        #r = int(r)
     
     #defines pixel angle 'theta' as the arctangent of the y distance from center divided by the x distance from center
     theta = math.degrees(math.atan2((y-YCenter),(x-XCenter)))
@@ -292,7 +287,7 @@ def noisemap(indiv, planets, fwhm, method='stdev'):
 
 
 
-def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True, outputName = None, method = 'all', checkmask=False, makenoisemap=False):
+def create_map(filename, fwhm, head = None, smooth = False, planets = None, saveOutput = True, outputName = None, method = 'all', checkmask=False, makenoisemap=False):
     """
     creates signal to noise ratio map of image.
     
@@ -320,18 +315,25 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
     Last Modified:
     Feb 2019 by KBF - added checkmask and makenoisemap keywords, removed default smooth
     Mar 2019 by KBF - returning max pixel under mask, adding loop over 3rd dimension so can generate 3D SNRmaps, return snrs and masked images
+    Sept 2019 by KBF - misc. cleanup, added additional SNR methodology to maps (median = noise), which are now 4D, added sums of snrs under mask as return
     """
 
-    print('this is the REPAIRED SNRMap code')
+    #print('this is the REPAIRED SNRMap code')
 
     #checks data type of 'filename'
     # if 'filename' is a string, assumes it is a filepath and reads in file
     if(isinstance(filename, str)):
-        inp = read_file(filename)
+        inp, head = read_file(filename)
         
     #if data type is not a string, reads in python object holding data
     else:
         inp = np.copy(filename)
+        if head == None:
+            head = fits.Header()
+            head['KLMODES'] = str(list(np.arange(inp.shape[0])))
+
+    klmodes = head['KLMODES'][1:-1]
+    klmodes = list(map(int, klmodes.split(",")))
 
     #smooth input image by specified amount
     if smooth > 0:
@@ -339,9 +341,6 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
         gauss = conv.Gaussian2DKernel(stddev=smooth)
         inpsm =conv.convolve(inp, gauss, preserve_nan=True)
         inp = inpsm
-    
-    #creates dictionary holding the standard deviation of pixlel values at each radius 
-    #stdMap = stdevMap(inp, planets, fwhm)
   
     #gets size of pixel value array
     try:
@@ -376,6 +375,7 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
 
     snrs = np.zeros((nmethods,zdim))
     snr_sums = np.zeros((nmethods,zdim))
+    snr_spurious = np.zeros((nmethods, zdim))
     planet_pixels = np.ones((ydim, xdim)) * np.nan
     planet_pixels_pos = np.ones((ydim, xdim)) * np.nan
 
@@ -396,6 +396,8 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
 
 
         #loops through all pixels in array
+            npospix = 0
+            fivesig = 0
             for x in range (xdim):
                 for y in range (ydim):
 
@@ -428,11 +430,17 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
                     #planets_core = deepcopy(planets)
                     #planets_core[2][1] = np.arctan(planets_core[2][0]/planets[0][0])*180/np.pi
                 #print("test radial mask is", planets_core[2][0], "azimuthal mask is now", planets_core[2][1], "instead of", planets[2][1])
+
                     if (isPlanet(radius, angle, planets)):
                         planet_pixels[x][y]=indiv[x][y]
                     ##includes only positive pixels under mask as planet pixels to avoid including self-subtraction regions in sums
                         if indiv[x][y] > 0:
                             planet_pixels_pos[x][y]=indiv[x][y]
+                            npospix+=1
+                    #count up how many pixels OUTSIDE the mask have >5 sigma values
+                    if not (isPlanet(radius, angle, planets)):
+                        if indiv[x][y] > 5:
+                            fivesig+=1
 
                 #store output for this method and # KL modes
                 Output[methodctr,s,:,:] = indiv
@@ -442,37 +450,42 @@ def create_map(filename, fwhm, smooth = False, planets = None, saveOutput = True
             if makenoisemap==True:
                 noises[methodctr, s,:,:]=noise
             snrs[methodctr,s]=np.nanmax(planet_pixels)
-            snr_sums[methodctr,s] = np.nansum(planet_pixels_pos)
-            print("max SNR under mask is", snrs[methodctr,s], "for slice", s)
-            print("sum of SNRs under mask is", snr_sums[methodctr,s], "for slice", s)
+            snr_sums[methodctr,s] = np.nansum(planet_pixels_pos)/npospix
+            snr_spurious[methodctr,s]=fivesig
+            #print("max SNR under mask is", snrs[methodctr,s], "for slice", s)
+            #print("sum of SNRs under mask is", snr_sums[methodctr,s], "for slice", s)
+            head["MX"+method[0:2]+'_'+str(klmodes[s])]= str(snrs[methodctr,s])
+            head["SM"+method[0:2]+'_'+str(klmodes[s])]= str(snr_sums[methodctr,s])
+            head["EX" + method[0:2] + '_' + str(klmodes[s])] = str(snr_spurious[methodctr, s])
         methodctr += 1
 
     print('method check', origmethod)
     #saves output to disk if saveOutput designated True
     if (saveOutput == True):
         newname = str(nameOutput(filename, outputName))
-        fits.writeto(origmethod + "_"+newname, Output, overwrite=True)
+        fits.writeto(origmethod + "_"+newname, Output, head, overwrite=True)
         print("Wrote %s to "%newname + os.getcwd())
 
         if checkmask==True:
             maskedims = msks*inp
-            fits.writeto(origmethod+'_'+newname[:-5]+'_masked.fits', maskedims, overwrite=True)
+            fits.writeto(origmethod+'_'+newname[:-5]+'_masked.fits', maskedims, head, overwrite=True)
 
         if makenoisemap==True:
-            fits.writeto(origmethod+'_noisemap.fits', noises, overwrite=True)
+            fits.writeto(origmethod+'_noisemap.fits', noises, head, overwrite=True)
 
     #returns final SNR map
     if checkmask==True:
-        return Output, snrs, snr_sums, maskedims
+        return Output, snrs, snr_sums, snr_spurious, maskedims
     else:
-        return Output, snrs, snr_sums
+        return Output, snrs, snr_sums, snr_spurious
 
 
 
-def getPlanet(snrmap, sep, pa, _range):
-    
+def getPlanet_peak(snrmap, sep, pa, _range):
+    #takes a 2d map - note have to loop over kl modes and modes
+
     #try:
-    modeDim, kldim, yDim, xDim = np.shape(snrmap)
+    yDim, xDim = np.shape(snrmap)
     print("check - cube shape is", snrmap.shape)
     #except:
        # yDim, xDim = np.shape(snrmap)
@@ -482,24 +495,24 @@ def getPlanet(snrmap, sep, pa, _range):
     XCenter = (xDim-1)/2
     YCenter = (yDim-1)/2  
 
-    #establish x and y coordinates of planet at given pa and sep
+    #translate pa and sep into (y,x) for MagAO image geometry
     x = int(sep*math.cos(math.radians(pa+90))+XCenter)
     y = int(sep*math.sin(math.radians(pa+90))+YCenter)
 
     planet = -100000000
 
-    for mode in range(modedim):
-        for kl in range(kldim):
-            print("check - mode = ", mode, "kl slice = ", kl)
-            for i in range (x-_range, x+_range):
-                for j in range (y-_range, y+_range):
-                    #finds highest pixel under mask for this planet and returns it
-                    if (snrmap[mode][kl][j][i] > planet):
-                        planet = snrmap[mode][kl][j][i]
+    #for mode in range(modedim):
+        #for kl in range(kldim):
+            #print("check - mode = ", mode, "kl slice = ", kl)
+    for i in range (x-_range, x+_range):
+        for j in range (y-_range, y+_range):
+            #finds highest pixel under mask for this planet and returns it
+            if (snrmap[j][i] > planet):
+                planet = snrmap[j][i]
                 
     if (planet == -100000000):
         return np.nan
-    print("check - dimensions of planet object are", planet.shape)
+    print("planet SNR is", planet)
     return planet
 
 

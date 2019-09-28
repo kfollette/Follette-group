@@ -375,12 +375,15 @@ def create_map(filename, fwhm, head = None, smooth = False, planets = None, save
 
     snrs = np.zeros((nmethods,zdim))
     snr_sums = np.zeros((nmethods,zdim))
-    snr_spurious = np.zeros((nmethods, zdim))
+    snr_spurious = np.zeros((nmethods, zdim, 2))
     planet_pixels = np.ones((ydim, xdim)) * np.nan
     planet_pixels_pos = np.ones((ydim, xdim)) * np.nan
 
     #initialize method counter for loop
     methodctr = 0
+
+    #pull values from planets needed for spurious pixels at same radius counts
+    rads, PAs, wid = planets
 
     for method in methods:
 
@@ -395,9 +398,12 @@ def create_map(filename, fwhm, head = None, smooth = False, planets = None, save
             NoiseMap = noisemap(indiv, planets, fwhm, method=method)
 
 
-        #loops through all pixels in array
+
             npospix = 0
             fivesig = 0
+            fivesig_atmask=0
+
+            # loops through all pixels in array
             for x in range (xdim):
                 for y in range (ydim):
 
@@ -437,10 +443,17 @@ def create_map(filename, fwhm, head = None, smooth = False, planets = None, save
                         if indiv[x][y] > 0:
                             planet_pixels_pos[x][y]=indiv[x][y]
                             npospix+=1
+
                     #count up how many pixels OUTSIDE the mask have >5 sigma values
                     if not (isPlanet(radius, angle, planets)):
                         if indiv[x][y] > 5:
                             fivesig+=1
+
+                    #count up how many pixels OUTSIDE the mask and at the same radius have >5 sigma values
+                    if (radius<rads[0]+wid[0]) and (radius>rads[0]-wid[0]):
+                        if not (isPlanet(radius, angle, planets)):
+                            if indiv[x][y] > 5:
+                                fivesig_atmask += 1
 
                 #store output for this method and # KL modes
                 Output[methodctr,s,:,:] = indiv
@@ -451,12 +464,12 @@ def create_map(filename, fwhm, head = None, smooth = False, planets = None, save
                 noises[methodctr, s,:,:]=noise
             snrs[methodctr,s]=np.nanmax(planet_pixels)
             snr_sums[methodctr,s] = np.nansum(planet_pixels_pos)/npospix
-            snr_spurious[methodctr,s]=fivesig
+            snr_spurious[methodctr,s,:]=[fivesig, fivesig_atmask]
             #print("max SNR under mask is", snrs[methodctr,s], "for slice", s)
             #print("sum of SNRs under mask is", snr_sums[methodctr,s], "for slice", s)
             head["MX"+method[0:2]+'_'+str(klmodes[s])]= str(snrs[methodctr,s])
             head["SM"+method[0:2]+'_'+str(klmodes[s])]= str(snr_sums[methodctr,s])
-            head["EX" + method[0:2] + '_' + str(klmodes[s])] = str(snr_spurious[methodctr, s])
+            head["EX" + method[0:2] + '_' + str(klmodes[s])] = str(snr_spurious[methodctr,s,:])
         methodctr += 1
 
     print('method check', origmethod)

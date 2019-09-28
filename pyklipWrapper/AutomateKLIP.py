@@ -92,6 +92,16 @@ def writeData(im, prihdr, allParams = False, snrmap = False, pre = ''):
         prihdr['SNRSMTH']=str(_smooth)
         prihdr['SNRFWHM']=str(FWHM)
 
+    if(allParams):
+        prihdr["SLICE1"]="average planet peak value under mask in standard deviation noise map"
+        prihdr["SLICE2"] = "average planet peak value under mask in median absolute value noise map"
+        prihdr["SLICE1"] = "average value of positive pixels under mask in standard deviation noise map"
+        prihdr["SLICE1"] = "average value of positive pixels under mask in median absolute value noise map"
+        prihdr["SLICE1"] = "total number of pixels >5sigma outside of mask in standard deviation noise map"
+        prihdr["SLICE1"] = "total number of pixels >5sigma outside of mask in median absolute value noise map"
+        prihdr["SLICE1"] = "total number of pixels >5sigma outside of mask and at similar radius in standard deviation noise map"
+        prihdr["SLICE1"] = "total number of pixels >5sigma outside of mask and at similar radius in median absolute value noise map"
+
     #suff = ''
 
     #writes out files
@@ -265,7 +275,7 @@ yDim = dataset._input.shape[1]
 owa = min(xDim,yDim)/2
 
 #creates cube to eventually hold parameter explorer data
-PECube = np.zeros((6,int((subsections_stop-subsections_start)/subsections_inc+1), len(klmodes),
+PECube = np.zeros((8,int((subsections_stop-subsections_start)/subsections_inc+1), len(klmodes),
                     int((annuli_stop-annuli_start)/annuli_inc+1),
                     int((movement_stop-movement_start)/movement_inc+1)))
 
@@ -311,7 +321,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                 
                 if(singleAnn):
                     print("Parameters: movement = %s; subections = %d" %(m,s))
-                    print("Running for %d annuli of width %s pixels" %(numAnn, dr))
+                    print("Running for %d annuli, equivalent to single annulus of width %s pixels" %(annuli_start+acount, dr))
                 else:
                     print("Parameters: annuli = %d; movement = %s; subections = %d" %(a, m,s))
 
@@ -351,6 +361,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
 
                 # makes SNR map
                 snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(incube, FWHM, smooth=_smooth, planets=mask, saveOutput=False)
+                print(snrspurious.shape)
 
                 #klmode index
                 kcount = 0
@@ -368,7 +379,8 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                     kcount+=1
                     # adds sums under mask from snr.create_map to PE cube
                     PECube[2:4, scount, :, acount, mcount] = snrsums
-                    PECube[4:6, scount, :, acount, mcount] = snrspurious
+                    PECube[4:6, scount, :, acount, mcount] = snrspurious[:,:,0]
+                    PECube[6:8, scount, :, acount, mcount] = snrspurious[:,:,1]
 
                 if(runKLIP):
                     #write median combination cube to disk 

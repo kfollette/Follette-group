@@ -95,12 +95,12 @@ def writeData(im, prihdr, allParams = False, snrmap = False, pre = ''):
     if(allParams):
         prihdr["SLICE1"]="average planet peak value under mask in standard deviation noise map"
         prihdr["SLICE2"] = "average planet peak value under mask in median absolute value noise map"
-        prihdr["SLICE1"] = "average value of positive pixels under mask in standard deviation noise map"
-        prihdr["SLICE1"] = "average value of positive pixels under mask in median absolute value noise map"
-        prihdr["SLICE1"] = "total number of pixels >5sigma outside of mask in standard deviation noise map"
-        prihdr["SLICE1"] = "total number of pixels >5sigma outside of mask in median absolute value noise map"
-        prihdr["SLICE1"] = "total number of pixels >5sigma outside of mask and at similar radius in standard deviation noise map"
-        prihdr["SLICE1"] = "total number of pixels >5sigma outside of mask and at similar radius in median absolute value noise map"
+        prihdr["SLICE3"] = "average value of positive pixels under mask in standard deviation noise map"
+        prihdr["SLICE4"] = "average value of positive pixels under mask in median absolute value noise map"
+        prihdr["SLICE5"] = "total number of pixels >5sigma outside of mask in standard deviation noise map"
+        prihdr["SLICE6"] = "total number of pixels >5sigma outside of mask in median absolute value noise map"
+        prihdr["SLICE7"] = "total number of pixels >5sigma outside of mask and at similar radius in standard deviation noise map"
+        prihdr["SLICE8"] = "total number of pixels >5sigma outside of mask and at similar radius in median absolute value noise map"
 
     #suff = ''
 

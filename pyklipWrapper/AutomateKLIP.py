@@ -260,7 +260,10 @@ print()
 hdr = fits.getheader(pathToFiles + '/sliced_1.fits')
 #erase values that change through image cube
 del hdr['ROTOFF']
-del hdr['GSTPEAK']
+try:
+    del hdr['GSTPEAK']
+except:
+    print('not a saturated dataset')
 del hdr['STARPEAK']
 
 

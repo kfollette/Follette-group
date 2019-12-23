@@ -499,7 +499,7 @@ def getPlanet_peak(snrmap, sep, pa, _range):
 
     #try:
     yDim, xDim = np.shape(snrmap)
-    print("check - cube shape is", snrmap.shape)
+    #print("check - cube shape is", snrmap.shape)
     #except:
        # yDim, xDim = np.shape(snrmap)
        # zDim = 1
@@ -525,7 +525,7 @@ def getPlanet_peak(snrmap, sep, pa, _range):
                 
     if (planet == -100000000):
         return np.nan
-    print("planet SNR is", planet)
+    #print("planet SNR is", planet)
     return planet
 
 

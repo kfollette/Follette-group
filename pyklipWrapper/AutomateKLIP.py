@@ -351,7 +351,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                     #run klip for given parameters
                     parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"),
                                               fileprefix=outputFileName, annuli=numAnn, subsections=s, movement=m,
-                                              numbasis=klmodes, calibrate_flux=True, mode="ADI", highpass = highpass)
+                                              numbasis=klmodes, calibrate_flux=True, mode="ADI", highpass = highpass, time_collapse='median')
 
                     #collapse in time dimension
                     incube = np.nanmedian(dataset.output, axis=1)
@@ -385,12 +385,12 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                     PECube[4:6, scount, :, acount, mcount] = snrspurious[:,:,0]
                     PECube[6:8, scount, :, acount, mcount] = snrspurious[:,:,1]
 
-                if(runKLIP):
+                if(runKLIP) and np.median(planetSNR)>3:
                     #write median combination cube to disk 
                     print("Writing median image combinations to " + pathToFiles + "_klip/")
                     writeData(incube, hdr, pre = 'med_')
 
-                if (saveSNR):
+                if (saveSNR) and np.median(planetSNR)>3:
                     print("Writing SNR maps to " + pathToFiles + "_klip/")
                     writeData(snrmaps, hdr, snrmap = True, pre = 'snrmap_')
                 print()

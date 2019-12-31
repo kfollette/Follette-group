@@ -81,6 +81,7 @@ def writeData(im, prihdr, allParams = False, snrmap = False, pre = ''):
     prihdr['ANNULI']=str(annuli_head)
     prihdr['MOVEMENT']=str(movement_head)
     prihdr['SUBSCTNS']=str(subsections_head)
+    prihdr['IWA'] = str(iwa)
     prihdr['KLMODES']=str(klmodes)
     prihdr['FILEPATH']=str(pathToFiles_short)
  

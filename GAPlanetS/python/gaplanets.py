@@ -17,6 +17,8 @@ import re
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patches as patches
 import SNRMap_new as snr
+from importlib import reload
+reload(snr)
 
 def SliceCube(imfile, rotfile, dir='./', slicedir='sliced/'):
     """
@@ -63,7 +65,7 @@ def get_cuts_df(dfname):
     # define dataframe if doesn't already exist
     try:
         df=pd.read_csv(dfname)
-        print("found existing data frame with the following contents: \n", df)
+        print("found existing data frame") #with the following contents: \n", df)
     except:
         print("creating new data frame")
         #if none found, make one
@@ -101,7 +103,7 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
     written by Kate Follette June 2019
     """
 
-    df = get_cuts_df(dfname)
+    df = get_cuts_df(subdir+dfname)
 
     if wl == 'Line':
         rotstring = 'rotoff_noLinecosmics'
@@ -178,7 +180,14 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
         head["MINPEAK"] = cuts[j]
         if ghost == True:
             head["GHSTPK"] = "True"
+        #need fwhm of 0pct cut in all headers
+        if j == 0:
+            reffwhm = np.nanmedian(goodfwhm)
+
+        #record both fwhm values in headers
+        head["0PCTFWHM"]=reffwhm
         head["MEDFWHM"]=np.nanmedian(goodfwhm)
+
         newim = imcube[goodims, :, :]
         new_nims = newim.shape[0]
         hdu = fits.PrimaryHDU(newim, head)
@@ -221,7 +230,7 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
         j += 1
 
     os.chdir(origdir)
-    df.to_csv(dfname, index=False)
+    df.to_csv(subdir+dfname, index=False)
 
     return
 
@@ -269,7 +278,7 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
     """
 
     #read in or make data frame
-    df = get_cuts_df(dfname)
+    df = get_cuts_df(subdir+dfname)
 
     #add contrast to df
     if "ctrst_fkpl" not in df:
@@ -298,7 +307,9 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
     for i in np.arange(len(filelist)):
         head = fits.getheader(filelist[i])
         starpeak.append(head["STARPEAK"])
-    fwhm=head["MEDFWHM"]
+
+    #pull fwhm of 0pctcut for consistent spacings
+    fwhm=head["0PCTFWHM"]
 
     # import the dataset. Wait to highpass filter until the KLIP call in the next cell
     dataset = MagAO.MagAOData(filelist, highpass=False)
@@ -450,7 +461,7 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
     fits.writeto(outputdir + prefix + '_throughputs.fits', thrpt_out, overwrite=True)
 
     os.chdir(origdir)
-    df.to_csv(dfname, index=False)
+    df.to_csv(subdir+dfname, index=False)
 
     return (thrpt_seps, thrpt_avgs, zone_boundaries, df)
 
@@ -486,7 +497,7 @@ def make_contrast_curve(subdir, wl, cut, thrpt_seps, thrpt_list, numann=3,
     """
 
     #read in or make data frame
-    df = get_cuts_df(dfname)
+    df = get_cuts_df(subdir+dfname)
 
     # set up directories and naming
     prefix = make_prefix(subdir, wl, cut)
@@ -494,6 +505,8 @@ def make_contrast_curve(subdir, wl, cut, thrpt_seps, thrpt_list, numann=3,
     print(os.getcwd(),subdir)
     os.chdir(subdir)
     outputdir = 'contrastcurves/'
+    if not os.path.exists(outputdir):
+        os.makedirs(outputdir)
 
     # specify directory and read in data again. This time we will NOT inject fakes
     filelist = glob.glob(wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
@@ -508,7 +521,8 @@ def make_contrast_curve(subdir, wl, cut, thrpt_seps, thrpt_list, numann=3,
     for i in np.arange(len(filelist)):
         head = fits.getheader(filelist[i])
         starpeak.append(head["STARPEAK"])
-    fwhm = head["MEDFWHM"]
+
+    fwhm = head["0PCTFWHM"]
 
     # get image units in terms of contrast rather than counts by dividing each image by the star peak
     for i in np.arange(0, len(starpeak)):
@@ -597,7 +611,7 @@ def make_contrast_curve(subdir, wl, cut, thrpt_seps, thrpt_list, numann=3,
             df[colname].loc[(df.Dataset == subdir) & (df.pctcut == cut)] = contrast
 
     os.chdir(origdir)
-    df.to_csv(dfname, index=False)
+    df.to_csv(subdir+dfname, index=False)
     fits.writeto(outputdir + prefix + '_contrast.fits', corrected_contrast_curve, overwrite=True)
 
     return (contrast_seps, corrected_contrast_curve, df, OWA)
@@ -655,13 +669,13 @@ def cut_comparison(subdir, wl, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90
             contrasts[0, :] = corrected_curve
             i = 0
         else:
+            print(contrasts.shape, contrast_seps, corrected_curve)
             contrasts[i, :] = corrected_curve
 
         # loop counter
         i += 1
 
-    print(df)
-    df.to_csv(dfname, index=False)
+    df.to_csv(subdir+dfname, index=False)
 
     return (contrast_seps, contrasts, zone_boundaries, IWA, df, OWA)
 
@@ -727,6 +741,7 @@ def contrastcut_fig(subdir, wl, contrast_seps, contrasts, zone_boundaries, OWA=2
     plt.legend()
     # write out in data directory
     plt.savefig(outputdir + prefix + '_contrastsbycut')
+    plt.clf()
     return
 
 
@@ -955,7 +970,7 @@ def collapsekl(subdir, fname, kllist, snrmeth='absmed', writestr='test'):
         i += 1
 
     # replacing -250 (value when planet too close to annulus) with 0 for ease of display
-    klkeep[klkeep == -250] = -100
+    klkeep[klkeep == -1000] = np.nan
 
     # make mean and stdev arrays
     avgkl = np.mean(klkeep, axis=2)
@@ -1025,8 +1040,8 @@ def find_best(subdir, fname, kllist, snrmeth='absmed', writestr='test', weights=
 
     #computes neighbor quality by smoothing with Gaussian
     kern = conv.Gaussian2DKernel(stddev=2)
-    nq_snr = conv.convolve(snr_norm, kern)
-    nq_stdev = conv.convolve(stdev_norm, kern)
+    nq_snr = conv.convolve(snr_norm, kern, preserve_nan=True)
+    nq_stdev = conv.convolve(stdev_norm, kern, preserve_nan = True)
 
     #normalizes neighbor quality
     nq_snr /= np.nanmax(nq_snr)
@@ -1077,9 +1092,6 @@ def ctrlmask(xdim, ydim, rin, rout):
 def paramexplore_fig(subdir, fname, kllist, snrmeth='absmed', writestr='test', weights=[1,1,0.5,0.5], lowsnr=False):
     snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores = \
         find_best(subdir, fname, kllist, snrmeth=snrmeth, writestr=writestr, weights=weights)
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
-    f.set_figwidth(15)
-    f.set_figheight(10)
     namelist = fname.split('_')
     params = [s for s in namelist if s[0] == 'a']
     params = params[0]
@@ -1107,7 +1119,7 @@ def paramexplore_fig(subdir, fname, kllist, snrmeth='absmed', writestr='test', w
 
     plt.setp((ax1, ax2, ax3, ax4), xticks=np.arange(nstepx + 1), yticks=np.arange(nstepy + 1), xticklabels=[], yticklabels=[])
 
-    im1 = ax1.imshow(snr_norm, origin='lower', cmap='magma')
+    im1 = ax1.imshow(snr_norm, origin='lower', cmap='magma', vmin=0, vmax=1)
 
     ax1.set_xlabel("movement parameter")
     ax1.set_ylabel("annuli parameter")
@@ -1138,7 +1150,7 @@ def paramexplore_fig(subdir, fname, kllist, snrmeth='absmed', writestr='test', w
     plt.colorbar(im4, cax=cax, orientation='vertical', label="Stdev Neighbor Quality")
 
     # plot metric
-    im5 = ax5.imshow(agg, origin='lower', vmin=np.sum(weights)/2, vmax=np.sum(weights))
+    im5 = ax5.imshow(agg, origin='lower', vmin=0, vmax=np.nanmax(agg))
     ax5.set_ylabel("annuli parameter")
     ax5.set_xlabel("movement parameter")
     divider = make_axes_locatable(ax5)
@@ -1159,22 +1171,23 @@ def get_pe_df(dfname):
     # define dataframe if doesn't already exist
     try:
         df=pd.read_csv(dfname)
-        print("found existing data frame with the following contents: \n", df)
+        print("found existing data frame") # with the following contents: \n", df)
+        df_cols = df.columns.tolist()
     except:
         print("creating new data frame")
         #if none found, make one
-        df_cols =['subdir','Dataset', 'Date', 'subset','pctcut', 'optimal movement', 'optimal annuli', 'KL combo used',
+        df_cols =['subdir','Dataset', 'Date', 'subset','pctcut', 'optimal movement', 'optimal annuli', 'IWA', 'KL combo used',
         'SNR value', 'SNR metric', 'SNR neighbors metric', 'stdev metric', 'stdev neighbors metric', 'total metric']
         # make a blank pandas dataframe
         df = pd.DataFrame({})
         for name in df_cols:
             df[name] = []
-    return(df)
+    return(df, df_cols)
 
-def add_to_pe_df(dfname,subdir, fname, kllist, cols):
-    df=get_pe_df(dfname)
-    avgkl, stdevkl = collapsekl(subdir, fname, kllist)
-    snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores = find_best(subdir, fname, kllist)
+def add_to_pe_df(subdir, pedir, fname, kllist, dfname='parameters.csv'):
+    df, df_cols =get_pe_df(dfname)
+    avgkl, stdevkl = collapsekl(subdir+pedir, fname, kllist)
+    snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores = find_best(subdir+pedir, fname, kllist)
     ind=np.where(agg == np.nanmax(agg))
     dir_info=re.split('/|_',subdir)
     objname = dir_info[0]
@@ -1191,15 +1204,43 @@ def add_to_pe_df(dfname,subdir, fname, kllist, cols):
             subset = dir_info[2]
     except:
         subset = ''
-    cut=[s for s in dir_info if 'cut' in s]
+    try:
+        head = fits.getheader(pedir+fname)
+        IWA = head["IWA"]
+    except:
+        IWA = int(input("You are using an old Parameter Explorer file. Please enter IWA:"))
+    pedir_info = re.split('/|_', pedir)
+    cut=[s for s in pedir_info if 'cut' in s]
     cut=(cut[0].split('pctcut'))[0]
-    datalist=pd.DataFrame([[subdir,objname,date,subset,cut,movm_val[0],ann_val[0],kllist[0],avgkl[ind][0],snr_norm[ind][0], nq_snr[ind][0],
-                            stdev_norm[ind][0], nq_stdev[ind][0], agg[ind][0]]], columns=cols)
+    datalist=pd.DataFrame([[subdir,objname,date,subset,cut,movm_val[0],ann_val[0],IWA,str(kllist),avgkl[ind][0],snr_norm[ind][0], nq_snr[ind][0],
+                            stdev_norm[ind][0], nq_stdev[ind][0], agg[ind][0]]], columns=df_cols)
     df = df.append(datalist)
+    df.to_csv(dfname, index=False)
     return(df)
 
+def clean_pe(subdir, keepparams):
+    """
+    Deletes superfluous parameter explorer that are not going to be used for analysis
+    prefix: file prefix
+    subdir: path to directory where files live
+    keeplist: list of files to keep in [annuli, movem] form
+    """
+    fulllist = glob.glob(subdir+'*.fits')
+    keeplist=[]
+    for keep in keepparams:
+        list = glob.glob(subdir+'*a'+str(keep[0])+'m'+str(keep[1])+'.*.fits')
+        keeplist+=list
+    pefiles = glob.glob(subdir+'paramexplore*.fits')
+    keeplist+=pefiles
+    print(keeplist)
+    for file in fulllist:
+        if file not in keeplist:
+            os.remove(file)
 
-def get_klip_inputs(pe_dfname, cuts_dfname, subdir, match2=False):
+    return
+
+
+def get_klip_inputs(subdir, pe_dfname='parameters.csv', cuts_dfname='cuts.csv', match2=False):
     """
     pulls info for naming and KLIP parameters from two data frames storing this info
     pe_dfname: dataframe containing info about optimal parameters
@@ -1207,8 +1248,8 @@ def get_klip_inputs(pe_dfname, cuts_dfname, subdir, match2=False):
     match2: for a second reduction in same subdir (e.g. different cuts), set this to True
     :return:
     """
-    df=get_pe_df(pe_dfname)
-    df2=get_cuts_df(cuts_dfname)
+    df, df_cols =get_pe_df(pe_dfname)
+    df2=get_cuts_df(subdir+cuts_dfname)
 
     dir_info = re.split('/|_', subdir)
     objname = dir_info[0]
@@ -1222,15 +1263,17 @@ def get_klip_inputs(pe_dfname, cuts_dfname, subdir, match2=False):
     cut = int(df[df["subdir"].values == match]["pctcut"].values[0])
     movm = int(df[df["subdir"].values == match]["optimal movement"].values[0])
     numann = int(df[df["subdir"].values == match]["optimal annuli"].values[0])
-    fwhm = df2[df2["subdir"] == subdir]["fwhm"].values[0]
-    IWA = int(df2[df2["subdir"] == subdir]["IWA"].values[0])
+    fwhm = df2[df2["Dataset"] == subdir]["medfwhm"].values[0]
+    IWA = int(df[df["subdir"] == subdir]["IWA"].values[0])
+    kllist = df[df["subdir"] == subdir]["KL combo used"].values[0]
+    kllist = eval(kllist)
     #if subdir == 'HD142527/8Apr14/merged_long/':
         #IWA = 6
-    return (objname, date, cut, movm, numann, fwhm, IWA)
+    return (objname, date, cut, movm, numann, fwhm, IWA, kllist)
 
 
 def klip_data(subdir, wl, match2=False):
-    objname, date, cut, movm, numann, fwhm, IWA = get_klip_inputs(subdir, match2=match2)
+    objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(subdir, match2=match2)
     filelist = glob.glob(subdir + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
     # filelist.sort(key=lambda f: int(''.join(filter(str.isdigit, f))))
     dataset = MagAO.MagAOData(filelist, highpass=True)
@@ -1238,37 +1281,35 @@ def klip_data(subdir, wl, match2=False):
     dataset.IWA = IWA
     prefix = subdir.replace('/', '_') + wl + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
         movm) + 'iwa' + str(IWA)
-    parallelized.klip_dataset(dataset, outputdir='./', fileprefix=prefix, algo='klip', annuli=numann,
-                              subsections=1, movement=movm, numbasis=KLlist, calibrate_flux=False, mode="ADI",
-                              highpass=False, save_aligned=False, time_collapse='median')
+    parallelized.klip_dataset(dataset, outputdir=subdir, fileprefix=prefix, algo='klip', annuli=numann, subsections=1, movement=movm,
+                              numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=False, save_aligned=False, time_collapse='median')
     # fits.writeto('output_test.fits', dataset.output, overwrite=True)
-    klcube = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out='./', pre=prefix))
-    print(klcube.shape)
-    snmap = snr.create_map(klcube, fwhm, saveOutput=True, outputName=prefix + '_SNRMap.fits')
-    print(snmap.shape)
+    klcube = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=subdir, pre=prefix))
+    snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=subdir+prefix + '_SNRMap.fits')
+    #snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=prefix + '_SNRMap.fits')
     return (klcube, snmap, fwhm)
 
 
 def get_scale_factor(subdir):
-    df3 = pd.read_csv('../scale_factors/apphot_scales.csv')
+    df3 = pd.read_csv('analysis/scale_factors/apphot_scales.csv')
     scale = df3[df3["subdir"] == subdir]["scale"].values[0]
     return (scale)
 
 
 def run_redx(subdir, match2=False):
     wls = ['Line', 'Cont']
-    objname, date, cut, movm, numann, fwhm, IWA = get_klip_inputs(subdir, match2=match2)
+    objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(subdir, match2=match2)
     linecube, linesnr, linefwhm = klip_data(subdir, wls[0], match2=match2)
     contcube, contsnr, contfwhm = klip_data(subdir, wls[1], match2=match2)
     scale = get_scale_factor(subdir)
     sdicube = linecube - scale * contcube
     prefix = subdir.replace('/', '_') + 'SDI_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
         movm) + 'iwa' + str(IWA)
-    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=prefix + '_SNRMap.fits')
-    return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr)
+    sdisnr, snrs, snr_sums, snr_spurious= snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=prefix + '_SNRMap.fits')
+    return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix)
 
 
-def indivobj_fig(lineim, contim, sdiim, klslice, stampsz=75, smooth=0):
+def indivobj_fig(subdir, lineim, contim, sdiim, prefix, stampsz=75, smooth=0):
     f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
     f.set_figwidth(15)
     f.set_figheight(10)
@@ -1291,20 +1332,20 @@ def indivobj_fig(lineim, contim, sdiim, klslice, stampsz=75, smooth=0):
 
     if smooth != 0:
         gauss = conv.Gaussian2DKernel(stddev=smooth)
-        lineimsm = conv.convolve(lineim[klslice, :, :], gauss, preserve_nan=True)
-        contimsm = conv.convolve(contim[klslice, :, :], gauss, preserve_nan=True)
-        sdiimsm = conv.convolve(sdiim[klslice, :, :], gauss, preserve_nan=True)
+        lineimsm = conv.convolve(lineim, gauss, preserve_nan=True)
+        contimsm = conv.convolve(contim, gauss, preserve_nan=True)
+        sdiimsm = conv.convolve(sdiim, gauss, preserve_nan=True)
 
     # set up tick labels according to parameter ranges
     plt.setp((ax1, ax2, ax3), xticks=ticks, xticklabels=ticklabels,
              yticks=ticks, yticklabels=ticklabels)
 
-    linemax = np.nanmax(lineim[klslice, low:high, low:high])
+    linemax = np.nanstd(lineim[low:high, low:high])*5
     minm = -1 * linemax / 2
     if smooth > 0:
         im1 = ax1.imshow(lineimsm[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     else:
-        im1 = ax1.imshow(lineim[klslice, low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
+        im1 = ax1.imshow(lineim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     # ax1.set_xlabel("")
     # ax1.set_ylabel("")
     divider = make_axes_locatable(ax1)
@@ -1314,7 +1355,7 @@ def indivobj_fig(lineim, contim, sdiim, klslice, stampsz=75, smooth=0):
     if smooth > 0:
         im2 = ax2.imshow(contimsm[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     else:
-        im2 = ax2.imshow(contim[klslice, low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
+        im2 = ax2.imshow(contim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     # ax2.set_xlabel("movement parameter")
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes('right', size='5%', pad=0.05)
@@ -1322,10 +1363,13 @@ def indivobj_fig(lineim, contim, sdiim, klslice, stampsz=75, smooth=0):
     # plot metric
 
     if smooth > 0:
-        im3 = ax3.imshow(sdiimsm[low:high, low:high], vmin=0, vmax=3, origin='lower')
+        im3 = ax3.imshow(sdiimsm[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     else:
-        im3 = ax3.imshow(sdiim[klslice, low:high, low:high], vmin=0, vmax=3, origin='lower')
+        im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     # ax3.set_xlabel("movement parameter")
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im3, cax=cax, orientation='vertical', label="Intensity")
+    plt.savefig(subdir+prefix+'.png')
+    #plt.clf()
+    return

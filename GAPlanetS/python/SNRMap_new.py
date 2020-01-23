@@ -144,10 +144,13 @@ def isPlanet(radius, theta, planets):
     #returns False if there are no planets to mask, showing that the pixel of interest does not fall within any masked region
     if (planets == None):
         return False
-  
+
+    if None in planets:
+        return False
+
     #stores lists found in 'planets' tuple as separate variables
     rads, PAs, wid = planets
-    
+
     #stores both arguements of 'wid' parameter in separate variables
     r_wid, pa_wid = wid
     
@@ -287,7 +290,7 @@ def noisemap(indiv, planets, fwhm, method='stdev'):
 
 
 
-def create_map(filename, fwhm, head = None, smooth = False, planets = None, saveOutput = True, outputName = None, method = 'all', checkmask=False, makenoisemap=False):
+def create_map(filename, fwhm, head = None, smooth = False, planets=([0],[0],[0,0]), saveOutput = True, outputName = None, method = 'all', checkmask=False, makenoisemap=False):
     """
     creates signal to noise ratio map of image.
     
@@ -317,7 +320,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets = None, save
     Mar 2019 by KBF - returning max pixel under mask, adding loop over 3rd dimension so can generate 3D SNRmaps, return snrs and masked images
     Sept 2019 by KBF - misc. cleanup, added additional SNR methodology to maps (median = noise), which are now 4D, added sums of snrs under mask as return
     """
-
+    print(planets)
     #print('this is the REPAIRED SNRMap code')
 
     #checks data type of 'filename'
@@ -397,8 +400,6 @@ def create_map(filename, fwhm, head = None, smooth = False, planets = None, save
         #creates dictionary holding the noise value at each radius for this method
             NoiseMap = noisemap(indiv, planets, fwhm, method=method)
 
-
-
             npospix = 0
             fivesig = 0
             fivesig_atmask=0
@@ -476,7 +477,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets = None, save
     #saves output to disk if saveOutput designated True
     if (saveOutput == True):
         newname = str(nameOutput(filename, outputName))
-        fits.writeto(origmethod + "_"+newname, Output, head, overwrite=True)
+        fits.writeto(newname[:-5]+'_'+origmethod+'.fits', Output, head, overwrite=True)
         print("Wrote %s to "%newname + os.getcwd())
 
         if checkmask==True:

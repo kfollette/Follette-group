@@ -56,7 +56,7 @@ def SliceCube(imfile, rotfile, dir='./', slicedir='sliced/'):
         fits.writeto("sliced_"+str(z+1)+".fits", single, head, overwrite=True)
 
     print("Done creating individual images for KLIP. These live in the", slicedir, 'directory')
-
+    print(os.getcwd())
     os.chdir(origdir)
 
     return
@@ -610,10 +610,10 @@ def make_contrast_curve(subdir, wl, cut, thrpt_seps, thrpt_list, numann=3,
                 print("creating column", colname)
             df[colname].loc[(df.Dataset == subdir) & (df.pctcut == cut)] = contrast
 
-    os.chdir(origdir)
-    df.to_csv(subdir+dfname, index=False)
+    df.to_csv(dfname, index=False)
     fits.writeto(outputdir + prefix + '_contrast.fits', corrected_contrast_curve, overwrite=True)
-
+    os.chdir(origdir)
+    
     return (contrast_seps, corrected_contrast_curve, df, OWA)
 
 def cut_comparison(subdir, wl, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
@@ -1272,9 +1272,24 @@ def get_klip_inputs(subdir, pe_dfname='parameters.csv', cuts_dfname='cuts.csv', 
     return (objname, date, cut, movm, numann, fwhm, IWA, kllist)
 
 
-def klip_data(subdir, wl, match2=False):
-    objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(subdir, match2=match2)
-    filelist = glob.glob(subdir + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
+def klip_data(subdir, wl, params=False, fakes=False, match2=False):
+    if params == False:
+        objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(subdir, match2=match2)
+    else:
+        [objname, date, cut, movm, numann, fwhm, IWA, kllist] = params
+    if fakes==False:
+        imstr = 'pctcut_sliced'
+    else:
+        imstr = 'pctcut_FAKES_sliced'
+    #if hasn't already been sliced, slice it
+    slicedir = subdir + wl + '_' + str(cut) + imstr+'/'
+    if os.path.exists(slicedir) == False:
+        print(wl, " image has not yet been sliced. Slicing now.")
+        imname = subdir+wl+'_clip451_flat_reg_nocosmics_'+str(cut)+'pctcut.fits'
+        rotoff_name = subdir+'rotoff_no'+wl+'cosmics_'+str(cut)+'pctcut.fits'
+        SliceCube(imname, rotoff_name, slicedir=slicedir)
+        pykh.addstarpeak(slicedir, debug=True, mask=True)
+    filelist = glob.glob(slicedir + "/sliced*.fits")
     # filelist.sort(key=lambda f: int(''.join(filter(str.isdigit, f))))
     dataset = MagAO.MagAOData(filelist, highpass=True)
     # fits.writeto('input_test.fits', dataset.input, overwrite=True)

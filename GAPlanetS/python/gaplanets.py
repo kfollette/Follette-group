@@ -56,7 +56,6 @@ def SliceCube(imfile, rotfile, dir='./', slicedir='sliced/'):
         fits.writeto("sliced_"+str(z+1)+".fits", single, head, overwrite=True)
 
     print("Done creating individual images for KLIP. These live in the", slicedir, 'directory')
-    print(os.getcwd())
     os.chdir(origdir)
 
     return
@@ -326,7 +325,7 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
     n_planets = int(n_planets)
     n_planets -= 1
     if debug == True:
-        print('I will inject ', n_planets, ' planets')
+        print('I will inject ', n_planets)
 
     # calculates separations (in pixels) where planets will be injected
     thrpt_seps = []
@@ -502,7 +501,6 @@ def make_contrast_curve(subdir, wl, cut, thrpt_seps, thrpt_list, numann=3,
     # set up directories and naming
     prefix = make_prefix(subdir, wl, cut)
     origdir = os.getcwd()
-    print(os.getcwd(),subdir)
     os.chdir(subdir)
     outputdir = 'contrastcurves/'
     if not os.path.exists(outputdir):
@@ -669,7 +667,6 @@ def cut_comparison(subdir, wl, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90
             contrasts[0, :] = corrected_curve
             i = 0
         else:
-            print(contrasts.shape, contrast_seps, corrected_curve)
             contrasts[i, :] = corrected_curve
 
         # loop counter
@@ -882,7 +879,6 @@ def inject_fakes(subdir, cut, IWA, wl='Line', numann=1, movm=3, KLlist=[10],
     klcube = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix_fakes))
     # compile specs for the injected planets
     planetspecs = (seps, thetas, mask)
-    print(planetspecs)
     # make a SNRMap cube
     origdir = os.getcwd()
     os.chdir(outputdir)
@@ -939,8 +935,6 @@ def collapsekl(subdir, fname, kllist, snrmeth='absmed', writestr='test'):
     # read in image and header
     klcube = fits.getdata(subdir + fname)
     head = fits.getheader(subdir + fname)
-    dims = klcube.shape
-    print("dims of PE cube are", dims)
 
     #pull only the SNR map slice with the matching snrmeth value
     if snrmeth == "absmed":
@@ -949,8 +943,6 @@ def collapsekl(subdir, fname, kllist, snrmeth='absmed', writestr='test'):
         slice = 0
 
     klcube=klcube[slice,:,:,:,:]
-    dims = klcube.shape
-    print("new dims of PE cube are", dims)
 
     # set up a blank array to be filled
     klkeep = np.zeros([dims[2], dims[3], len(kllist)])
@@ -980,7 +972,6 @@ def collapsekl(subdir, fname, kllist, snrmeth='absmed', writestr='test'):
     head["KLMODES"] = str(kllist)
 
     # write arrays
-    print('dimensions of images are', avgkl.shape, stdevkl.shape)
     fits.writeto(writestr + '_avgkl.fits', avgkl, head, overwrite=True)
     fits.writeto(writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
     return (avgkl, stdevkl)
@@ -1158,7 +1149,6 @@ def paramexplore_fig(subdir, fname, kllist, snrmeth='absmed', writestr='test', w
     plt.colorbar(im5, cax=cax, orientation='vertical', label="Parameter Quality Metric")
 
     ind = np.where(agg == np.nanmax(agg))
-    print(ind, nstepx)
     label_text = 'a' + str(ann_val[0]) + 'm' + str(movm_val[0])
     rect = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
     ax5.add_patch(rect)
@@ -1232,7 +1222,6 @@ def clean_pe(subdir, keepparams):
         keeplist+=list
     pefiles = glob.glob(subdir+'paramexplore*.fits')
     keeplist+=pefiles
-    print(keeplist)
     for file in fulllist:
         if file not in keeplist:
             os.remove(file)
@@ -1332,18 +1321,14 @@ def indivobj_fig(subdir, lineim, contim, sdiim, prefix, stampsz=75, smooth=0):
 
     imsz = lineim.shape[1]
 
-    print(0.25 / pixscale)
-
     ticks = (np.arange(11) - 10 / 2.) * 0.25 / pixscale
     ticklabels = str(ticks * pixscale)
-    print(ticks)
     # ticks = np.arange(imsz)-(imsz-1)/2
     # ticklabels = str(ticks*pixscale)+'\"'
 
     cen = (imsz - 1) / 2
     low = int(cen - stampsz / 2)
     high = int(cen + stampsz / 2 + 1)
-    print(cen, low, high)
 
     if smooth != 0:
         gauss = conv.Gaussian2DKernel(stddev=smooth)

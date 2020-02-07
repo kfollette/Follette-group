@@ -115,7 +115,11 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
     #read in image, header, and rotoffs
     imcube = fits.getdata(wl + imstring + '.fits')
     head = fits.getheader(wl + imstring + '.fits')
-    rotoffs = fits.getdata(rotstring + '.fits')
+    
+    if os.path.exists(rotstring + '.fits'):
+        rotoffs = fits.getdata(rotstring + '.fits')
+    else:
+        rotoffs = fits.getdata(rotstring + '_0pctcut.fits')
 
     # Basic parameters needed for fits
     dim = imcube.shape[1]  # dimension
@@ -628,7 +632,7 @@ def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
 
     #check whether has already been computed
     if os.path.exists(outputdir+rawc_prefix+'_rawcontrast.fits'):
-        contrast = readfits(outputdir+rawc_prefix+'_rawcontrast.fits')
+        contrast = fits.getdata(outputdir+rawc_prefix+'_rawcontrast.fits')
     
     #if not, generate raw contrast and write out as .jpg and .fits
     else:

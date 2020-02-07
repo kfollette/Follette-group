@@ -352,6 +352,8 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
 
     prefix_fakes = prefix +'_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
 
+    dataset_prefix = prefix_fakes +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA)
+
     tpt_fname = outputdir + prefix_fakes +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + '_throughputs.fits'
 
     calcthrpt=True
@@ -482,8 +484,9 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
             plt.plot((bd, bd), (0, 1), '--', label='zone boundary')
         plt.xlabel("separation in pixels")
         plt.ylabel("throughput")
+        plt.title(dataset_prefix+" Throughput")
         plt.legend()
-        plt.savefig(outputdir + prefix_fakes +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + '_throughput.jpg')
+        plt.savefig(outputdir + dataset_prefix + '_throughput.jpg')
         plt.show()
         plt.clf()
 
@@ -531,14 +534,12 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
 
     df.to_csv(subdir+dfname, index=False)
 
-    dataset_prefix = prefix_fakes +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA)
-
     return (thrpt_out, zone_boundaries, df, dataset_prefix)
 
 
 def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
-                        movm=4, KLlist=[10], IWA=0, dfname='cuts.csv', record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
-                        iterations=3, savefig=False, debug=False):
+                        movm=4, KLlist=[10], IWA=0, dfname='cuts.csv', record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], 
+                        savefig=False, debug=False):
     """
     PURPOSE
     calculates raw contrast by running KLIP on images and then corrects for throughput
@@ -568,8 +569,8 @@ def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
 
     #read in or make data frame
     df = get_cuts_df(subdir+dfname)
+
     iterations = len(thrpt_out[:,0])-2
-    print('iterations', iterations)
 
     # set up directories and naming
     prefix = dataset_prefix
@@ -619,43 +620,55 @@ def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
         klcube = kl_hdulist[1].data
         klheader = kl_hdulist[0].header
     
-    #read in fwhm for no cut, though unclear whether this should be the cut-specific FWHM
+    #read in fwhm
     dataset_fwhm = klheader["0PCTFWHM"]
 
-    # first number is KL mode index of cube. Don't change unless you ran multiple KL modes.
-    klim = klcube[0, :, :]
-    
-    dataset_center = [klheader['PSFCENTX'], klheader['PSFCENTY']]
-    if klim.shape[1]/2 <= 140:
-        OWA = klim.shape[1]/2
-    else:
-        OWA = 140  # a little beyond 1" is the furthest out we will go for computing contrast. Can change if needed.
-    
-    contrast_seps, contrast = klip.meas_contrast(klim, IWA, OWA, dataset_fwhm,
-                                                 center=dataset_center, low_pass_filter=False)
+    #raw contrast is independent of fake injection
+    rawc_prefix = make_prefix(subdir, wl, cut)
 
-    platescale = 0.0078513
-    if savefig == True:
-        plt.figure(figsize=(10, 5), dpi=750)
-        imsz = klim.shape[1]
-        annspacing = (imsz / 2. - IWA) / numann
-        zone_boundaries = np.arange(1, numann) * annspacing + IWA
-        plt.plot(contrast_seps * platescale, contrast)
-        plt.plot(contrast_seps * platescale, contrast, 'bo')
-        plt.yscale("log")
-        plt.ylim(np.nanmin(contrast), 1e-1)
-        plt.xlim(0, platescale * OWA)
-        plt.xlabel("distance in arcseconds")
-        plt.ylabel("contrast")
-        if IWA > 0:
-            plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), label='IWA')
-        for bd in zone_boundaries * platescale:
-            if bd < OWA * platescale:
-                plt.plot((bd, bd), (0, 1), '--', label='zone boundary')
-        plt.legend()
-        plt.savefig(outputdir + prefix + '_rawcontrast.jpg')
-        plt.show()
-        plt.clf()  # clear figure
+    #check whether has already been computed
+    if os.path.exists(outputdir+rawc_prefix+'_rawcontrast.fits'):
+        contrast = readfits(outputdir+rawc_prefix+'_rawcontrast.fits')
+    
+    #if not, generate raw contrast and write out as .jpg and .fits
+    else:
+        # first number is KL mode index of cube. Don't change unless you ran multiple KL modes.
+        klim = klcube[0, :, :]
+        
+        dataset_center = [klheader['PSFCENTX'], klheader['PSFCENTY']]
+        if klim.shape[1]/2 <= 140:
+            OWA = klim.shape[1]/2
+        else:
+            OWA = 140  # a little beyond 1" is the furthest out we will go for computing contrast. Can change if needed.
+
+        contrast_seps, contrast = klip.meas_contrast(klim, IWA, OWA, dataset_fwhm,
+                                                     center=dataset_center, low_pass_filter=False)
+
+        platescale = 0.0078513
+        if savefig == True:
+            plt.figure(figsize=(10, 5), dpi=750)
+            imsz = klim.shape[1]
+            annspacing = (imsz / 2. - IWA) / numann
+            zone_boundaries = np.arange(1, numann) * annspacing + IWA
+            plt.plot(contrast_seps * platescale, contrast)
+            plt.plot(contrast_seps * platescale, contrast, 'bo')
+            plt.yscale("log")
+            plt.ylim(np.nanmin(contrast), 1e-1)
+            plt.xlim(0, platescale * OWA)
+            plt.xlabel("distance in arcseconds")
+            plt.ylabel("contrast")
+            if IWA > 0:
+                plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), label='IWA')
+            for bd in zone_boundaries * platescale:
+                if bd < OWA * platescale:
+                    plt.plot((bd, bd), (0, 1), '--', label='zone boundary')
+            plt.legend()
+            plt.title(rawc_prefix+" Raw Contrast")
+            plt.savefig(outputdir + rawc_prefix + '_rawcontrast.jpg')
+            plt.show()
+            plt.clf()  # clear figure
+
+        fits.writeto(outputdir+rawc_prefix+'_rawcontrast.fits', contrast, overwrite=True)
 
     ## corrected contrast figure
     corrected_contrast_curve = np.copy(contrast)
@@ -856,7 +869,7 @@ def contrastcut_fig(subdir, wl, contrast_seps, contrasts, zone_boundaries, datas
                  label=str(cut) + ' cut', linestyle=linesty, color=cm.plasma(j))
     floor = np.log10(np.nanmin(contrasts)) - 0.2
     plt.yscale("log")
-    plt.title(prefix)
+    plt.title(dataset_prefix)
     plt.xlim(0, OWA_asec)
     plt.ylim(10 ** floor, 1e-1)
     plt.xlabel("distance in arcseconds")
@@ -868,7 +881,7 @@ def contrastcut_fig(subdir, wl, contrast_seps, contrasts, zone_boundaries, datas
             plt.plot((bd, bd), (0, 1), 'k-', lw=2, label='zone boundary')
     plt.legend()
     # write out in data directory
-    plt.savefig(outputdir + dataset_prefix + '_contrastsbycut')
+    plt.savefig(outputdir + dataset_prefix + '_contrastsbycut.jpg')
     plt.show()
     plt.clf()
     return
@@ -921,7 +934,6 @@ def inject_fakes(subdir, cut, IWA, wl='Line', numann=1, movm=3, KLlist=[10],
     OUTPUT
     separations where planets were injected = separations in pixels where throughputs were computed
     thrpt_list = computed throughputs at those separations (injected/recovered fake planet brightness)
-
 
     written by Kate Follette June 2019
     """

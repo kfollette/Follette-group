@@ -115,7 +115,7 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
     #read in image, header, and rotoffs
     imcube = fits.getdata(wl + imstring + '.fits')
     head = fits.getheader(wl + imstring + '.fits')
-    
+
     if os.path.exists(rotstring + '.fits'):
         rotoffs = fits.getdata(rotstring + '.fits')
     else:
@@ -632,7 +632,9 @@ def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
 
     #check whether has already been computed
     if os.path.exists(outputdir+rawc_prefix+'_rawcontrast.fits'):
-        contrast = fits.getdata(outputdir+rawc_prefix+'_rawcontrast.fits')
+        ctrst = fits.getdata(outputdir+rawc_prefix+'_rawcontrast.fits')
+        contrast_seps = ctrst[0,:]
+        contrast = ctrst[1,:]
     
     #if not, generate raw contrast and write out as .jpg and .fits
     else:
@@ -672,7 +674,10 @@ def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
             plt.show()
             plt.clf()  # clear figure
 
-        fits.writeto(outputdir+rawc_prefix+'_rawcontrast.fits', contrast, overwrite=True)
+        contrast_out=np.zeros((2, len(contrast_seps)))
+        contrast_out[0,:]=contrast_seps
+        contrast_out[1,:]=contrast
+        fits.writeto(outputdir+rawc_prefix+'_rawcontrast.fits', contrast_out, overwrite=True)
 
     ## corrected contrast figure
     corrected_contrast_curve = np.copy(contrast)
@@ -873,7 +878,7 @@ def contrastcut_fig(subdir, wl, contrast_seps, contrasts, zone_boundaries, datas
                  label=str(cut) + ' cut', linestyle=linesty, color=cm.plasma(j))
     floor = np.log10(np.nanmin(contrasts)) - 0.2
     plt.yscale("log")
-    plt.title(dataset_prefix)
+    plt.title(prefix)
     plt.xlim(0, OWA_asec)
     plt.ylim(10 ** floor, 1e-1)
     plt.xlabel("distance in arcseconds")
@@ -913,7 +918,7 @@ def clean_cuts(wl, subdir, keeplist, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 
     return
 
 
-def inject_fakes(subdir, cut, IWA, wl='Line', numann=1, movm=3, KLlist=[10],
+def inject_fakes(subdir, cut, IWA, wl='Line', numann=3, movm=5, KLlist=[10],
                  contrast=1e-2, seps=[10, 10, 10], thetas=[0, 120, 240], debug=True,
                  ghost=False, mask=[3, 15], slicefakes=True):
     """
@@ -947,9 +952,16 @@ def inject_fakes(subdir, cut, IWA, wl='Line', numann=1, movm=3, KLlist=[10],
     # if contrast curve directory doesn't already exist, create it
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
-    prefix = subdir.replace('/', '_') + wl + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
-        movm) + 'iwa' + str(IWA) + 'KL' + str(KLlist[0])
-    prefix_fakes = prefix + '_' + str(contrast) + 'FAKES'
+    prefix=subdir.replace('/', '_') + wl + '_' + str(cut) + 'pctcut_'
+    strklip = 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + 'KL' + str(KLlist[0])
+    
+    sepstr=''
+    thetastr = ''
+    for sep in seps:
+        sepstr+=str(sep)+'_'
+    for theta in thetas:
+        thetastr+=str(theta)+'_'
+    prefix_fakes = prefix +'thetas_'+thetastr+'seps_'+sepstr+'ctrst'+str(contrast)+'_FAKES'
 
     ###load data
     filelist = glob.glob(subdir + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
@@ -1011,7 +1023,7 @@ def inject_fakes(subdir, cut, IWA, wl='Line', numann=1, movm=3, KLlist=[10],
     dataset.input[np.isnan(dataset_copy) == True] = np.nan
 
     #write out fakes cube
-    fits.writeto(subdir + wl + '_' + str(cut) + 'pctcut_FAKES.fits', dataset.input)
+    fits.writeto(subdir + prefix_fakes + '.fits', dataset.input, overwrite=True)
 
     #slice the final fake dataset in preparation for parameter exploration
     if slicefakes==True:
@@ -1022,18 +1034,18 @@ def inject_fakes(subdir, cut, IWA, wl='Line', numann=1, movm=3, KLlist=[10],
             fits.writeto(outdir+'sliced_'+str(i)+'.fits', dataset.input[i,:,:], dataset.prihdrs[i], overwrite=True)
 
     # KLIP dataset with fake planets. Highpass filter here.
-    parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix_fakes, algo='klip', annuli=numann,
+    parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix_fakes+strklip, algo='klip', annuli=numann,
                               subsections=1, movement=movm, numbasis=KLlist, calibrate_flux=False, mode="ADI",
                               highpass=True, save_aligned=False, time_collapse='median')
 
     # read in the KLIP cube that was just created
-    klcube = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix_fakes))
+    klcube = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix_fakes+strklip))
     # compile specs for the injected planets
     planetspecs = (seps, thetas, mask)
     # make a SNRMap cube
     origdir = os.getcwd()
     os.chdir(outputdir)
-    Output, snrs, snr_sums, snr_spurious, maskedims = snr.create_map(klcube, fwhm, saveOutput=True, outputName=prefix_fakes + '_SNRMap.fits',
+    Output, snrs, snr_sums, snr_spurious, maskedims = snr.create_map(klcube, fwhm, saveOutput=True, outputName=prefix_fakes+strklip + '_SNRMap.fits',
                                        planets=planetspecs, checkmask=True, method='med')
     os.chdir(origdir)
     # create a list that will store throughputs

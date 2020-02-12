@@ -113,13 +113,15 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
     os.chdir(subdir)
 
     #read in image, header, and rotoffs
-    imcube = fits.getdata(wl + imstring + '.fits')
-    head = fits.getheader(wl + imstring + '.fits')
 
     if os.path.exists(rotstring + '.fits'):
         rotoffs = fits.getdata(rotstring + '.fits')
+        imcube = fits.getdata(wl + imstring + '.fits')
+        head = fits.getheader(wl + imstring + '.fits')
     else:
         rotoffs = fits.getdata(rotstring + '_0pctcut.fits')
+        imcube = fits.getdata(wl + imstring + '_0pctcut.fits')
+        head = fits.getheader(wl + imstring + '_0pctcut.fits')
 
     # Basic parameters needed for fits
     dim = imcube.shape[1]  # dimension
@@ -575,6 +577,7 @@ def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
     df = get_cuts_df(subdir+dfname)
 
     iterations = len(thrpt_out[:,0])-2
+    platescale = 0.0078513
 
     # set up directories and naming
     prefix = dataset_prefix
@@ -630,6 +633,14 @@ def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
     #raw contrast is independent of fake injection
     rawc_prefix = make_prefix(subdir, wl, cut)
 
+    #set OWA
+    klim = klcube[0, :, :]
+    if klim.shape[1]/2 <= 140:
+        OWA = klim.shape[1]/2
+    else:
+        OWA = 140  # a little beyond 1" is the furthest out we will go for computing contrast. Can change if needed.
+
+
     #check whether has already been computed
     if os.path.exists(outputdir+rawc_prefix+'_rawcontrast.fits'):
         ctrst = fits.getdata(outputdir+rawc_prefix+'_rawcontrast.fits')
@@ -639,18 +650,11 @@ def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
     #if not, generate raw contrast and write out as .jpg and .fits
     else:
         # first number is KL mode index of cube. Don't change unless you ran multiple KL modes.
-        klim = klcube[0, :, :]
         
         dataset_center = [klheader['PSFCENTX'], klheader['PSFCENTY']]
-        if klim.shape[1]/2 <= 140:
-            OWA = klim.shape[1]/2
-        else:
-            OWA = 140  # a little beyond 1" is the furthest out we will go for computing contrast. Can change if needed.
-
         contrast_seps, contrast = klip.meas_contrast(klim, IWA, OWA, dataset_fwhm,
                                                      center=dataset_center, low_pass_filter=False)
 
-        platescale = 0.0078513
         if savefig == True:
             plt.figure(figsize=(10, 5), dpi=750)
             imsz = klim.shape[1]
@@ -1107,6 +1111,8 @@ def collapsekl(subdir, fname, kllist, snrmeth='absmed', writestr='test'):
 
     klcube=klcube[slice,:,:,:,:]
 
+    dims = klcube.shape
+
     # set up a blank array to be filled
     klkeep = np.zeros([dims[2], dims[3], len(kllist)])
 
@@ -1135,8 +1141,8 @@ def collapsekl(subdir, fname, kllist, snrmeth='absmed', writestr='test'):
     head["KLMODES"] = str(kllist)
 
     # write arrays
-    fits.writeto(writestr + '_avgkl.fits', avgkl, head, overwrite=True)
-    fits.writeto(writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
+    fits.writeto(subdir+writestr + '_avgkl.fits', avgkl, head, overwrite=True)
+    fits.writeto(subdir+writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
     return (avgkl, stdevkl)
 
 
@@ -1393,12 +1399,11 @@ def clean_pe(subdir, keepparams):
     return
 
 
-def get_klip_inputs(subdir, pe_dfname='parameters.csv', cuts_dfname='cuts.csv', match2=False):
+def get_klip_inputs(subdir, pe_dfname='parameters.csv', cuts_dfname='cuts.csv'):
     """
     pulls info for naming and KLIP parameters from two data frames storing this info
     pe_dfname: dataframe containing info about optimal parameters
     subdir: directory containing data
-    match2: for a second reduction in same subdir (e.g. different cuts), set this to True
     :return:
     """
     df, df_cols =get_pe_df(pe_dfname)
@@ -1409,25 +1414,24 @@ def get_klip_inputs(subdir, pe_dfname='parameters.csv', cuts_dfname='cuts.csv', 
     date = dir_info[1]
     match = [direc for direc in df.subdir if subdir in direc]
     if len(match) > 1:
-        if match2 == False:
-            match = match[0]
-        else:
-            match = match[1]
-    cut = int(df[df["subdir"].values == match]["pctcut"].values[0])
-    movm = int(df[df["subdir"].values == match]["optimal movement"].values[0])
-    numann = int(df[df["subdir"].values == match]["optimal annuli"].values[0])
-    fwhm = df2[df2["Dataset"] == subdir]["medfwhm"].values[0]
-    IWA = int(df[df["subdir"] == subdir]["IWA"].values[0])
-    kllist = df[df["subdir"] == subdir]["KL combo used"].values[0]
-    kllist = eval(kllist)
+        print('there is more than one entry in the dataframe for this dataset. please delete the duplicates.')
+        return
+    else:
+        cut = int(df[df["subdir"].values == match]["pctcut"].values[0])
+        movm = int(df[df["subdir"].values == match]["optimal movement"].values[0])
+        numann = int(df[df["subdir"].values == match]["optimal annuli"].values[0])
+        fwhm = df2[df2["Dataset"] == subdir]["medfwhm"].values[0]
+        IWA = int(df[df["subdir"] == subdir]["IWA"].values[0])
+        kllist = df[df["subdir"] == subdir]["KL combo used"].values[0]
+        kllist = eval(kllist)
     #if subdir == 'HD142527/8Apr14/merged_long/':
         #IWA = 6
     return (objname, date, cut, movm, numann, fwhm, IWA, kllist)
 
 
-def klip_data(subdir, wl, params=False, fakes=False, match2=False, imstring='_clip451_flat_reg_nocosmics_'):
+def klip_data(subdir, wl, params=False, fakes=False, imstring='_clip451_flat_reg_nocosmics_'):
     if params == False:
-        objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(subdir, match2=match2)
+        objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(subdir)
     else:
         [objname, date, cut, movm, numann, fwhm, IWA, kllist] = params
     if fakes==False:
@@ -1442,17 +1446,20 @@ def klip_data(subdir, wl, params=False, fakes=False, match2=False, imstring='_cl
         rotoff_name = subdir+'rotoff_no'+wl+'cosmics_'+str(cut)+'pctcut.fits'
         SliceCube(imname, rotoff_name, slicedir=slicedir)
         pykh.addstarpeak(slicedir, debug=True, mask=True)
-    filelist = glob.glob(slicedir + "/sliced*.fits")
-    # filelist.sort(key=lambda f: int(''.join(filter(str.isdigit, f))))
-    dataset = MagAO.MagAOData(filelist, highpass=True)
-    # fits.writeto('input_test.fits', dataset.input, overwrite=True)
-    dataset.IWA = IWA
+
     prefix = subdir.replace('/', '_') + wl + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
         movm) + 'iwa' + str(IWA)
-    parallelized.klip_dataset(dataset, outputdir=subdir, fileprefix=prefix, algo='klip', annuli=numann, subsections=1, movement=movm,
+    if os.path.exists(subdir+prefix+'-KLmodes-all.fits'):
+        klcube=fits.getdata(subdir+prefix+'-KLmodes-all.fits')
+    else:   
+        filelist = glob.glob(slicedir + "/sliced*.fits")
+    
+        dataset = MagAO.MagAOData(filelist, highpass=True) 
+        parallelized.klip_dataset(dataset, outputdir=subdir, fileprefix=prefix, algo='klip', annuli=numann, subsections=1, movement=movm,
                               numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=False, save_aligned=False, time_collapse='median')
     # fits.writeto('output_test.fits', dataset.output, overwrite=True)
-    klcube = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=subdir, pre=prefix))
+        klcube = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=subdir, pre=prefix))
+    
     snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=subdir+prefix + '_SNRMap.fits')
     #snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=prefix + '_SNRMap.fits')
     return (klcube, snmap, fwhm)
@@ -1464,12 +1471,15 @@ def get_scale_factor(subdir):
     return (scale)
 
 
-def run_redx(subdir, match2=False):
+def run_redx(subdir, scale = False, imstring='_clip451_flat_reg_nocosmics_'):
     wls = ['Line', 'Cont']
-    objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(subdir, match2=match2)
-    linecube, linesnr, linefwhm = klip_data(subdir, wls[0], match2=match2)
-    contcube, contsnr, contfwhm = klip_data(subdir, wls[1], match2=match2)
-    scale = get_scale_factor(subdir)
+    objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(subdir)
+    linecube, linesnr, linefwhm = klip_data(subdir, wls[0], imstring=imstring)
+    contcube, contsnr, contfwhm = klip_data(subdir, wls[1], imstring=imstring)
+    if scale == False:
+        scale = get_scale_factor(subdir)
+    else:
+        scale = float(scale)
     sdicube = linecube - scale * contcube
     prefix = subdir.replace('/', '_') + 'SDI_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
         movm) + 'iwa' + str(IWA)
@@ -1477,7 +1487,14 @@ def run_redx(subdir, match2=False):
     return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix)
 
 
-def indivobj_fig(subdir, lineim, contim, sdiim, prefix, stampsz=75, smooth=0):
+def indivobj_fig(subdir, lineim, contim, sdiim, prefix, stampsz=75, smooth=0, lims = False):
+    """
+    creates a three panel figure with line, continuum and SDI images
+
+    optional keywords:
+    lims = tuple in the form (min, max) to set colorbar limits
+
+    """
     f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
     f.set_figwidth(15)
     f.set_figheight(10)
@@ -1503,9 +1520,15 @@ def indivobj_fig(subdir, lineim, contim, sdiim, prefix, stampsz=75, smooth=0):
     # set up tick labels according to parameter ranges
     plt.setp((ax1, ax2, ax3), xticks=ticks, xticklabels=ticklabels,
              yticks=ticks, yticklabels=ticklabels)
-
-    linemax = np.nanstd(lineim[low:high, low:high])*5
-    minm = -1 * linemax / 2
+    
+    #user defined limits
+    if lims != False:
+        minm = lims[0]
+        linemax = lims[1]
+    #otherwise limits set by default
+    else:
+        linemax = np.nanstd(lineim[low:high, low:high])*5
+        minm = -1 * linemax / 2
     if smooth > 0:
         im1 = ax1.imshow(lineimsm[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     else:

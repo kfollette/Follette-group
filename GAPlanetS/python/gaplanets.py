@@ -64,7 +64,7 @@ def get_cuts_df(dfname):
     # define dataframe if doesn't already exist
     try:
         df=pd.read_csv(dfname)
-        print("found existing data frame") #with the following contents: \n", df)
+        print("found existing data quality cuts data frame. Reading in.") #with the following contents: \n", df)
     except:
         print("creating new data frame")
         #if none found, make one
@@ -413,6 +413,7 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
 
             # put NaNs back
             dataset.input[np.isnan(dataset_copy) == True] = np.nan
+            print(dataset.input.shape, outputdir, pfx, numann, movm, KLlist)
 
             # KLIP dataset with fake planets. Highpass filter here.
             parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=pfx, algo='klip', annuli=numann,
@@ -1449,18 +1450,22 @@ def klip_data(subdir, wl, params=False, fakes=False, imstring='_clip451_flat_reg
 
     prefix = subdir.replace('/', '_') + wl + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
         movm) + 'iwa' + str(IWA)
+    
+    #check whether this KLIP image has already been generated
     if os.path.exists(subdir+prefix+'-KLmodes-all.fits'):
         klcube=fits.getdata(subdir+prefix+'-KLmodes-all.fits')
     else:   
         filelist = glob.glob(slicedir + "/sliced*.fits")
-    
         dataset = MagAO.MagAOData(filelist, highpass=True) 
         parallelized.klip_dataset(dataset, outputdir=subdir, fileprefix=prefix, algo='klip', annuli=numann, subsections=1, movement=movm,
                               numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=False, save_aligned=False, time_collapse='median')
-    # fits.writeto('output_test.fits', dataset.output, overwrite=True)
         klcube = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=subdir, pre=prefix))
     
-    snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=subdir+prefix + '_SNRMap.fits')
+    #check whether this SNRMap has already been generated
+    if os.path.exists(subdir+prefix + '_SNRMap.fits'):
+        snmap = fits.getdata(subdir+prefix + '_SNRMap.fits')
+    else:
+        snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=subdir+prefix + '_SNRMap.fits')
     #snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=prefix + '_SNRMap.fits')
     return (klcube, snmap, fwhm)
 

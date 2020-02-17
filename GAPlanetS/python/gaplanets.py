@@ -18,7 +18,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patches as patches
 import SNRMap_new as snr
 from importlib import reload
-import datetime
+from datetime import datetime
 
 def SliceCube(imfile, rotfile, dir='./', slicedir='sliced/'):
     """
@@ -285,11 +285,12 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
     # if directory doesn't already exist, create it
     if os.path.exists(outputdir) == False:
+        print(outputdir, 'already exists')
         os.mkdir(outputdir)
     prefix = make_prefix(data_str, wl, cut)
 
     ###load data
-    filelist = glob.glob(wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
+    filelist = glob.glob('dq_cuts/'+wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
 
     # sorts file list so it's sequential
     filelist.sort(key=lambda f: int(''.join(filter(str.isdigit, f))))
@@ -528,8 +529,6 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
     df.to_csv(dfname, index=False)
 
-    os.chdir(origdir)
-
     return (thrpt_out, zone_boundaries, df, dataset_prefix)
 
 
@@ -579,10 +578,10 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
     thrpt_avgs = thrpt_out[1]
     thrpts = thrpt_out[2:]
 
-    if os.path.exists(outputdir+prefix+'-KLmodes-all.fits'):
+    if os.path.exists(outputdir+dataset_prefix+'-KLmodes-all.fits'):
         print('KLIPed image without fakes already exists for these parameters')
-        klcube = fits.getdata(outputdir+prefix+'-KLmodes-all.fits')
-        klheader = fits.getheader(outputdir+prefix+'-KLmodes-all.fits')
+        klcube = fits.getdata(outputdir+dataset_prefix+'-KLmodes-all.fits')
+        klheader = fits.getheader(outputdir+dataset_prefix+'-KLmodes-all.fits')
 
     else:
         # specify directory and read in data again. This time we will NOT inject fakes
@@ -707,7 +706,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
         # for bd in zone_boundaries*platescale:
         #   plt.plot((bd,bd),(0,1),'--',label='zone boundary')
         plt.legend()
-        plt.savefig(outputdir + prefix + '_contrastcurve.jpg')
+        plt.savefig(outputdir + dataset_prefix + '_contrastcurve.jpg')
         plt.show()
         plt.clf()  # clear figure
 
@@ -731,7 +730,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
 
     df.to_csv('dq_cuts/'+dfname, index=False)
     contrast_out=np.array([contrast_seps,corrected_contrast_curve])
-    fits.writeto(outputdir + prefix +  '_contrast.fits', contrast_out, overwrite=True)
+    fits.writeto(outputdir + dataset_prefix +  '_contrast.fits', contrast_out, overwrite=True)
 
 
     return (contrast_seps, corrected_contrast_curve, df, OWA)
@@ -859,7 +858,7 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, dat
                  label=str(cut) + ' cut', linestyle=linesty, color=cm.plasma(j))
     floor = np.log10(np.nanmin(contrasts)) - 0.2
     plt.yscale("log")
-    plt.title(prefix)
+    plt.title(dataset_prefix)
     plt.xlim(0, OWA_asec)
     plt.ylim(10 ** floor, 1e-1)
     plt.xlabel("distance in arcseconds")
@@ -1066,7 +1065,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
     return (dataset.input, dataset.prihdrs)
 
 
-def collapsekl(pedir, pename, kllist, snrmeth='absmed', writestr='test'):
+def collapsekl(pedir, pename, kllist, snrmeth='absmed', writestr=False):
     """
     Reads in a parameter explorer file and collapses it in the KLmode dimension (axis 3)
 
@@ -1080,6 +1079,9 @@ def collapsekl(pedir, pename, kllist, snrmeth='absmed', writestr='test'):
     avgkl:  array containing averages over the specified KL modes
     stdevkl: array containing standard deviations over the specified KL modes
     """
+    if writestr == False:
+        writestr = pename[:-17]
+
     # read in image and header
     klcube = fits.getdata(pedir + pename)
     head = fits.getheader(pedir + pename)
@@ -1127,7 +1129,7 @@ def collapsekl(pedir, pename, kllist, snrmeth='absmed', writestr='test'):
     return (avgkl, stdevkl)
 
 
-def find_best(pedir, pename, kllist, snrmeth='absmed', writestr='test', weights=[1,1,0.5,0.5]):
+def find_best(pedir, pename, kllist, snrmeth='absmed', writestr=False, weights=[1,1,0.5,0.5]):
     """
     collapses parameter explorer file and extracts the optimal parameter value
 
@@ -1154,7 +1156,7 @@ def find_best(pedir, pename, kllist, snrmeth='absmed', writestr='test', weights=
     print("peak is at coordinates:", xcoord, ycoord)
 
     #extracts parameter explorer inputs from the filename (assumes was autonamed by parameter explorer)
-    namelist = fname.split('_')
+    namelist = pename.split('_')
     params = [s for s in namelist if s[0] == 'a']
     params = params[0]
     params = re.split('a|-|x|m|s|iwa', params)
@@ -1230,10 +1232,15 @@ def ctrlmask(xdim, ydim, rin, rout):
     new[(arr >= rin) & (arr <= rout)] = np.nan
     return(new)
 
-def paramexplore_fig(pedir, pename, kllist, snrmeth='absmed', writestr='test', weights=[1,1,0.5,0.5], lowsnr=False):
+def paramexplore_fig(pedir, pename, kllist, snrmeth='absmed', writestr=False, weights=[1,1,0.5,0.5], lowsnr=False):
+    
     snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores = \
         find_best(pedir, pename, kllist, snrmeth=snrmeth, writestr=writestr, weights=weights)
-    namelist = fname.split('_')
+
+    if writestr == False:
+        writestr = pename[:-17]
+
+    namelist = pename.split('_')
     params = [s for s in namelist if s[0] == 'a']
     params = params[0]
     params = re.split('a|-|x|m|s|iwa', params)
@@ -1304,7 +1311,7 @@ def paramexplore_fig(pedir, pename, kllist, snrmeth='absmed', writestr='test', w
     ax5.add_patch(rect)
     ax5.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
 
-    plt.savefig(writestr+'_paramqual.png')
+    plt.savefig(pedir+writestr+'_paramqual.png')
     return(ann_val, movm_val)
 
 def get_pe_df(dfname):
@@ -1324,22 +1331,22 @@ def get_pe_df(dfname):
             df[name] = []
     return(df, df_cols)
 
-def add_to_pe_df(data_str_uniq, pedir, pename, kllist, dfname='../../optimal_params.csv'):
+def add_to_pe_df(data_str, pedir, pename, kllist, dfname='../../optimal_params.csv'):
     df, df_cols =get_pe_df(dfname)
     avgkl, stdevkl = collapsekl(pedir, pename, kllist)
     snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores = find_best(pedir, pename, kllist)
     ind=np.where(agg == np.nanmax(agg))
-    data_str=re.split('_',data_str)
-    objname = dir_info[0]
-    date = dir_info[1]
+    data_split=re.split('_',data_str)
+    objname = data_split[0]
+    date = data_split[1]
     try:
-        subset = dir_info[2]
+        subset = data_split[2]
     except:
         subset = ''
 
-    if "Line" in fname:
+    if "Line" in pename:
         wl = "Line"
-    elif "Cont" in fname:
+    elif "Cont" in pename:
         wl = "Cont"
     else:
         "Could not parse wavelength from filename. please enter"
@@ -1352,14 +1359,15 @@ def add_to_pe_df(data_str_uniq, pedir, pename, kllist, dfname='../../optimal_par
     except:
         IWA = int(input("You are using an old Parameter Explorer file. Please enter IWA:"))
 
-    now = datetime.datetime.now()
+    now = datetime.now()
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
 
     pedir_info = re.split('/|_', pedir)
+
     cut=[s for s in pedir_info if 'cut' in s]
     cut=(cut[0].split('pctcut'))[0]
-
-    datalist=pd.DataFrame([[data_str_uniq,objname,date,subset,wl,cut,movm_val[0],ann_val[0],IWA,str(kllist),avgkl[ind][0],snr_norm[ind][0], nq_snr[ind][0],
-                            stdev_norm[ind][0], nq_stdev[ind][0], agg[ind][0]]], now, columns=df_cols)
+    datalist=pd.DataFrame([[data_str[:-1],objname,date,subset,wl,cut,movm_val[0],ann_val[0],IWA,str(kllist),avgkl[ind][0],snr_norm[ind][0], nq_snr[ind][0],
+                            stdev_norm[ind][0], nq_stdev[ind][0], agg[ind][0], dt_string]], columns=df_cols)
     df = df.append(datalist)
     df.to_csv(dfname, index=False)
     return(df)
@@ -1412,6 +1420,10 @@ def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', cuts_df
 
 
 def klip_data(data_str, wl, params=False, fakes=False, indir='dq_cuts/', imstring='_clip451_flat_reg_nocosmics_', outputdir='final_ims/'):
+
+    if os.path.exists(outputdir) == False:
+        os.mkdir(outputdir)
+
     if params == False:
         objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(indir)
     else:
@@ -1431,8 +1443,7 @@ def klip_data(data_str, wl, params=False, fakes=False, indir='dq_cuts/', imstrin
         SliceCube(imname, rotoff_name, slicedir=slicedir)
         pykh.addstarpeak(slicedir, debug=True, mask=True)
 
-    prefix = data_str + wl + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
-        movm) + 'iwa' + str(IWA)
+    prefix = data_str + wl + '_' + str(cut) + namestr[:-7] + 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA)
     
     #check whether this KLIP image has already been generated
     if os.path.exists(outputdir+prefix+'-KLmodes-all.fits'):

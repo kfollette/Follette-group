@@ -237,7 +237,7 @@ def peak_cut(data_str, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosm
 
 
 def make_prefix(data_str, wl, cut):
-        prefix = data_str + '_' + wl + '_' + str(cut) + 'pctcut'
+    prefix = data_str + wl + '_' + str(cut) + 'pctcut'
     return(prefix)
 
 def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numann=3, movm=4, KLlist=[10], IWA=0,
@@ -1334,7 +1334,7 @@ def add_to_pe_df(data_str_uniq, pedir, pename, kllist, dfname='../../optimal_par
     date = dir_info[1]
     try:
         subset = dir_info[2]
-    else:
+    except:
         subset = ''
 
     if "Line" in fname:
@@ -1477,7 +1477,7 @@ def run_redx(data_str, scale = False, indir='dq_cuts/',imstring='_clip451_flat_r
     return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix)
 
 
-def indivobj_fig(lineim, contim, sdiim, prefix, outputdir=outputdir, stampsz=75, smooth=0, lims = False):
+def indivobj_fig(lineim, contim, sdiim, prefix, outputdir='final_ims/', stampsz=75, smooth=0, lims = False):
     """
     creates a three panel figure with line, continuum and SDI images
 

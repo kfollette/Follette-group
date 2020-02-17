@@ -18,6 +18,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patches as patches
 import SNRMap_new as snr
 from importlib import reload
+import datetime
 
 def SliceCube(imfile, rotfile, dir='./', slicedir='sliced/'):
     """
@@ -74,7 +75,7 @@ def get_cuts_df(dfname):
             df[name] = []
     return(df)
 
-def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmics',
+def peak_cut(data_str, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmics',
              debug=False, ghost=False, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], electrons=False):
     """
     PURPOSE
@@ -84,7 +85,7 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
     peaks, nimages, etc. in dataframe.
 
     REQUIRED INPUTS
-    subdir = directory holding images that you want to reduce
+    data_str = unique identifier for this dataset for naming and table entry
     wl = "Line" or "Cont" depending on which you are reducing
     df = pandas dataframe to store output
 
@@ -100,33 +101,22 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
 
     written by Kate Follette June 2019
     """
-    if 'dq_cuts' in subdir:
-        subdir=subdir[0:-8]+'/'
-    df = get_cuts_df(subdir+'dq_cuts/'+dfname)
 
     if wl == 'Line':
         rotstring = 'rotoff_noLinecosmics'
     if wl == 'Cont':
         rotstring = 'rotoff_noContcosmics'
 
-    origdir = os.getcwd()
-    os.chdir(subdir)
-
     #read in image, header, and rotoffs
-
-    #if os.path.exists(subdir+rotstring + '.fits'):
     rotoffs = fits.getdata('preprocessed/'+rotstring + '.fits')
     imcube = fits.getdata('preprocessed/'+wl + imstring + '.fits')
     head = fits.getheader('preprocessed/'+wl + imstring + '.fits')
-    #else:
-        #rotoffs = fits.getdata(subdir+rotstring + '_0pctcut.fits')
-        #imcube = fits.getdata(subdir+wl + imstring + '_0pctcut.fits')
-        #head = fits.getheader(subdir+wl + imstring + '_0pctcut.fits')
 
     #move to dq_cuts directory (create if doesn't already exist)
     if not os.path.exists('dq_cuts'):
         os.makedirs('dq_cuts')
-    os.chdir('dq_cuts')
+
+    df = get_cuts_df('dq_cuts/'+dfname)
 
     # Basic parameters needed for fits
     dim = imcube.shape[1]  # dimension
@@ -203,7 +193,7 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
         hdu = fits.PrimaryHDU(newim, head)
         if not os.path.exists('cubes/'):
             os.makedirs('cubes/')
-        imname = 'cubes/'+ wl + imstring + '_' + str(pctcuts[j]) + 'pctcut.fits'
+        imname = 'dq_cuts/cubes/'+ wl + imstring + '_' + str(pctcuts[j]) + 'pctcut.fits'
         hdu.writeto(imname, overwrite=True)
         rotnew = rotoffs[goodims]
 
@@ -214,7 +204,7 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
         else:
             rotrange = (rotnew[0] - rotnew[-1]) / ((rotoffs[0]) - (rotoffs[-1])) * 100
         hdu2 = fits.PrimaryHDU(rotnew)
-        rotname = 'cubes/' + rotstring + '_' + str(pctcuts[j]) + 'pctcut.fits'
+        rotname = 'dq_cuts/cubes/' + rotstring + '_' + str(pctcuts[j]) + 'pctcut.fits'
         hdu2.writeto(rotname, overwrite=True)
 
         if debug == True:
@@ -226,7 +216,7 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
             print("slicing cube", imname)
 
         # slice the newly created file in preparation for KLIP
-        outdir = wl + '_' + str(pctcuts[j]) + 'pctcut_sliced/'
+        outdir = 'dq_cuts/'+ wl + '_' + str(pctcuts[j]) + 'pctcut_sliced/'
         SliceCube(imname, rotname, slicedir=outdir)
 
         # and add star peak to headers of sliced files
@@ -236,27 +226,21 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
             pykh.addstarpeak(outdir, debug=debug, mask=True)
 
         # record relevant quantities for this data cut to dataframe
-        datalist = pd.DataFrame([[subdir, wl, pctcuts[j], new_nims, cuts[j], np.nanmedian(goodfwhm),
+        datalist = pd.DataFrame([[data_str, wl, pctcuts[j], new_nims, cuts[j], np.nanmedian(goodfwhm),
                                   rotrange]], columns=['Dataset', 'wl', 'pctcut', 'nims', 'minpeak', 'medfwhm','rotrange'])
         df = df.append(datalist)
         j += 1
 
-    os.chdir(origdir)
-    df.to_csv(subdir+'dq_cuts/'+dfname, index=False)
+    df.to_csv('dq_cuts/'+dfname, index=False)
 
     return
 
 
-def make_prefix(subdir, wl, cut):
-    if 'dq_cuts' in subdir:
-        subdir=subdir[0:-8]
-    if subdir != './':
-        prefix = subdir.replace('/', '_') + wl + '_' + str(cut) + 'pctcut'
-    else:
-        prefix = wl + '_' + str(cut) + 'pctcut'
+def make_prefix(data_str, wl, cut):
+        prefix = data_str + '_' + wl + '_' + str(cut) + 'pctcut'
     return(prefix)
 
-def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
+def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numann=3, movm=4, KLlist=[10], IWA=0,
                   contrast=1e-2, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                   ghost=False, savefig=False, iterations=3,dfname='cuts.csv'):
     """
@@ -265,7 +249,7 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
     in azimuth and calculates the  throughput.
 
     REQUIRED INPUTS
-    subdir = directory holding images that you want to reduce
+    data_str = unique identifier for this dataset for naming and table entry
     wl = "Line" or "Cont" depending on which you are reducing
     cut = what percentage of images do you want to retain?
 
@@ -291,7 +275,7 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
     """
 
     #read in or make data frame
-    df = get_cuts_df(subdir+dfname)
+    df = get_cuts_df('dq_cuts/'+dfname)
 
     #add contrast to df
     if "ctrst_fkpl" not in df:
@@ -299,14 +283,10 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
         print("creating column", "ctrst_fkpl")
     df["ctrst_fkpl"]=contrast
 
-    # set up directories and naming
-    origdir = os.getcwd()
-    os.chdir(subdir)
-    outputdir = 'contrastcurves/'
-    # if contrast curve directory doesn't already exist, create it
+    # if directory doesn't already exist, create it
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
-    prefix = make_prefix(subdir, wl, cut)
+    prefix = make_prefix(data_str, wl, cut)
 
     ###load data
     filelist = glob.glob(wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
@@ -369,7 +349,7 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
 
     dataset_prefix = prefix_fakes +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA)
 
-    tpt_fname = outputdir + prefix_fakes +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + '_throughputs.fits'
+    tpt_fname = outputdir + dataset_prefix + '_throughputs.fits'
 
     calcthrpt=True
     
@@ -526,7 +506,7 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
             if colname not in df:
                 df[colname] = np.nan
                 print("creating column", colname)
-            df[colname].loc[(df.Dataset == subdir) & (df.pctcut == cut)] = tpt
+            df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = tpt
 
     thrpt_out=np.zeros((2+iterations, len(thrpt_seps)))
     thrpt_out[0]=thrpt_seps
@@ -553,7 +533,7 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
     return (thrpt_out, zone_boundaries, df, dataset_prefix)
 
 
-def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
+def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir = 'dq_cuts/contrastcurves/', numann=3,
                         movm=4, KLlist=[10], IWA=0, dfname='cuts.csv', record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], 
                         savefig=False, debug=False):
     """
@@ -562,7 +542,7 @@ def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
     to generate a calibrated contrast curve.
 
     REQUIRED INPUTS
-    subdir = directory holding images that you want to reduce
+    data_str = unique identifier for this dataset for naming and table entry
     wl = "Line" or "Cont" depending on which you are reducing
     cut = what percentage of images do you want to retain?
     thrpt_out = output of compute_thrpt.
@@ -584,17 +564,13 @@ def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
     """
 
     #read in or make data frame
-    df = get_cuts_df(subdir+dfname)
+    df = get_cuts_df('dq_cuts/'+dfname)
 
     iterations = len(thrpt_out[:,0])-2
     platescale = 0.0078513
 
     # set up directories and naming
-    prefix = dataset_prefix
-    print(prefix)
-    origdir = os.getcwd()
-    os.chdir(subdir)
-    outputdir = 'contrastcurves/'
+    
     if not os.path.exists(outputdir):
         os.makedirs(outputdir)
 
@@ -640,8 +616,8 @@ def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
     #read in fwhm
     dataset_fwhm = klheader["0PCTFWHM"]
 
-    #raw contrast is independent of fake injection
-    rawc_prefix = make_prefix(subdir, wl, cut)
+    #raw contrast is independent of fake injection so simpler name string
+    rawc_prefix = make_prefix(data_str, wl, cut)
 
     #set OWA
     klim = klcube[0, :, :]
@@ -659,8 +635,6 @@ def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
     
     #if not, generate raw contrast and write out as .jpg and .fits
     else:
-        # first number is KL mode index of cube. Don't change unless you ran multiple KL modes.
-        
         dataset_center = [klheader['PSFCENTX'], klheader['PSFCENTY']]
         contrast_seps, contrast = klip.meas_contrast(klim, IWA, OWA, dataset_fwhm,
                                                      center=dataset_center, low_pass_filter=False)
@@ -753,16 +727,16 @@ def make_contrast_curve(subdir, wl, cut, thrpt_out, dataset_prefix, numann=3,
             if colname not in df:
                 df[colname] = np.nan
                 print("creating column", colname)
-            df[colname].loc[(df.Dataset == subdir) & (df.pctcut == cut)] = contrast
+            df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = contrast
 
-    df.to_csv(dfname, index=False)
+    df.to_csv('dq_cuts/'+dfname, index=False)
     contrast_out=np.array([contrast_seps,corrected_contrast_curve])
     fits.writeto(outputdir + prefix +  '_contrast.fits', contrast_out, overwrite=True)
-    os.chdir(origdir)
-    
+
+
     return (contrast_seps, corrected_contrast_curve, df, OWA)
 
-def cut_comparison(subdir, wl, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
+def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                    contrast=1e-2, numann=3, movm=4, KLlist=[10], IWA=0, savefig=False, ghost=False, dfname="cuts.csv", debug=False,
                    iterations=3):
     """
@@ -770,7 +744,7 @@ def cut_comparison(subdir, wl, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90
     loop through data quality cuts and compile corrected contrast curves into single array
 
     REQUIRED INPUTS
-    subdir = directory holding images that you want to reduce
+    data_str = unique identifier for this dataset for naming and table entry
     wl = "Line" or "Cont" depending on which you are reducing
     fwhm = fwhm of the dataset (we use fwhm of median determined with idl atv aperture photometry)
 
@@ -794,35 +768,36 @@ def cut_comparison(subdir, wl, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90
     for cut in pctcuts:
 
         ##add logic to find existing files if they've already been computed!
-        prefix = make_prefix(subdir, wl, cut)
-        if os.path.exists(subdir+'contrastcurves/'+ prefix + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) +  '_throughputs.fits'):
-            print ('found existing throughput file', subdir+'contrastcurves/'+ prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_throughputs.fits')
-            thrpt = fits.getdata(subdir+'contrastcurves/'+ prefix + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_throughputs.fits')
+        prefix = make_prefix(data_str, wl, cut)
+        if os.path.exists(outputdir+ prefix + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) +  '_throughputs.fits'):
+            print ('found existing throughput file', outputdir+ prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_throughputs.fits')
+            thrpt = fits.getdata(outputdir + prefix + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_throughputs.fits')
             print(thrpt.shape)
             thrpt_seps = thrpt[0,:]
             thrpt_list = thrpt[1,:]
 
         else:
             print('computing throughputs for', cut, 'pct cut')
-            thrpt_out, zone_boundaries, df, dataset_prefix = compute_thrpt(subdir, wl, cut,
+            thrpt_out, zone_boundaries, df, dataset_prefix = compute_thrpt(data_str, wl, cut,
                                                                     savefig=savefig, ghost=ghost, contrast=contrast,
                                                                     record_seps=record_seps,
+                                                                    outputdir=outputdir,
                                                                     #KLIP parameters
                                                                     numann=numann, movm=movm,
                                                                     KLlist=KLlist, IWA=IWA, dfname=dfname, 
                                                                     debug=debug, iterations=iterations)
 
-        if os.path.exists(subdir+'contrastcurves/'+ prefix +  '_a' + str(numann) + 'm' + str(movm) + '_contrast.fits'):
-            print ('found existing contrast curve', subdir+'contrastcurves/'+ prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_contrast.fits')
-            curve = fits.getdata(subdir+'contrastcurves/'+ prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_contrast.fits')
+        if os.path.exists(outputdir + prefix +  '_a' + str(numann) + 'm' + str(movm) + '_contrast.fits'):
+            print ('found existing contrast curve', outputdir + prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_contrast.fits')
+            curve = fits.getdata(outputdir + prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_contrast.fits')
             contrast_seps = curve[0,:]
             corrected_curve = curve[1,:]
 
         else:
             print('computing contrasts for', cut, 'pct cut')
-            contrast_seps, corrected_curve, df, OWA = make_contrast_curve(subdir, wl, cut,
+            contrast_seps, corrected_curve, df, OWA = make_contrast_curve(data_str, wl, cut,
                                                                  thrpt_out, dataset_prefix, record_seps=record_seps,
-                                                                 savefig=savefig,
+                                                                 savefig=savefig, outputdir=outputdir,
                                                                  ##KLIP parameters
                                                                  numann=numann, movm=movm, KLlist=KLlist, IWA=IWA,
                                                                  dfname=dfname, debug=debug)
@@ -839,19 +814,17 @@ def cut_comparison(subdir, wl, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90
         # loop counter
         i += 1
 
-    #df.to_csv(subdir+dfname, index=False)
-
     return (contrast_seps, contrasts, zone_boundaries, IWA, df, OWA, dataset_prefix)
 
 
-def contrastcut_fig(subdir, wl, contrast_seps, contrasts, zone_boundaries, dataset_prefix, OWA=225, IWA=0,
+def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, dataset_prefix, outputdir = 'dq_cuts/contrastcurves/', OWA=225, IWA=0,
                     pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90]):
     """
     PURPOSE
     Generate figure for comparison of contrasts with different image quality cuts
 
     REQUIRED INPUT
-    subdir = directory holding images that you want to reduce
+    data_str = unique identifier for this dataset for naming and table entry
     wl = "Line" or "Cont" depending on which you are reducing
     contrast_seps = separations in pixels where contrasts were computed
     contrasts = ncuts x contrast_seps array storing all corrected curves
@@ -866,13 +839,7 @@ def contrastcut_fig(subdir, wl, contrast_seps, contrasts, zone_boundaries, datas
 
     written by Kate Follette June 2019
     """
-    outputdir = subdir + 'contrastcurves/'
     platescale = 0.0078513
-
-    if subdir != './':
-        prefix = subdir.replace('/', '_') + wl
-    else:
-        prefix = wl
 
     if OWA*platescale<1:
         OWA_asec = OWA*platescale
@@ -932,7 +899,7 @@ def clean_cuts(wl, subdir, keeplist, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 
     return
 
 
-def inject_fakes(subdir, cut, IWA, wl='Line', numann=3, movm=5, KLlist=[10],
+def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, movm=5, KLlist=[10],
                  contrast=1e-2, seps=[10, 10, 10], thetas=[0, 120, 240], debug=True,
                  ghost=False, mask=[3, 15], slicefakes=True):
     """
@@ -941,7 +908,7 @@ def inject_fakes(subdir, cut, IWA, wl='Line', numann=3, movm=5, KLlist=[10],
     displays a test image. This is largely the same as compute_thrpt, but for specific injected planet locations
 
     REQUIRED INPUTS
-    subdir = directory holding images that you want to reduce
+    data_str = unique identifier for this dataset for naming and table entry
     cut = what percentage of images do you want to cyt?
     fwhm = fwhm of the dataset (we use fwhm of median determined with idl atv aperture photometry)
 
@@ -961,15 +928,10 @@ def inject_fakes(subdir, cut, IWA, wl='Line', numann=3, movm=5, KLlist=[10],
     written by Kate Follette June 2019
     """
 
-    # set up directories and naming
-    if 'dq_cuts' in subdir:
-        outputdir = subdir[:-8]+'/fakes/'
-    else:
-        outputdir = subdir+'fakes/'
     # if contrast curve directory doesn't already exist, create it
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
-    prefix=make_prefix(subdir, wl, cut)
+    prefix=make_prefix(data_str, wl, cut)
     strklip = '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + 'KL' + str(KLlist[0])
     
     sepstr=''
@@ -981,13 +943,13 @@ def inject_fakes(subdir, cut, IWA, wl='Line', numann=3, movm=5, KLlist=[10],
     prefix_fakes = prefix +'_thetas_'+thetastr+'seps_'+sepstr+'ctrst'+str(contrast)+'_FAKES'
 
     ###load data
-    if os.path.exists(subdir + wl + '_' + str(cut) + 'pctcut_sliced'):
-        filelist = glob.glob(subdir + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
+    if os.path.exists('dq_cuts/' + wl + '_' + str(cut) + 'pctcut_sliced'):
+        filelist = glob.glob('dq_cuts/' + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
     else:
         print("this file has not yet been generated")
-        peak_cut(subdir, wl, pctcuts=[cut])
+        peak_cut(data_str, wl, pctcuts=[cut])
 
-        filelist = glob.glob(subdir + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
+        filelist = glob.glob('dq_cuts' + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
     # sorts file list so it's sequential
     filelist.sort(key=lambda f: int(''.join(filter(str.isdigit, f))))
 
@@ -1104,13 +1066,13 @@ def inject_fakes(subdir, cut, IWA, wl='Line', numann=3, movm=5, KLlist=[10],
     return (dataset.input, dataset.prihdrs)
 
 
-def collapsekl(subdir, fname, kllist, snrmeth='absmed', writestr='test'):
+def collapsekl(pedir, pename, kllist, snrmeth='absmed', writestr='test'):
     """
     Reads in a parameter explorer file and collapses it in the KLmode dimension (axis 3)
 
     PARAMETERS:
-    subdir: location of files
-    fname: name of paramexplore file
+    pedir: directory holding parameter explorer file
+    pename: name of paramexplore file
     kllist: list of KL modes you want to collapse over
     snrmeth: one of two ways of computing SNR - possibilities are stdev and absmed (for median absolute value)
 
@@ -1119,8 +1081,8 @@ def collapsekl(subdir, fname, kllist, snrmeth='absmed', writestr='test'):
     stdevkl: array containing standard deviations over the specified KL modes
     """
     # read in image and header
-    klcube = fits.getdata(subdir + fname)
-    head = fits.getheader(subdir + fname)
+    klcube = fits.getdata(pedir + pename)
+    head = fits.getheader(pedir + pename)
 
     #pull only the SNR map slice with the matching snrmeth value
     if snrmeth == "absmed":
@@ -1160,18 +1122,18 @@ def collapsekl(subdir, fname, kllist, snrmeth='absmed', writestr='test'):
     head["KLMODES"] = str(kllist)
 
     # write arrays
-    fits.writeto(subdir+writestr + '_avgkl.fits', avgkl, head, overwrite=True)
-    fits.writeto(subdir+writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
+    fits.writeto(pedir+writestr + '_avgkl.fits', avgkl, head, overwrite=True)
+    fits.writeto(pedir+writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
     return (avgkl, stdevkl)
 
 
-def find_best(subdir, fname, kllist, snrmeth='absmed', writestr='test', weights=[1,1,0.5,0.5]):
+def find_best(pedir, pename, kllist, snrmeth='absmed', writestr='test', weights=[1,1,0.5,0.5]):
     """
     collapses parameter explorer file and extracts the optimal parameter value
 
     PARAMETERS:
-    subdir: location of files
-    fname: name of paramexplore file
+    pedir: directory holding parameter explorer file
+    pename: name of paramexplore file
     kllist: list of KL modes you want to collapse over
     weights: weights for parameter quality metric. [SNR, SNR neighbors, stdev, stdev neighbors]
 
@@ -1180,7 +1142,7 @@ def find_best(subdir, fname, kllist, snrmeth='absmed', writestr='test', weights=
 
     """
     #collapse KL mode cube
-    avgkl, stdevkl = collapsekl(subdir, fname, kllist, snrmeth=snrmeth, writestr=writestr)
+    avgkl, stdevkl = collapsekl(pedir, pename, kllist, snrmeth=snrmeth, writestr=writestr)
     # stdevkl[stdevkl < 0.01] = np.nan
 
     #finds location of peak
@@ -1268,9 +1230,9 @@ def ctrlmask(xdim, ydim, rin, rout):
     new[(arr >= rin) & (arr <= rout)] = np.nan
     return(new)
 
-def paramexplore_fig(subdir, fname, kllist, snrmeth='absmed', writestr='test', weights=[1,1,0.5,0.5], lowsnr=False):
+def paramexplore_fig(pedir, pename, kllist, snrmeth='absmed', writestr='test', weights=[1,1,0.5,0.5], lowsnr=False):
     snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores = \
-        find_best(subdir, fname, kllist, snrmeth=snrmeth, writestr=writestr, weights=weights)
+        find_best(pedir, pename, kllist, snrmeth=snrmeth, writestr=writestr, weights=weights)
     namelist = fname.split('_')
     params = [s for s in namelist if s[0] == 'a']
     params = params[0]
@@ -1354,62 +1316,67 @@ def get_pe_df(dfname):
     except:
         print("creating new data frame")
         #if none found, make one
-        df_cols =['subdir','Dataset', 'Date', 'subset','pctcut', 'optimal movement', 'optimal annuli', 'IWA', 'KL combo used',
-        'SNR value', 'SNR metric', 'SNR neighbors metric', 'stdev metric', 'stdev neighbors metric', 'total metric']
+        df_cols =['Dataset','Object', 'Date','subset','Wavelength','pctcut', 'optimal movement', 'optimal annuli', 'IWA', 'KL combo used',
+        'SNR value', 'SNR metric', 'SNR neighbors metric', 'stdev metric', 'stdev neighbors metric', 'total metric', 'date added']
         # make a blank pandas dataframe
         df = pd.DataFrame({})
         for name in df_cols:
             df[name] = []
     return(df, df_cols)
 
-def add_to_pe_df(subdir, pedir, fname, kllist, dfname='parameters.csv'):
+def add_to_pe_df(data_str_uniq, pedir, pename, kllist, dfname='../../optimal_params.csv'):
     df, df_cols =get_pe_df(dfname)
-    avgkl, stdevkl = collapsekl(subdir+pedir, fname, kllist)
-    snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores = find_best(subdir+pedir, fname, kllist)
+    avgkl, stdevkl = collapsekl(pedir, pename, kllist)
+    snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores = find_best(pedir, pename, kllist)
     ind=np.where(agg == np.nanmax(agg))
-    dir_info=re.split('/|_',subdir)
+    data_str=re.split('_',data_str)
     objname = dir_info[0]
     date = dir_info[1]
     try:
-        if (dir_info[2] in ['Line', 'Cont', 'Haplus']):
-            subset = ''
-        elif (dir_info[2]=='merged'):
-            if dir_info[3] not in ['Line', 'Cont']:
-                subset = dir_info[3]
-            else:
-                subset = ''
-        else:
-            subset = dir_info[2]
-    except:
+        subset = dir_info[2]
+    else:
         subset = ''
+
+    if "Line" in fname:
+        wl = "Line"
+    elif "Cont" in fname:
+        wl = "Cont"
+    else:
+        "Could not parse wavelength from filename. please enter"
+        wl = input("please enter wavelength:")
+
     try:
-        head = fits.getheader(pedir+fname)
-        print(head)
+        head = fits.getheader(pedir+pename)
+        print("found header")
         IWA = head["IWA"]
     except:
         IWA = int(input("You are using an old Parameter Explorer file. Please enter IWA:"))
+
+    now = datetime.datetime.now()
+
     pedir_info = re.split('/|_', pedir)
     cut=[s for s in pedir_info if 'cut' in s]
     cut=(cut[0].split('pctcut'))[0]
-    datalist=pd.DataFrame([[subdir,objname,date,subset,cut,movm_val[0],ann_val[0],IWA,str(kllist),avgkl[ind][0],snr_norm[ind][0], nq_snr[ind][0],
-                            stdev_norm[ind][0], nq_stdev[ind][0], agg[ind][0]]], columns=df_cols)
+
+    datalist=pd.DataFrame([[data_str_uniq,objname,date,subset,wl,cut,movm_val[0],ann_val[0],IWA,str(kllist),avgkl[ind][0],snr_norm[ind][0], nq_snr[ind][0],
+                            stdev_norm[ind][0], nq_stdev[ind][0], agg[ind][0]]], now, columns=df_cols)
     df = df.append(datalist)
     df.to_csv(dfname, index=False)
     return(df)
 
-def clean_pe(subdir, keepparams):
+def clean_pe(pedir, keepparams):
     """
     Deletes superfluous parameter explorer that are not going to be used for analysis
     prefix: file prefix
-    subdir: path to directory where files live
+    pedir: path to directory where parameter explorer files live
     keeplist: list of files to keep in [annuli, movem] form
     """
-    fulllist = glob.glob(subdir+'*.fits')
+    fulllist = glob.glob(pedir+'*.fits')
     keeplist=[]
     for keep in keepparams:
-        list = glob.glob(subdir+'*a'+str(keep[0])+'m'+str(keep[1])+'.*.fits')
-        keeplist+=list
-    pefiles = glob.glob(subdir+'paramexplore*.fits')
+        lst = glob.glob(pedir+'*a'+str(keep[0])+'m'+str(keep[1])+'.*.fits')
+        keeplist+=lst
+    pefiles = glob.glob(pedir+'paramexplore*.fits')
     keeplist+=pefiles
     for file in fulllist:
         if file not in keeplist:
@@ -1418,103 +1385,99 @@ def clean_pe(subdir, keepparams):
     return
 
 
-def get_klip_inputs(subdir, pe_dfname='parameters.csv', cuts_dfname='cuts.csv'):
+def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', cuts_dfname='dq_cuts/cuts.csv'):
     """
     pulls info for naming and KLIP parameters from two data frames storing this info
     pe_dfname: dataframe containing info about optimal parameters
-    subdir: directory containing data
+    data_str_uniq = unique dataset identifier 
     :return:
     """
     df, df_cols =get_pe_df(pe_dfname)
-    df2=get_cuts_df(subdir+'dq_cuts/'+cuts_dfname)
+    df2=get_cuts_df(cuts_dfname)
 
-    dir_info = re.split('/|_', subdir)
-    objname = dir_info[0]
-    date = dir_info[1]
-    match = [direc for direc in df.subdir if subdir in direc]
+    match = [line for line in df["Dataset"] if data_str_uniq == line]
+
     if len(match) > 1:
         print('there is more than one entry in the dataframe for this dataset. please delete the duplicates.')
         return
     else:
-        cut = int(df[df["subdir"].values == match]["pctcut"].values[0])
-        movm = int(df[df["subdir"].values == match]["optimal movement"].values[0])
-        numann = int(df[df["subdir"].values == match]["optimal annuli"].values[0])
-        fwhm = df2[df2["Dataset"] == subdir]["medfwhm"].values[0]
-        IWA = int(df[df["subdir"] == subdir]["IWA"].values[0])
-        kllist = df[df["subdir"] == subdir]["KL combo used"].values[0]
+        cut = int(df[df["Dataset"].values == match]["pctcut"].values[0])
+        movm = int(df[df["Dataset"].values == match]["optimal movement"].values[0])
+        numann = int(df[df["Dataset"].values == match]["optimal annuli"].values[0])
+        fwhm = df2[df2["Dataset"] == data_str_uniq]["medfwhm"].values[0]
+        IWA = int(df[df["Dataset"] == data_str_uniq]["IWA"].values[0])
+        kllist = df[df["Dataset"] == data_str_uniq]["KL combo used"].values[0]
         kllist = eval(kllist)
-    #if subdir == 'HD142527/8Apr14/merged_long/':
-        #IWA = 6
     return (objname, date, cut, movm, numann, fwhm, IWA, kllist)
 
 
-def klip_data(subdir, wl, params=False, fakes=False, imstring='_clip451_flat_reg_nocosmics_'):
+def klip_data(data_str, wl, params=False, fakes=False, indir='dq_cuts/', imstring='_clip451_flat_reg_nocosmics_', outputdir='final_ims/'):
     if params == False:
-        objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(subdir)
+        objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(indir)
     else:
         [objname, date, cut, movm, numann, fwhm, IWA, kllist] = params
+    
     if fakes==False:
         namestr = 'pctcut_sliced'
     else:
         namestr = 'pctcut_FAKES_sliced'
+    
     #if hasn't already been sliced, slice it
-    slicedir = subdir + wl + '_' + str(cut) + namestr+'/'
+    slicedir = indir + wl + '_' + str(cut) + namestr+'/'
     if os.path.exists(slicedir) == False:
         print(wl, " image has not yet been sliced. Slicing now.")
-        imname = subdir+wl+imstring+str(cut)+'pctcut.fits'
-        rotoff_name = subdir+'rotoff_no'+wl+'cosmics_'+str(cut)+'pctcut.fits'
+        imname = indir+wl+imstring+str(cut)+'pctcut.fits'
+        rotoff_name = indir+'rotoff_no'+wl+'cosmics_'+str(cut)+'pctcut.fits'
         SliceCube(imname, rotoff_name, slicedir=slicedir)
         pykh.addstarpeak(slicedir, debug=True, mask=True)
 
-    if 'dq_cuts' in subdir:
-        outdirstr = subdir[0:-8]
-    else:
-        outdirstr = subdir
-    prefix = outdirstr.replace('/', '_') + wl + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
+    prefix = data_str + wl + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
         movm) + 'iwa' + str(IWA)
     
     #check whether this KLIP image has already been generated
-    if os.path.exists(subdir+prefix+'-KLmodes-all.fits'):
-        klcube=fits.getdata(subdir+prefix+'-KLmodes-all.fits')
+    if os.path.exists(outputdir+prefix+'-KLmodes-all.fits'):
+        klcube=fits.getdata(outputdir+prefix+'-KLmodes-all.fits')
     else:   
         filelist = glob.glob(slicedir + "/sliced*.fits")
         dataset = MagAO.MagAOData(filelist, highpass=True) 
-        parallelized.klip_dataset(dataset, outputdir=subdir, fileprefix=prefix, algo='klip', annuli=numann, subsections=1, movement=movm,
+        parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix, algo='klip', annuli=numann, subsections=1, movement=movm,
                               numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=False, save_aligned=False, time_collapse='median')
-        klcube = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=subdir, pre=prefix))
+        klcube = fits.getdata("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix))
     
     #check whether this SNRMap has already been generated
-    if os.path.exists(subdir+prefix + '_SNRMap.fits'):
-        snmap = fits.getdata(subdir+prefix + '_SNRMap.fits')
+    if os.path.exists(outputdir+prefix + '_SNRMap.fits'):
+        snmap = fits.getdata(outputdir+prefix + '_SNRMap.fits')
     else:
-        snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=subdir+prefix + '_SNRMap.fits')
+        snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits')
     #snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=prefix + '_SNRMap.fits')
     return (klcube, snmap, fwhm)
 
 
-def get_scale_factor(subdir):
-    df3 = pd.read_csv('analysis/scale_factors/apphot_scales.csv')
-    scale = df3[df3["subdir"] == subdir]["scale"].values[0]
+def get_scale_factor(data_str, scalefile = '../../apphot_scales.csv'):
+    df3 = pd.read_csv(scalefile)
+    scale = df3[df3["Dataset"] == data_str]["scale"].values[0]
     return (scale)
 
 
-def run_redx(subdir, scale = False, imstring='_clip451_flat_reg_nocosmics_'):
+def run_redx(data_str, scale = False, indir='dq_cuts/',imstring='_clip451_flat_reg_nocosmics_', outputdir = 'final_ims/'):
     wls = ['Line', 'Cont']
-    objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(subdir)
-    linecube, linesnr, linefwhm = klip_data(subdir, wls[0], imstring=imstring)
-    contcube, contsnr, contfwhm = klip_data(subdir, wls[1], imstring=imstring)
+    objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
+    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], imstring=imstring, indir=indir, outputdir=outputdir)
+    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], imstring=imstring, indir=indir, outputdir=outputdir)
+    
     if scale == False:
-        scale = get_scale_factor(subdir)
+        scale = get_scale_factor(data_str)
     else:
         scale = float(scale)
+    
     sdicube = linecube - scale * contcube
-    prefix = subdir.replace('/', '_') + 'SDI_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
+    prefix = data_str+'SDI_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
         movm) + 'iwa' + str(IWA)
     sdisnr, snrs, snr_sums, snr_spurious= snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=prefix + '_SNRMap.fits')
     return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix)
 
 
-def indivobj_fig(subdir, lineim, contim, sdiim, prefix, stampsz=75, smooth=0, lims = False):
+def indivobj_fig(lineim, contim, sdiim, prefix, outputdir=outputdir, stampsz=75, smooth=0, lims = False):
     """
     creates a three panel figure with line, continuum and SDI images
 
@@ -1584,7 +1547,7 @@ def indivobj_fig(subdir, lineim, contim, sdiim, prefix, stampsz=75, smooth=0, li
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im3, cax=cax, orientation='vertical', label="Intensity")
-    plt.savefig(subdir+prefix+'.png')
+    plt.savefig(outputdir+prefix+'.png')
     plt.show()
     plt.clf()
     return

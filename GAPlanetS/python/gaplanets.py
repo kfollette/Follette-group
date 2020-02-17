@@ -18,7 +18,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patches as patches
 import SNRMap_new as snr
 from importlib import reload
-reload(snr)
 
 def SliceCube(imfile, rotfile, dir='./', slicedir='sliced/'):
     """
@@ -63,7 +62,7 @@ def SliceCube(imfile, rotfile, dir='./', slicedir='sliced/'):
 def get_cuts_df(dfname):
     # define dataframe if doesn't already exist
     try:
-        df=pd.read_csv(dfname)
+        df=pd.read_csv('dq_cuts/'+dfname)
         print("found existing data quality cuts data frame. Reading in.") #with the following contents: \n", df)
     except:
         print("creating new data frame")
@@ -101,8 +100,9 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
 
     written by Kate Follette June 2019
     """
-
-    df = get_cuts_df(subdir+dfname)
+    if 'dq_cuts' in subdir:
+        subdir=subdir[0:-8]+'/'
+    df = get_cuts_df(subdir+'dq_cuts/'+dfname)
 
     if wl == 'Line':
         rotstring = 'rotoff_noLinecosmics'
@@ -114,14 +114,19 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
 
     #read in image, header, and rotoffs
 
-    if os.path.exists(rotstring + '.fits'):
-        rotoffs = fits.getdata(rotstring + '.fits')
-        imcube = fits.getdata(wl + imstring + '.fits')
-        head = fits.getheader(wl + imstring + '.fits')
-    else:
-        rotoffs = fits.getdata(rotstring + '_0pctcut.fits')
-        imcube = fits.getdata(wl + imstring + '_0pctcut.fits')
-        head = fits.getheader(wl + imstring + '_0pctcut.fits')
+    #if os.path.exists(subdir+rotstring + '.fits'):
+    rotoffs = fits.getdata('preprocessed/'+rotstring + '.fits')
+    imcube = fits.getdata('preprocessed/'+wl + imstring + '.fits')
+    head = fits.getheader('preprocessed/'+wl + imstring + '.fits')
+    #else:
+        #rotoffs = fits.getdata(subdir+rotstring + '_0pctcut.fits')
+        #imcube = fits.getdata(subdir+wl + imstring + '_0pctcut.fits')
+        #head = fits.getheader(subdir+wl + imstring + '_0pctcut.fits')
+
+    #move to dq_cuts directory (create if doesn't already exist)
+    if not os.path.exists('dq_cuts'):
+        os.makedirs('dq_cuts')
+    os.chdir('dq_cuts')
 
     # Basic parameters needed for fits
     dim = imcube.shape[1]  # dimension
@@ -196,7 +201,9 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
         newim = imcube[goodims, :, :]
         new_nims = newim.shape[0]
         hdu = fits.PrimaryHDU(newim, head)
-        imname = wl + imstring + '_' + str(pctcuts[j]) + 'pctcut.fits'
+        if not os.path.exists('cubes/'):
+            os.makedirs('cubes/')
+        imname = 'cubes/'+ wl + imstring + '_' + str(pctcuts[j]) + 'pctcut.fits'
         hdu.writeto(imname, overwrite=True)
         rotnew = rotoffs[goodims]
 
@@ -207,7 +214,7 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
         else:
             rotrange = (rotnew[0] - rotnew[-1]) / ((rotoffs[0]) - (rotoffs[-1])) * 100
         hdu2 = fits.PrimaryHDU(rotnew)
-        rotname = rotstring + '_' + str(pctcuts[j]) + 'pctcut.fits'
+        rotname = 'cubes/' + rotstring + '_' + str(pctcuts[j]) + 'pctcut.fits'
         hdu2.writeto(rotname, overwrite=True)
 
         if debug == True:
@@ -235,12 +242,14 @@ def peak_cut(subdir, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmic
         j += 1
 
     os.chdir(origdir)
-    df.to_csv(subdir+dfname, index=False)
+    df.to_csv(subdir+'dq_cuts/'+dfname, index=False)
 
     return
 
 
 def make_prefix(subdir, wl, cut):
+    if 'dq_cuts' in subdir:
+        subdir=subdir[0:-8]
     if subdir != './':
         prefix = subdir.replace('/', '_') + wl + '_' + str(cut) + 'pctcut'
     else:
@@ -537,9 +546,9 @@ def compute_thrpt(subdir, wl, cut, numann=3, movm=4, KLlist=[10], IWA=0,
         
     fits.writeto(tpt_fname, thrpt_out, header=head, overwrite=True)
 
-    os.chdir(origdir)
+    df.to_csv(dfname, index=False)
 
-    df.to_csv(subdir+dfname, index=False)
+    os.chdir(origdir)
 
     return (thrpt_out, zone_boundaries, df, dataset_prefix)
 
@@ -779,7 +788,7 @@ def cut_comparison(subdir, wl, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90
     written by Kate Follette June 2019
     """
     #read in or make data frame
-    df = get_cuts_df(dfname)
+    df = get_cuts_df('dq_cut/'+dfname)
 
     ##loop through data quality cuts
     for cut in pctcuts:
@@ -830,7 +839,7 @@ def cut_comparison(subdir, wl, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90
         # loop counter
         i += 1
 
-    df.to_csv(subdir+dfname, index=False)
+    #df.to_csv(subdir+dfname, index=False)
 
     return (contrast_seps, contrasts, zone_boundaries, IWA, df, OWA, dataset_prefix)
 
@@ -953,12 +962,15 @@ def inject_fakes(subdir, cut, IWA, wl='Line', numann=3, movm=5, KLlist=[10],
     """
 
     # set up directories and naming
-    outputdir = subdir+'fakes/'
+    if 'dq_cuts' in subdir:
+        outputdir = subdir[:-8]+'/fakes/'
+    else:
+        outputdir = subdir+'fakes/'
     # if contrast curve directory doesn't already exist, create it
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
-    prefix=subdir.replace('/', '_') + wl + '_' + str(cut) + 'pctcut_'
-    strklip = 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + 'KL' + str(KLlist[0])
+    prefix=make_prefix(subdir, wl, cut)
+    strklip = '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + 'KL' + str(KLlist[0])
     
     sepstr=''
     thetastr = ''
@@ -966,10 +978,16 @@ def inject_fakes(subdir, cut, IWA, wl='Line', numann=3, movm=5, KLlist=[10],
         sepstr+=str(sep)+'_'
     for theta in thetas:
         thetastr+=str(theta)+'_'
-    prefix_fakes = prefix +'thetas_'+thetastr+'seps_'+sepstr+'ctrst'+str(contrast)+'_FAKES'
+    prefix_fakes = prefix +'_thetas_'+thetastr+'seps_'+sepstr+'ctrst'+str(contrast)+'_FAKES'
 
     ###load data
-    filelist = glob.glob(subdir + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
+    if os.path.exists(subdir + wl + '_' + str(cut) + 'pctcut_sliced'):
+        filelist = glob.glob(subdir + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
+    else:
+        print("this file has not yet been generated")
+        peak_cut(subdir, wl, pctcuts=[cut])
+
+        filelist = glob.glob(subdir + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
     # sorts file list so it's sequential
     filelist.sort(key=lambda f: int(''.join(filter(str.isdigit, f))))
 
@@ -1028,11 +1046,11 @@ def inject_fakes(subdir, cut, IWA, wl='Line', numann=3, movm=5, KLlist=[10],
     dataset.input[np.isnan(dataset_copy) == True] = np.nan
 
     #write out fakes cube
-    fits.writeto(subdir + prefix_fakes + '.fits', dataset.input, overwrite=True)
+    fits.writeto(outputdir + prefix_fakes + '.fits', dataset.input, overwrite=True)
 
     #slice the final fake dataset in preparation for parameter exploration
     if slicefakes==True:
-        outdir=subdir+wl+'_'+str(cut)+'pctcut_FAKES_sliced/'
+        outdir=outputdir+wl+'_'+str(cut)+'pctcut_FAKES_sliced/'
         if os.path.exists(outdir)== False:
             os.mkdir(outdir)
         for i in np.arange(0,len(dataset.prihdrs)):
@@ -1408,7 +1426,7 @@ def get_klip_inputs(subdir, pe_dfname='parameters.csv', cuts_dfname='cuts.csv'):
     :return:
     """
     df, df_cols =get_pe_df(pe_dfname)
-    df2=get_cuts_df(subdir+cuts_dfname)
+    df2=get_cuts_df(subdir+'dq_cuts/'+cuts_dfname)
 
     dir_info = re.split('/|_', subdir)
     objname = dir_info[0]
@@ -1448,7 +1466,11 @@ def klip_data(subdir, wl, params=False, fakes=False, imstring='_clip451_flat_reg
         SliceCube(imname, rotoff_name, slicedir=slicedir)
         pykh.addstarpeak(slicedir, debug=True, mask=True)
 
-    prefix = subdir.replace('/', '_') + wl + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
+    if 'dq_cuts' in subdir:
+        outdirstr = subdir[0:-8]
+    else:
+        outdirstr = subdir
+    prefix = outdirstr.replace('/', '_') + wl + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
         movm) + 'iwa' + str(IWA)
     
     #check whether this KLIP image has already been generated

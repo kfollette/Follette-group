@@ -404,6 +404,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             # put NaNs back
             dataset.input[np.isnan(dataset_copy) == True] = np.nan
 
+
             # KLIP dataset with fake planets. Highpass filter here.
             parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=pfx, algo='klip', annuli=numann,
                                       subsections=1, movement=movm, numbasis=KLlist, calibrate_flux=False, mode="ADI",
@@ -582,7 +583,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
 
     else:
         # specify directory and read in data again. This time we will NOT inject fakes
-        filelist = glob.glob(wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
+        filelist = glob.glob('dq_cuts/'+wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
         filelist.sort(key=lambda f: int(''.join(filter(str.isdigit, f))))
         ## create dataset object for processing
         dataset = MagAO.MagAOData(filelist, highpass=False)
@@ -600,12 +601,12 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
             dataset.input[i, :, :] /= starpeak[i]
 
         # klip the dataset with same set of KLIP parameters as fake planets
-        parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix, annuli=numann, subsections=1,
+        parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=dataset_prefix, annuli=numann, subsections=1,
                                   algo='klip', movement=movm, numbasis=KLlist, calibrate_flux=False,
                                   mode="ADI", highpass=True, time_collapse='median')
 
         ##pull some needed info from headers
-        kl_hdulist = fits.open("{out}/{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix))
+        kl_hdulist = fits.open("{out}/{pre}-KLmodes-all.fits".format(out=outputdir, pre=dataset_prefix))
         klcube = kl_hdulist[1].data
         klheader = kl_hdulist[0].header
     
@@ -676,7 +677,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
         corrected_contrast_curve[i] /= thrpt_interp
         interp_thrpts.append(thrpt_interp)
 
-    ctrsts = np.zeros((iterations, len(contrast_sets)))
+    ctrsts = np.zeros((iterations, len(contrast_seps)))
     #compute contrast curves independently for each set of throughputs (use for range)
     for iter in np.arange(iterations):
         thrpts_thisset = np.interp(contrast_seps, thrpt_seps, thrpts[iter,:])

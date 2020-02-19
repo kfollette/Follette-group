@@ -112,9 +112,11 @@ def peak_cut(data_str, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosm
     imcube = fits.getdata('preprocessed/'+wl + imstring + '.fits')
     head = fits.getheader('preprocessed/'+wl + imstring + '.fits')
 
-    #move to dq_cuts directory (create if doesn't already exist)
+    #create dq_cuts directory if doesn't already exist)
     if not os.path.exists('dq_cuts'):
         os.makedirs('dq_cuts')
+    if not os.path.exists('dq_cuts/cubes'):
+        os.makedirs('dq_cuts/cubes')
 
     df = get_cuts_df('dq_cuts/'+dfname)
 
@@ -191,8 +193,6 @@ def peak_cut(data_str, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosm
         newim = imcube[goodims, :, :]
         new_nims = newim.shape[0]
         hdu = fits.PrimaryHDU(newim, head)
-        if not os.path.exists('cubes/'):
-            os.makedirs('cubes/')
         imname = 'dq_cuts/cubes/'+ wl + imstring + '_' + str(pctcuts[j]) + 'pctcut.fits'
         hdu.writeto(imname, overwrite=True)
         rotnew = rotoffs[goodims]
@@ -403,7 +403,6 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
             # put NaNs back
             dataset.input[np.isnan(dataset_copy) == True] = np.nan
-            print(dataset.input.shape, outputdir, pfx, numann, movm, KLlist)
 
             # KLIP dataset with fake planets. Highpass filter here.
             parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=pfx, algo='klip', annuli=numann,
@@ -420,8 +419,8 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         i = 0
 
         #calculate a few fixed quantities
-        annspacing = (imsz / 2. - dataset.IWA) / numann
-        zone_boundaries = np.arange(1, numann) * annspacing + dataset.IWA
+        annspacing = (imsz / 2. - IWA) / numann
+        zone_boundaries = np.arange(1, numann) * annspacing + IWA
 
         if calcthrpt==True:
 
@@ -513,8 +512,6 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     thrpt_out[0]=thrpt_seps
     thrpt_out[1]=thrpt_avgs
     thrpt_out[2:]=thrpts
-    np.array([thrpt_seps,thrpt_avgs,thrpts])
-    print(thrpt_out.shape)
 
     head["NPLANET"]=n_planets
     head["CTRST"]=contrast
@@ -625,7 +622,6 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
     else:
         OWA = 140  # a little beyond 1" is the furthest out we will go for computing contrast. Can change if needed.
 
-
     #check whether has already been computed
     if os.path.exists(outputdir+rawc_prefix+'_rawcontrast.fits'):
         ctrst = fits.getdata(outputdir+rawc_prefix+'_rawcontrast.fits')
@@ -680,6 +676,13 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
         corrected_contrast_curve[i] /= thrpt_interp
         interp_thrpts.append(thrpt_interp)
 
+    ctrsts = np.zeros((iterations, len(contrast_sets)))
+    #compute contrast curves independently for each set of throughputs (use for range)
+    for iter in np.arange(iterations):
+        thrpts_thisset = np.interp(contrast_seps, thrpt_seps, thrpts[iter,:])
+        ctrst_thisset = contrast/thrpts_thisset
+        ctrsts[iter,:]=ctrst_thisset
+
     if debug==True:
         #check throughput interpolations
         plt.plot(contrast_seps, interp_thrpts, 'k-', label="interpolated")
@@ -729,11 +732,16 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
             df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = contrast
 
     df.to_csv('dq_cuts/'+dfname, index=False)
-    contrast_out=np.array([contrast_seps,corrected_contrast_curve])
+    
+    contrast_out=np.zeros((2+iterations, len(contrast_seps)))
+    contrast_out[0]=contrast_seps
+    contrast_out[1]=corrected_contrast_curve
+    contrast_out[2:]=ctrsts
+
     fits.writeto(outputdir + dataset_prefix +  '_contrast.fits', contrast_out, overwrite=True)
 
 
-    return (contrast_seps, corrected_contrast_curve, df, OWA)
+    return (contrast_seps, corrected_contrast_curve, ctrsts, df, OWA)
 
 def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                    contrast=1e-2, numann=3, movm=4, KLlist=[10], IWA=0, savefig=False, ghost=False, dfname="cuts.csv", debug=False,
@@ -794,7 +802,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
 
         else:
             print('computing contrasts for', cut, 'pct cut')
-            contrast_seps, corrected_curve, df, OWA = make_contrast_curve(data_str, wl, cut,
+            contrast_seps, corrected_curve, ctrsts, df, OWA = make_contrast_curve(data_str, wl, cut,
                                                                  thrpt_out, dataset_prefix, record_seps=record_seps,
                                                                  savefig=savefig, outputdir=outputdir,
                                                                  ##KLIP parameters
@@ -1203,8 +1211,7 @@ def find_best(pedir, pename, kllist, snrmeth='absmed', writestr=False, weights=[
     ann_val = ymin + ind[0] * ystep
     movm_val = xmin + ind[1] * xstep
 
-    print(
-    'peak is at', [ind[0][0], ind[1][0]], 'corresponding to annuli', ann_val, ' and movement', movm_val, 'and snr of',
+    print('peak is at', [ind[0][0], ind[1][0]], 'corresponding to annuli', ann_val, ' and movement', movm_val, 'and snr of',
     avgkl[ind])
     print('metric scores for peak (snr, snr neigbors, stdev, stdev neighbors, agg) are:', metric_scores)
     return (snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores)
@@ -1562,3 +1569,85 @@ def indivobj_fig(lineim, contim, sdiim, prefix, outputdir='final_ims/', stampsz=
     plt.show()
     plt.clf()
     return
+
+def final_contrast_fig(data_str, hafakes_prefix, cont_prefix, klmode, indir = 'dq_cuts/contrastcurves/', outdir = 'final_ims/', ghost=False):
+    
+    #pull final cut and KLIP parameters
+    objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
+
+    #pull H-a contrast curve
+    ha_curve = fits.getdata(indir + ha_prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_contrast.fits')
+    ha_contrast_seps = ha_curve[0,:]
+    ha_corrected_curve = ha_curve[1,:]
+    ha_contrasts = ha_curve[2:,:]
+
+    for i in np.arange(len(ha_contrast_seps)):
+        max_ctrst_ha = np.nanmax(ha_contrasts[:,i])
+        min_ctrst_ha = np.nanmin(ha_contrasts[:,i])
+
+    #generate Cont contrast curve
+    wl = 'Cont'
+    if os.path.exists(indir+ cont_prefix + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) +  '_throughputs.fits'):
+        print ('found existing throughput file', indir+ prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_throughputs.fits')
+        thrpt = fits.getdata(indir + cont_prefix + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_throughputs.fits')
+        thrpt_seps = thrpt[0,:]
+        thrpt_list = thrpt[1,:]
+
+    else:
+        print('computing throughputs for', cut, 'pct cut')
+        thrpt_out, zone_boundaries, df, dataset_prefix = compute_thrpt(data_str, wl, cut,
+                                                                savefig=savefig, ghost=ghost, contrast=contrast,
+                                                                record_seps=record_seps,
+                                                                outputdir=indir,
+                                                                #KLIP parameters
+                                                                numann=numann, movm=movm,
+                                                                KLlist=KLmode, IWA=IWA, dfname=dfname, 
+                                                                debug=debug, iterations=iterations)
+
+    if os.path.exists(indir + cont_prefix +  '_a' + str(numann) + 'm' + str(movm) + '_contrast.fits'):
+        print ('found existing contrast curve', indir + cont_prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_contrast.fits')
+        cont_curve = fits.getdata(indir + cont_prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_contrast.fits')
+        cont_contrast_seps = cont_curve[0,:]
+        cont_corrected_curve = cont_curve[1,:]
+        cont_contrasts = cont_curve[2:,:]
+
+    else:
+        print('computing contrasts for', cut, 'pct cut')
+        cont_contrast_seps, cont_corrected_curve, cont_contrasts, df, OWA = make_contrast_curve(data_str, wl, cut,
+                                                             thrpt_out, cont_prefix, record_seps=record_seps,
+                                                             savefig=savefig, outputdir=indir,
+                                                             ##KLIP parameters
+                                                             numann=numann, movm=movm, KLlist=KLmode, IWA=IWA,
+                                                             dfname=dfname, debug=debug)
+    
+
+    for i in np.arange(len(cont_contrast_seps)):
+        max_ctrst_cont = np.nanmax(cont_contrasts[:,i])
+        min_ctrst_cont = np.nanmin(cont_contrasts[:,i])
+
+
+    platescale = 0.0078513
+
+    #make figure
+    plt.figure(figsize=(10, 5), dpi=750)
+    plt.plot(ha_contrast_seps * platescale, ha_corrected_curve, label='H$\alpha$', color='blue')
+    plt.fill_between(ha_contrast_seps * platescale, min_ctrst_ha, max_ctrst_ha, color='blue', alpha=0.5)
+    plt.plot(cont_contrast_seps * platescale, cont_corrected_curve, label='Continuum', color='red')
+    plt.fill_between(cont_contrast_seps * platescale, min_ctrst_cont, max_ctrst_cont, color='red', alpha=0.5)
+    floor = np.log10(np.nanmin(ha_)) - 0.2
+    plt.yscale("log")
+    plt.title(data_str)
+    plt.xlim(0, 1)
+    plt.ylim(10 ** floor, 1e-1)
+    plt.xlabel("distance in arcseconds")
+    plt.ylabel("contrast")
+    if IWA > 0:
+        plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k--', label='IWA')
+    for bd in zone_boundaries * platescale:
+        if bd < 1:
+            plt.plot((bd, bd), (0, 1), 'k-', lw=2, label='zone boundary')
+    plt.legend()
+    # write out in data directory
+    plt.savefig(outdir+data_str+'_contrast_curve.jpg')
+    plt.show()
+    plt.clf()

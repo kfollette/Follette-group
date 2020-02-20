@@ -63,7 +63,7 @@ def SliceCube(imfile, rotfile, dir='./', slicedir='sliced/'):
 def get_cuts_df(dfname):
     # define dataframe if doesn't already exist
     try:
-        df=pd.read_csv('dq_cuts/'+dfname)
+        df=pd.read_csv(dfname)
         print("found existing data quality cuts data frame. Reading in.") #with the following contents: \n", df)
     except:
         print("creating new data frame")
@@ -75,7 +75,7 @@ def get_cuts_df(dfname):
             df[name] = []
     return(df)
 
-def peak_cut(data_str, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosmics',
+def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_flat_reg_nocosmics',
              debug=False, ghost=False, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], electrons=False):
     """
     PURPOSE
@@ -118,7 +118,7 @@ def peak_cut(data_str, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosm
     if not os.path.exists('dq_cuts/cubes'):
         os.makedirs('dq_cuts/cubes')
 
-    df = get_cuts_df('dq_cuts/'+dfname)
+    df = get_cuts_df(cuts_dfname)
 
     # Basic parameters needed for fits
     dim = imcube.shape[1]  # dimension
@@ -231,7 +231,7 @@ def peak_cut(data_str, wl, dfname='cuts.csv', imstring='_clip451_flat_reg_nocosm
         df = df.append(datalist)
         j += 1
 
-    df.to_csv('dq_cuts/'+dfname, index=False)
+    df.to_csv(cuts_dfname, index=False)
 
     return
 
@@ -242,7 +242,7 @@ def make_prefix(data_str, wl, cut):
 
 def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numann=3, movm=4, KLlist=[10], IWA=0,
                   contrast=1e-2, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
-                  ghost=False, savefig=False, iterations=3,dfname='cuts.csv'):
+                  ghost=False, savefig=False, iterations=3,cuts_dfname='dq_cuts/cuts.csv'):
     """
     PURPOSE
     Injects false planets separated by the measured fwhm of the dataset in radius and the clockang parameter
@@ -275,7 +275,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     """
 
     #read in or make data frame
-    df = get_cuts_df('dq_cuts/'+dfname)
+    df = get_cuts_df(cuts_dfname)
 
     #add contrast to df
     if "ctrst_fkpl" not in df:
@@ -525,13 +525,13 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         
     fits.writeto(tpt_fname, thrpt_out, header=head, overwrite=True)
 
-    df.to_csv(dfname, index=False)
+    df.to_csv(cuts_dfname, index=False)
 
     return (thrpt_out, zone_boundaries, df, dataset_prefix)
 
 
 def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir = 'dq_cuts/contrastcurves/', numann=3,
-                        movm=4, KLlist=[10], IWA=0, dfname='cuts.csv', record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], 
+                        movm=4, KLlist=[10], IWA=0, cuts_dfname='dq_cuts/cuts.csv', record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], 
                         savefig=False, debug=False):
     """
     PURPOSE
@@ -561,7 +561,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
     """
 
     #read in or make data frame
-    df = get_cuts_df('dq_cuts/'+dfname)
+    df = get_cuts_df(cuts_dfname)
 
     iterations = len(thrpt_out[:,0])-2
     platescale = 0.0078513
@@ -732,7 +732,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
                 print("creating column", colname)
             df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = contrast
 
-    df.to_csv('dq_cuts/'+dfname, index=False)
+    df.to_csv(cuts_dfname, index=False)
     
     contrast_out=np.zeros((2+iterations, len(contrast_seps)))
     contrast_out[0]=contrast_seps
@@ -745,7 +745,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
     return (contrast_seps, corrected_contrast_curve, ctrsts, df, OWA)
 
 def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
-                   contrast=1e-2, numann=3, movm=4, KLlist=[10], IWA=0, savefig=False, ghost=False, dfname="cuts.csv", debug=False,
+                   contrast=1e-2, numann=3, movm=4, KLlist=[10], IWA=0, savefig=False, ghost=False, cuts_dfname="dq_cuts/cuts.csv", debug=False,
                    iterations=3):
     """
     PURPOSE
@@ -770,7 +770,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
     written by Kate Follette June 2019
     """
     #read in or make data frame
-    df = get_cuts_df('dq_cut/'+dfname)
+    df = get_cuts_df(cuts_dfname)
 
     ##loop through data quality cuts
     for cut in pctcuts:
@@ -792,7 +792,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
                                                                     outputdir=outputdir,
                                                                     #KLIP parameters
                                                                     numann=numann, movm=movm,
-                                                                    KLlist=KLlist, IWA=IWA, dfname=dfname, 
+                                                                    KLlist=KLlist, IWA=IWA, cuts_dfname=cuts_dfname, 
                                                                     debug=debug, iterations=iterations)
 
         if os.path.exists(outputdir + prefix +  '_a' + str(numann) + 'm' + str(movm) + '_contrast.fits'):
@@ -808,7 +808,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
                                                                  savefig=savefig, outputdir=outputdir,
                                                                  ##KLIP parameters
                                                                  numann=numann, movm=movm, KLlist=KLlist, IWA=IWA,
-                                                                 dfname=dfname, debug=debug)
+                                                                 cuts_dfname=cuts_dfname, debug=debug)
 
         # compile contrasts for all cuts into array
         if cut == 0:
@@ -953,9 +953,11 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
     ###load data
     if os.path.exists('dq_cuts/' + wl + '_' + str(cut) + 'pctcut_sliced'):
         filelist = glob.glob('dq_cuts/' + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
+        print(filelist)
     else:
         print("this file has not yet been generated")
         peak_cut(data_str, wl, pctcuts=[cut])
+        print(filelist)
 
         filelist = glob.glob('dq_cuts' + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
     # sorts file list so it's sequential
@@ -1339,8 +1341,8 @@ def get_pe_df(dfname):
             df[name] = []
     return(df, df_cols)
 
-def add_to_pe_df(data_str, pedir, pename, kllist, dfname='../../optimal_params.csv'):
-    df, df_cols =get_pe_df(dfname)
+def add_to_pe_df(data_str, pedir, pename, kllist, pe_dfname='../../optimal_params.csv'):
+    df, df_cols =get_pe_df(pe_dfname)
     avgkl, stdevkl = collapsekl(pedir, pename, kllist)
     snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores = find_best(pedir, pename, kllist)
     ind=np.where(agg == np.nanmax(agg))
@@ -1377,7 +1379,7 @@ def add_to_pe_df(data_str, pedir, pename, kllist, dfname='../../optimal_params.c
     datalist=pd.DataFrame([[data_str[:-1],objname,date,subset,wl,cut,movm_val[0],ann_val[0],IWA,str(kllist),avgkl[ind][0],snr_norm[ind][0], nq_snr[ind][0],
                             stdev_norm[ind][0], nq_stdev[ind][0], agg[ind][0], dt_string]], columns=df_cols)
     df = df.append(datalist)
-    df.to_csv(dfname, index=False)
+    df.to_csv(pe_dfname, index=False)
     return(df)
 
 def clean_pe(pedir, keepparams):
@@ -1602,7 +1604,7 @@ def final_contrast_fig(data_str, hafakes_prefix, cont_prefix, klmode, indir = 'd
                                                                 outputdir=indir,
                                                                 #KLIP parameters
                                                                 numann=numann, movm=movm,
-                                                                KLlist=KLmode, IWA=IWA, dfname=dfname, 
+                                                                KLlist=KLmode, IWA=IWA, cuts_dfname=cuts_dfname, 
                                                                 debug=debug, iterations=iterations)
 
     if os.path.exists(indir + cont_prefix +  '_a' + str(numann) + 'm' + str(movm) + '_contrast.fits'):
@@ -1619,7 +1621,7 @@ def final_contrast_fig(data_str, hafakes_prefix, cont_prefix, klmode, indir = 'd
                                                              savefig=savefig, outputdir=indir,
                                                              ##KLIP parameters
                                                              numann=numann, movm=movm, KLlist=KLmode, IWA=IWA,
-                                                             dfname=dfname, debug=debug)
+                                                             cuts_dfname=cuts_dfname, debug=debug)
     
 
     for i in np.arange(len(cont_contrast_seps)):

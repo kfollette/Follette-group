@@ -454,10 +454,10 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
                             print('suspicious trend in throughput. Value at', sep, 'is', newthpt, 'but was', thrpt_list[-1], 'in previous iteration.')
                             #if planet is within 10 pixels of zone boundary, relax the requirement that the trend has to be upward
                             if len(zone_boundaries) > 0:
-                                if abs(min(zone_boundaries - sep)) < 10:
-                                    print(min(zone_boundaries - sep), 'pixels from zone boundary. Keeping.')
+                                if min(abs(zone_boundaries - sep)) < 10:
+                                    print(min(abs(zone_boundaries - sep)), 'pixels from zone boundary. Keeping.')
                                 else:
-                                    print('planet is', min(zone_boundaries - sep), 'pixels from nearest zone boundary. Setting to NaN.')
+                                    print('planet is', min(abs(zone_boundaries - sep)), 'pixels from nearest zone boundary. Setting to NaN.')
                                     newthpt=np.nan
 
                 thrpt_list.append(newthpt)

@@ -946,7 +946,7 @@ def clean_cuts(wl, subdir, keeplist, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 
 
 
 def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, movm=5, KLlist=[10],
-                 contrast=1e-2, seps=[10, 10, 10], thetas=[0, 120, 240], debug=True,
+                 contrasts=[1e-2,1e-2,1e-2], seps=[10, 10, 10], thetas=[0, 120, 240], debug=True,
                  ghost=False, mask=[3, 15], slicefakes=True):
     """
     PURPOSE
@@ -1024,22 +1024,22 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
     dataset.input[np.isnan(dataset.input) == True] = 0.
     imsz = dataset.input.shape[1]
 
-    if ghost == False:
-        # where can, use actual image as "stamp" to avoid edge effects
-        stmpsz = imsz
-        starstamp = dataset.input[:, int(ycen - stmpsz / 2):int(ycen + stmpsz / 2),
-                    int(xcen - stmpsz / 2):int(xcen + stmpsz / 2)]
-
-        # multiply starstamp image by contrast to create your false planets
-        to_inject = contrast * starstamp
-
     # now inject planets
     i = 0
     for sep in seps:
         if ghost == True:
-            fakes.inject_planet(dataset.input, dataset.centers, np.repeat(contrast, nims)[0], dataset.wcs, sep,
+            if i==0:
+                print("injecting planets into saturated data with fwhm=", fwhm)
+            fakes.inject_planet(dataset.input, dataset.centers, np.repeat(contrasts[i], nims)[0], dataset.wcs, sep,
                                 thetas[i], fwhm=fwhm)
         else:
+                    # where can, use actual image as "stamp" to avoid edge effects
+            stmpsz = imsz
+            starstamp = dataset.input[:, int(ycen - stmpsz / 2):int(ycen + stmpsz / 2),
+                        int(xcen - stmpsz / 2):int(xcen + stmpsz / 2)]
+
+            # multiply starstamp image by contrast to create your false planets
+            to_inject = contrasts[i] * starstamp
             fakes.inject_planet(dataset.input, dataset.centers, to_inject, dataset.wcs, sep, thetas[i], fwhm=fwhm,
                                 stampsize=imsz)  # , thetas=thetas)
         i += 1
@@ -1083,6 +1083,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
 
     for sep in seps:
         theta = thetas[i]
+        contrast = contrasts[i]
         # thetas for retrieve planet call are measured from +x axis, so should always add 90 to pa for thetas keyword
         # dataset shape is [KL modes, n images, 1(wl dim), xdim, ydim]
         fake_flux = fakes.retrieve_planet_flux(dataset.output[0, :, 0, :, :], dataset.centers, dataset.wcs, sep, theta,
@@ -1101,9 +1102,10 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
                   np.nanstd(fake_flux / (contrast)))
         i += 1
     print("throughputs are", thrpt_list)
-    print("max snr for all planets is", snrs)
 
-    return (dataset.input, dataset.prihdrs)
+    print("snrs (max pixel) are", snrs)
+
+    return (dataset.input, dataset.prihdrs, prefix_fakes)
 
 
 def collapsekl(pedir, pename, kllist, snrmeth='absmed', writestr=False):

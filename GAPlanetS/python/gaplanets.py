@@ -236,6 +236,14 @@ def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_fl
     return
 
 
+def get_control_rad():
+    filelist = glob.glob('raw/'+'V47*.fits')
+    dummyhead = fits.getheader(filelist[10])
+    aobin = int(dummyhead["AOBIN"])
+    ctrlrads = [30,15] #bin 1, bin 
+    ctrlrad = ctrlrads[aobin-1]
+    return(ctrlrad)
+
 def make_prefix(data_str, wl, cut):
     prefix = data_str + wl + '_' + str(cut) + 'pctcut'
     return(prefix)
@@ -468,8 +476,10 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     thrpt_avgs=np.nanmean(thrpts,axis=0)
 
     #up to 10 iterations. will break if do more. 
-    cx = ['rx','gx','kx','cx','mx','rs','gs','ks','cs','ms']
+    cx = ['rx','gx','yx','cx','mx','rs','gs','ys','cs','ms']
     #if on last iteration, make plot and save
+    ctrl_rad = get_control_rad() 
+
     if (savefig == True) and (iter==iterations-1):
         #plot the individual points
         plt.figure(figsize=(10, 5), dpi=750)
@@ -477,8 +487,14 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             plt.plot(thrpt_seps, thrpts[iter,:], cx[iter], label="set"+str(iter+1))
         # plot the throughput averages (should all be <1 and should increase outward until they hit a zone boundary)
         plt.plot(thrpt_seps, thrpt_avgs, 'bo', label="average")
+        plt.plot((IWA, IWA),(0,1),'k-', label="IWA")
+        plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
+
         for bd in zone_boundaries:
-            plt.plot((bd, bd), (0, 1), '--', label='zone boundary')
+            if bd == zone_boundaries[0]:
+                plt.plot((bd, bd), (0, 1), '--',color='grey',label='zone boundary')
+            else:
+                plt.plot((bd, bd), (0, 1), '--', color='grey',)
         plt.xlabel("separation in pixels")
         plt.ylabel("throughput")
         plt.title(dataset_prefix+" Throughput")
@@ -635,28 +651,35 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
         contrast_seps, contrast = klip.meas_contrast(klim, IWA, OWA, dataset_fwhm,
                                                      center=dataset_center, low_pass_filter=False)
 
-        if savefig == True:
-            plt.figure(figsize=(10, 5), dpi=750)
-            imsz = klim.shape[1]
-            annspacing = (imsz / 2. - IWA) / numann
-            zone_boundaries = np.arange(1, numann) * annspacing + IWA
-            plt.plot(contrast_seps * platescale, contrast)
-            plt.plot(contrast_seps * platescale, contrast, 'bo')
-            plt.yscale("log")
-            plt.ylim(np.nanmin(contrast), 1e-1)
-            plt.xlim(0, platescale * OWA)
-            plt.xlabel("distance in arcseconds")
-            plt.ylabel("contrast")
-            if IWA > 0:
-                plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), label='IWA')
-            for bd in zone_boundaries * platescale:
-                if bd < OWA * platescale:
-                    plt.plot((bd, bd), (0, 1), '--', label='zone boundary')
-            plt.legend()
-            plt.title(rawc_prefix+" Raw Contrast")
-            plt.savefig(outputdir + rawc_prefix + '_rawcontrast.jpg')
-            plt.show()
-            plt.clf()  # clear figure
+    ctrl_rad = get_control_rad()
+    ctrl_rad = ctrl_rad * platescale
+
+    if savefig == True:
+        plt.figure(figsize=(10, 5), dpi=750)
+        imsz = klim.shape[1]
+        annspacing = (imsz / 2. - IWA) / numann
+        zone_boundaries = np.arange(1, numann) * annspacing + IWA
+        plt.plot(contrast_seps * platescale, contrast)
+        plt.plot(contrast_seps * platescale, contrast, 'bo')
+        plt.yscale("log")
+        plt.ylim(np.nanmin(contrast), 1e-1)
+        plt.xlim(0, platescale * OWA)
+        plt.xlabel("distance in arcseconds")
+        plt.ylabel("contrast")
+        if IWA > 0:
+            plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
+        plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
+        for bd in zone_boundaries * platescale:
+            if bd < OWA * platescale:
+                if bd == zone_boundaries[0]*platescale:
+                    plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
+                else:
+                    plt.plot((bd, bd), (0, 1), '--', color='grey')
+        plt.legend()
+        plt.title(rawc_prefix+" Raw Contrast")
+        plt.savefig(outputdir + rawc_prefix + '_rawcontrast.jpg')
+        plt.show()
+        plt.clf()  # clear figure
 
         contrast_out=np.zeros((2, len(contrast_seps)))
         contrast_out[0,:]=contrast_seps
@@ -694,22 +717,28 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
 
     if savefig == True:
         plt.figure(figsize=(10, 5), dpi=750)
-        plt.plot(contrast_seps * platescale, corrected_contrast_curve, label='corrected 5$\sigma$ contrast - average')
-        cx = ['r--','g--','k--','c--','m--','r:','g:','k:','c:','m:']
+        cx = ['r-','g-','y-','c-','m-','r:','g:','y:','c:','m:']
         #plot the individual points
         for iter in np.arange(iterations):
             thrpts_thisset = np.interp(contrast_seps, thrpt_seps, thrpts[iter,:])
             plt.plot(contrast_seps * platescale, contrast/thrpts_thisset, cx[iter], label="set"+str(iter+1))
+        plt.plot(contrast_seps * platescale, corrected_contrast_curve, label='average 5$\sigma$ contrast')
         plt.plot(contrast_seps * platescale, contrast, label='raw 5$\sigma$ contrast', color='gray')
         plt.yscale("log")
         plt.ylim(np.nanmin(contrast), 1e-1)
         plt.xlabel("distance in arcseconds")
         plt.ylabel("contrast")
         if IWA > 0:
-            plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k--', label='IWA')
-        # for bd in zone_boundaries*platescale:
-        #   plt.plot((bd,bd),(0,1),'--',label='zone boundary')
+            plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
+        plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
+        for bd in zone_boundaries * platescale:
+            if bd < OWA * platescale:
+                if bd == zone_boundaries[0]*platescale:
+                    plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
+                else:
+                    plt.plot((bd, bd), (0, 1), '--', color='grey')
         plt.legend()
+        plt.title(dataset_prefix + " Corrected Contrast")
         plt.savefig(outputdir + dataset_prefix + '_contrastcurve.jpg')
         plt.show()
         plt.clf()  # clear figure
@@ -848,6 +877,8 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, dat
     written by Kate Follette June 2019
     """
     platescale = 0.0078513
+    ctrl_rad = get_control_rad()
+    ctrl_rad*=platescale
 
     if OWA*platescale<1:
         OWA_asec = OWA*platescale
@@ -867,19 +898,23 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, dat
                  label=str(cut) + ' cut', linestyle=linesty, color=cm.plasma(j))
     floor = np.log10(np.nanmin(contrasts)) - 0.2
     plt.yscale("log")
-    plt.title(dataset_prefix)
+    plt.title(data_str[:-1] + outstr)
     plt.xlim(0, OWA_asec)
     plt.ylim(10 ** floor, 1e-1)
     plt.xlabel("distance in arcseconds")
     plt.ylabel("contrast")
     if IWA > 0:
-        plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k--', label='IWA')
+        plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
+    plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
     for bd in zone_boundaries * platescale:
-        if bd < 1:
-            plt.plot((bd, bd), (0, 1), 'k-', lw=2, label='zone boundary')
+        if bd < OWA * platescale:
+            if bd == zone_boundaries[0]*platescale:
+                plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
+            else:
+                plt.plot((bd, bd), (0, 1), '--', color='grey')
     plt.legend()
     # write out in data directory
-    plt.savefig(outputdir + dataset_prefix + '_contrastsbycut.jpg')
+    plt.savefig(outputdir + data_str[:-1] + outstr + '_contrastsbycut.jpg')
     plt.show()
     plt.clf()
     return

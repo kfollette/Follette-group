@@ -973,7 +973,11 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
 
     written by Kate Follette June 2019
     """
-
+    #if doesn't exist yet, make it
+    if not os.path.exists('dq_cuts/' + wl + '_' + str(cut) + 'pctcut_sliced'):
+        print("this wavelength and cut has not yet been generated. making now.")
+        peak_cut(data_str, wl, pctcuts=[cut], ghost=ghost)
+    
     # if contrast curve directory doesn't already exist, create it
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
@@ -1068,11 +1072,8 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
     # compile specs for the injected planets
     planetspecs = (seps, thetas, mask)
     # make a SNRMap cube
-    origdir = os.getcwd()
-    os.chdir(outputdir)
-    Output, snrs, snr_sums, snr_spurious, maskedims = snr.create_map(klcube, fwhm, saveOutput=True, outputName=prefix_fakes+strklip + '_SNRMap.fits',
+    Output, snrs, snr_sums, snr_spurious, maskedims = snr.create_map(klcube, fwhm, saveOutput=True, outputName=outputdir+prefix_fakes+strklip + '_SNRMap.fits',
                                        planets=planetspecs, checkmask=True, method='med')
-    os.chdir(origdir)
     # create a list that will store throughputs
     thrpt_list = []
 

@@ -19,6 +19,7 @@ import matplotlib.patches as patches
 import SNRMap_new as snr
 from importlib import reload
 from datetime import datetime
+reload(snr)
 
 def SliceCube(imfile, rotfile, indir='./', slicedir='sliced/'):
     """
@@ -986,11 +987,14 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
     
     sepstr=''
     thetastr = ''
+    ctrststr = ''
     for sep in seps:
         sepstr+=str(sep)+'_'
     for theta in thetas:
         thetastr+=str(theta)+'_'
-    prefix_fakes = prefix +'_thetas_'+thetastr+'seps_'+sepstr+'ctrst'+str(contrasts)+'_FAKES'
+    for contrast in contrasts:
+        ctrststr+=str(contrast)+'_'
+    prefix_fakes = prefix +'_thetas_'+thetastr+'seps_'+sepstr+'ctrst_'+ctrststr+'FAKES'
 
     ###load data
     filelist = glob.glob('dq_cuts/' + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
@@ -1030,6 +1034,9 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
 
     # now inject planets
     i = 0
+    stmpsz = imsz
+    starstamp = dataset.input[:, int(ycen - stmpsz / 2):int(ycen + stmpsz / 2), int(xcen - stmpsz / 2):int(xcen + stmpsz / 2)]
+
     for sep in seps:
         if ghost == True:
             if i==0:
@@ -1038,10 +1045,6 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
                                 thetas[i], fwhm=fwhm)
         else:
                     # where can, use actual image as "stamp" to avoid edge effects
-            stmpsz = imsz
-            starstamp = dataset.input[:, int(ycen - stmpsz / 2):int(ycen + stmpsz / 2),
-                        int(xcen - stmpsz / 2):int(xcen + stmpsz / 2)]
-
             # multiply starstamp image by contrast to create your false planets
             to_inject = contrasts[i] * starstamp
             fakes.inject_planet(dataset.input, dataset.centers, to_inject, dataset.wcs, sep, thetas[i], fwhm=fwhm,
@@ -1087,12 +1090,18 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
         contrast = contrasts[i]
         # thetas for retrieve planet call are measured from +x axis, so should always add 90 to pa for thetas keyword
         # dataset shape is [KL modes, n images, 1(wl dim), xdim, ydim]
+        guesspeak = contrast * np.median(dataset.star_flux)
+        
         fake_flux = fakes.retrieve_planet_flux(dataset.output[0, :, 0, :, :], dataset.centers, dataset.wcs, sep, theta,
                                                searchrad=8, guessfwhm=fwhm,
-                                               guesspeak=contrast * np.median(dataset.star_flux),
+                                               guesspeak=guesspeak,
                                                thetas=np.repeat(theta + 90, dataset.output.shape[1]), refinefit=True)
+        print('replacing', len(fake_flux[fake_flux < 0]), 'negative fluxes with NaN')
+        fake_flux[fake_flux < 0]=np.nan
+
         fake_fluxes[i, :] = fake_flux
         newthpt = np.nanmedian(fake_flux / (contrast))
+        
         if (newthpt > 1) or (newthpt < 0):
             print('invalid throughput value of', newthpt, 'for planet at separation', sep, '. Replacing with NaN')
             newthpt = np.nan
@@ -1105,6 +1114,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
     print("throughputs are", thrpt_list)
 
     print("snrs (max pixel) are", snrs)
+    print("snrs (avg under mask) are", snr_sums)
 
     return (dataset.input, dataset.prihdrs, prefix_fakes)
 

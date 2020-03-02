@@ -144,11 +144,13 @@ def isPlanet(radius, theta, planets):
     2/25/20 by KBF - output now tuple returning boolean and number of planet. Simplified so isplanetpix is just false by default
                      instead of having multiple test conditions
     2/26/20 by KBF - fixed bug in planets spanning PA=0
+    3/2/20 by KBF - adding core pix for averaging
     
     """
 
     #initialize vairable defaults
     isplanetpix = False
+    iscorepix = False
     whichplanet = np.nan
 
     #stores lists found in 'planets' tuple as separate variables
@@ -156,26 +158,29 @@ def isPlanet(radius, theta, planets):
 
     #stores both arguements of 'wid' parameter in separate variables
     r_wid, pa_wid = wid
-    
+
     for x in range (len(rads)):
-       
+           
         #checks to see if point falls within masked radii
         if ((radius < rads[x] + r_wid) and (radius > rads[x] - r_wid)):
 
             #converts position angle and upper and lower angle limits t fall between 0 and 360 degrees
             PA = convertAngle(PAs[x])
             theta1 = convertAngle(PA - pa_wid)
-            theta2 = convertAngle(theta1)
             theta2 = convertAngle(PA + pa_wid)
-            theta2 = convertAngle(theta2)
-            
+            core_wid = np.arctan(r_wid/radius)*180/np.pi
+            core1 = convertAngle(PA - core_wid)
+            core2 = convertAngle(PA + core_wid)
+
             #returns true if the point falls within the bounds of the angle limits, as well as within specified radii
             if(inWedge(theta, theta1, theta2)):
                 isplanetpix = True
+                if(inWedge(theta, core1, core2)):
+                    iscorepix = True
                 #records which planet in the list this pixel corresponds to
                 whichplanet = x
                   
-    return(isplanetpix, whichplanet)
+    return(isplanetpix, iscorepix, whichplanet)
 
 
 def toPolar(x, y):
@@ -259,7 +264,7 @@ def noisemap(indiv, planets, fwhm, method='stdev'):
             #converts pixel values to polar coordinates
             radius, angle = toPolar(x, y)  
             
-            isplanetpix, whichplanet = isPlanet(radius, angle, planets)
+            isplanetpix, iscorepix, whichplanet = isPlanet(radius, angle, planets)
             #adds pixel values to radial profile dictionary with the radius as key. ignores masked pixels. 
             if(not isplanetpix and not np.isnan(indiv[x][y])):
                 
@@ -412,7 +417,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=([0],[0],[0,
                     #converts x/y indices to polar coordinates
                     radius, angle = toPolar(x,y)
                     #returns whether this location has a planet and, if so, which planet in the list
-                    isplanetpix, p = isPlanet(radius, angle, planets)
+                    isplanetpix, iscorepix, p = isPlanet(radius, angle, planets)
 
                     if checkmask==True:
                         
@@ -442,12 +447,13 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=([0],[0],[0,
                     #planets_core[2][1] = np.arctan(planets_core[2][0]/planets[0][0])*180/np.pi
                 #print("test radial mask is", planets_core[2][0], "azimuthal mask is now", planets_core[2][1], "instead of", planets[2][1])
 
-                    if (isplanetpix == True):
+                    if isplanetpix == True:
                         planet_pixels[x][y][methodctr][s][p]=indiv[x][y]
                     ##includes only positive pixels under mask as planet pixels to avoid including self-subtraction regions in sums
-                        if indiv[x][y] > 0:
-                            planet_pixels_pos[x][y][methodctr][s][p]=indiv[x][y]
-                            npospix[methodctr][s][p]+=1
+                        if iscorepix == True:
+                            if indiv[x][y]>0:
+                                planet_pixels_pos[x][y][methodctr][s][p]=indiv[x][y]
+                                npospix[methodctr][s][p]+=1
 
                     #count up how many pixels OUTSIDE the mask have >5 sigma values
                     if not (isPlanet(radius, angle, planets)):
@@ -459,18 +465,21 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=([0],[0],[0,
                         if not (isPlanet(radius, angle, planets)):
                             if indiv[x][y] > 5:
                                 fivesig_atmask += 1
-
                 #store output for this method and # KL modes
                 Output[methodctr,s,:,:] = indiv
 
+            print(planet_pixels_pos.shape)
+            fits.writeto('corepix.fits', planet_pixels_pos[:,:,0,0,:], overwrite=True)  
+            fits.writeto('maskpix.fits', planet_pixels[:,:,0,0,:], overwrite=True)    
             if checkmask==True:
                 msks[s,:,:]=msk
             if makenoisemap==True:
                 noises[methodctr, s,:,:]=noise
+
             for p in np.arange(nplanets):
                 snrs[methodctr,s,p]=np.nanmax(planet_pixels[:,:,methodctr,s,p])
                 snr_sums[methodctr,s,p] = np.nansum(planet_pixels_pos[:,:,methodctr,s,p])/npospix[methodctr,s,p]
-                print(methodctr,s,p, snrs[methodctr,s,p], snr_sums[methodctr,s,p])
+
             snr_spurious[methodctr,s,:]=[fivesig, fivesig_atmask]
             #print("max SNR under mask is", snrs[methodctr,s], "for slice", s)
             #print("sum of SNRs under mask is", snr_sums[methodctr,s], "for slice", s)
@@ -480,10 +489,6 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=([0],[0],[0,
   
         methodctr += 1
 
-    fits.writeto('planet_pix_test.fits', planet_pixels, overwrite=True)
-    fits.writeto('planet_pix_pos_test.fits', planet_pixels_pos, overwrite=True)
-
-    print('method check', origmethod)
     #saves output to disk if saveOutput designated True
     if (saveOutput == True):
         newname = str(nameOutput(filename, outputName))
@@ -496,8 +501,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=([0],[0],[0,
 
         if makenoisemap==True:
             fits.writeto(newname[:-5]+'_'+origmethod+'_noisemap.fits', noises, head, overwrite=True)
-
-    print(snrs.shape, snrs, snr_sums.shape, snr_sums)
+        fits.writeto('test.fits', planet_pixels[:,:,0,0,:], overwrite=True)
 
     #returns final SNR map
     if checkmask==True:

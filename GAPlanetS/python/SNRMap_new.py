@@ -143,6 +143,7 @@ def isPlanet(radius, theta, planets):
     Last Modified:
     2/25/20 by KBF - output now tuple returning boolean and number of planet. Simplified so isplanetpix is just false by default
                      instead of having multiple test conditions
+    2/26/20 by KBF - fixed bug in planets spanning PA=0
     
     """
 
@@ -163,9 +164,9 @@ def isPlanet(radius, theta, planets):
 
             #converts position angle and upper and lower angle limits t fall between 0 and 360 degrees
             PA = convertAngle(PAs[x])
-            theta1 = PA - pa_wid
+            theta1 = convertAngle(PA - pa_wid)
             theta2 = convertAngle(theta1)
-            theta2 = PA + pa_wid
+            theta2 = convertAngle(PA + pa_wid)
             theta2 = convertAngle(theta2)
             
             #returns true if the point falls within the bounds of the angle limits, as well as within specified radii

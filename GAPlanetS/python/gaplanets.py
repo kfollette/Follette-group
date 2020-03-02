@@ -20,7 +20,7 @@ import SNRMap_new as snr
 from importlib import reload
 from datetime import datetime
 
-def SliceCube(imfile, rotfile, dir='./', slicedir='sliced/'):
+def SliceCube(imfile, rotfile, indir='./', slicedir='sliced/'):
     """
     Slices a 3D cube into individual 2D images numbered sequentially
     dir: directory containing the 3D image
@@ -28,8 +28,6 @@ def SliceCube(imfile, rotfile, dir='./', slicedir='sliced/'):
     rotfile: name of the cube containing the rotoff values needed to rotate images
     slicedir: name of the directory to write the sliced images into
     """
-    origdir=os.getcwd()
-    os.chdir(dir)
 
     #read in 3D image, header, and rotoffs
     cube = fits.getdata(imfile)
@@ -45,18 +43,17 @@ def SliceCube(imfile, rotfile, dir='./', slicedir='sliced/'):
         return
 
     #create sliced directory if doesn't already exist
-    if not os.path.exists(slicedir):
-        os.makedirs(slicedir)
-    os.chdir(slicedir)
+    if not os.path.exists(indir+slicedir):
+        os.makedirs(indir+slicedir)
 
     #loop to save 2D images into the sliced directory
     for z in range(nims):
         single = cube[z,:,:]
         head["rotoff"]=rotoffs[z]
-        fits.writeto("sliced_"+str(z+1)+".fits", single, head, overwrite=True)
+        fits.writeto(indir+slicedir+"sliced_"+str(z+1)+".fits", single, head, overwrite=True)
 
-    print("Done creating individual images for KLIP. These live in the", slicedir, 'directory')
-    os.chdir(origdir)
+    print("Done creating individual images for KLIP. These live in the", indir+slicedir, 'directory')
+
 
     return
 
@@ -631,6 +628,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
 
     #raw contrast is independent of fake injection so simpler name string
     rawc_prefix = make_prefix(data_str, wl, cut)
+    rawc_prefix += '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA)
 
     #set OWA
     klim = klcube[0, :, :]
@@ -801,39 +799,44 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
     #read in or make data frame
     df = get_cuts_df(cuts_dfname)
 
+    fakestr = '_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
+    klipstr =  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA)
+    outstr = fakestr + klipstr
+
     ##loop through data quality cuts
     for cut in pctcuts:
 
         ##add logic to find existing files if they've already been computed!
         prefix = make_prefix(data_str, wl, cut)
-        if os.path.exists(outputdir+ prefix + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) +  '_throughputs.fits'):
-            print ('found existing throughput file', outputdir+ prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_throughputs.fits')
-            thrpt = fits.getdata(outputdir + prefix + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_throughputs.fits')
-            print(thrpt.shape)
-            thrpt_seps = thrpt[0,:]
-            thrpt_list = thrpt[1,:]
+        namestr = prefix+outstr
+
+        if os.path.exists(outputdir + namestr + '_throughputs.fits'):
+            print ('found existing throughput file', outputdir + namestr + '_throughputs.fits')
+            thrpt_out = fits.getdata(outputdir + namestr + '_throughputs.fits')
+            #thrpt_seps = thrpt_out[0,:]
+            #thrpt_list = thrpt_out[1,:]
 
         else:
             print('computing throughputs for', cut, 'pct cut')
             thrpt_out, zone_boundaries, df, dataset_prefix = compute_thrpt(data_str, wl, cut,
                                                                     savefig=savefig, ghost=ghost, contrast=contrast,
-                                                                    record_seps=record_seps,
-                                                                    outputdir=outputdir,
+                                                                    record_seps=record_seps, theta=theta,
+                                                                    outputdir=outputdir, clockang=clockang,
                                                                     #KLIP parameters
                                                                     numann=numann, movm=movm,
                                                                     KLlist=KLlist, IWA=IWA, cuts_dfname=cuts_dfname, 
                                                                     debug=debug, iterations=iterations)
 
-        if os.path.exists(outputdir + prefix +  '_a' + str(numann) + 'm' + str(movm) + '_contrast.fits'):
-            print ('found existing contrast curve', outputdir + prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_contrast.fits')
-            curve = fits.getdata(outputdir + prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_contrast.fits')
+        if os.path.exists(outputdir + prefix +  klipstr + '_contrast.fits'):
+            print ('found existing contrast curve', outputdir + prefix +  klipstr + '_contrast.fits')
+            curve = fits.getdata(outputdir + prefix +  klipstr + '_contrast.fits')
             contrast_seps = curve[0,:]
             corrected_curve = curve[1,:]
 
         else:
             print('computing contrasts for', cut, 'pct cut')
             contrast_seps, corrected_curve, ctrsts, df, OWA = make_contrast_curve(data_str, wl, cut,
-                                                                 thrpt_out, dataset_prefix, record_seps=record_seps,
+                                                                 thrpt_out, namestr, record_seps=record_seps,
                                                                  savefig=savefig, outputdir=outputdir,
                                                                  ##KLIP parameters
                                                                  numann=numann, movm=movm, KLlist=KLlist, IWA=IWA,
@@ -851,10 +854,10 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
         # loop counter
         i += 1
 
-    return (contrast_seps, contrasts, zone_boundaries, IWA, df, OWA, dataset_prefix)
+    return (contrast_seps, contrasts, zone_boundaries, IWA, df, OWA, outstr)
 
 
-def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, dataset_prefix, outputdir = 'dq_cuts/contrastcurves/', OWA=225, IWA=0,
+def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, outstr, outputdir = 'dq_cuts/contrastcurves/', OWA=225, IWA=0,
                     pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90]):
     """
     PURPOSE
@@ -983,18 +986,10 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
         sepstr+=str(sep)+'_'
     for theta in thetas:
         thetastr+=str(theta)+'_'
-    prefix_fakes = prefix +'_thetas_'+thetastr+'seps_'+sepstr+'ctrst'+str(contrast)+'_FAKES'
+    prefix_fakes = prefix +'_thetas_'+thetastr+'seps_'+sepstr+'ctrst'+str(contrasts)+'_FAKES'
 
     ###load data
-    if os.path.exists('dq_cuts/' + wl + '_' + str(cut) + 'pctcut_sliced'):
-        filelist = glob.glob('dq_cuts/' + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
-        print(filelist)
-    else:
-        print("this file has not yet been generated")
-        peak_cut(data_str, wl, pctcuts=[cut])
-        print(filelist)
-
-        filelist = glob.glob('dq_cuts' + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
+    filelist = glob.glob('dq_cuts/' + wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
     # sorts file list so it's sequential
     filelist.sort(key=lambda f: int(''.join(filter(str.isdigit, f))))
 
@@ -1057,7 +1052,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
 
     #slice the final fake dataset in preparation for parameter exploration
     if slicefakes==True:
-        outdir=outputdir+wl+'_'+str(cut)+'pctcut_FAKES_sliced/'
+        outdir=outputdir+prefix_fakes+'_sliced/'
         if os.path.exists(outdir)== False:
             os.mkdir(outdir)
         for i in np.arange(0,len(dataset.prihdrs)):
@@ -1475,12 +1470,13 @@ def klip_data(data_str, wl, params=False, fakes=False, indir='dq_cuts/', imstrin
         [objname, date, cut, movm, numann, fwhm, IWA, kllist] = params
     
     if fakes==False:
-        namestr = 'pctcut_sliced'
+        namestr = wl + '_' + str(cut) +'pctcut_sliced'
     else:
-        namestr = 'pctcut_FAKES_sliced'
+        namestr = fakes + '_sliced'
     
     #if hasn't already been sliced, slice it
-    slicedir = indir + wl + '_' + str(cut) + namestr+'/'
+    slicedir = indir + namestr + '/'
+
     if os.path.exists(slicedir) == False:
         print(wl, " image has not yet been sliced. Slicing now.")
         imname = indir+wl+imstring+str(cut)+'pctcut.fits'
@@ -1488,8 +1484,8 @@ def klip_data(data_str, wl, params=False, fakes=False, indir='dq_cuts/', imstrin
         SliceCube(imname, rotoff_name, slicedir=slicedir)
         pykh.addstarpeak(slicedir, debug=True, mask=True)
 
-    prefix = data_str + wl + '_' + str(cut) + namestr[:-7] + 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA)
-    
+    prefix =namestr[:-6] + 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA)
+
     #check whether this KLIP image has already been generated
     if os.path.exists(outputdir+prefix+'-KLmodes-all.fits'):
         klcube=fits.getdata(outputdir+prefix+'-KLmodes-all.fits')

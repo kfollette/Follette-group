@@ -346,10 +346,6 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     dataset_copy = np.copy(dataset.input)
     imsz = dataset.input.shape[1]
 
-    if ghost == False:
-        # multiply starstamp image by contrast to create your false planets
-        to_inject = contrast * dataset.input
-
     thrpts = np.zeros((iterations, len(thrpt_seps)))
 
     prefix_fakes = prefix +'_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
@@ -397,6 +393,10 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             # replace any nans in image with zeros (edges, padded) for fake injection
             dataset.input[np.isnan(dataset.input) == True] = 0.
 
+            #create copy of dataset.input * contrast for injection
+            if ghost==False:
+                to_inject = contrast * dataset.input
+            
             #inject planets in raw images
             for sep in thrpt_seps:
                 if ghost == True:
@@ -409,7 +409,6 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
             # put NaNs back
             dataset.input[np.isnan(dataset_copy) == True] = np.nan
-
 
             # KLIP dataset with fake planets. Highpass filter here.
             parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=pfx, algo='klip', annuli=numann,

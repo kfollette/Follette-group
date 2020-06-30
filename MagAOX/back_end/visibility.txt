@@ -1,7 +1,0 @@
-# Target name                  ever observable                always observable              fraction of time observable
-HD 200466B                     True                           False                          0.34375                       
-HD 207966                      True                           False                          0.3125                        
-Vega                           True                           False                          0.34375                       
-Sirius                         True                           False                          0.09375                       
-HD 168607                      True                           False                          0.6875                        
-HD 168625                      True                           False                          0.6875                        

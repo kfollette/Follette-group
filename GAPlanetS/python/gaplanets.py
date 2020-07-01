@@ -1471,7 +1471,7 @@ def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', cuts_df
     return (objname, date, cut, movm, numann, fwhm, IWA, kllist)
 
 
-def klip_data(data_str, wl, params=False, fakes=False, indir='dq_cuts/', imstring='_clip451_flat_reg_nocosmics_', outputdir='final_ims/'):
+def klip_data(data_str, wl, params=False, fakes=False, planets=False, indir='dq_cuts/', imstring='_clip451_flat_reg_nocosmics_', outputdir='final_ims/'):
 
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
@@ -1512,7 +1512,10 @@ def klip_data(data_str, wl, params=False, fakes=False, indir='dq_cuts/', imstrin
     if os.path.exists(outputdir+prefix + '_SNRMap.fits'):
         snmap = fits.getdata(outputdir+prefix + '_SNRMap.fits')
     else:
-        snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits')
+        if planets != False:
+            snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits')
+        else: 
+            snmap = snr.create_map(klcube, fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits')
     #snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=prefix + '_SNRMap.fits')
     return (klcube, snmap, fwhm)
 

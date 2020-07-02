@@ -26,8 +26,8 @@ targets_to_convert = str(sys.argv[2])
 
 ages = str(sys.argv[3])
 
-models = glob.glob('/Users/Kim/Research/ALMA/TaurusContinuumDraft/DustMassCalculations/Baraffe*txt')
-mesamodels = glob.glob('/Users/Kim/Research/ALMA/TaurusContinuumDraft/DustMassCalculations/MESA_*.txt') #format is the same: Mass    Teff    LogLum  Logg    Radius
+models = glob.glob('./Baraffe*txt')
+mesamodels = glob.glob('./MESA_*.txt') #format is the same: Mass    Teff    LogLum  Logg    Radius
 for ii in mesamodels:
     models.append(ii)
 
@@ -97,16 +97,16 @@ for idx, modelname in enumerate(models):
         linecolor = 'green'    
 
     elif modelname == "MESA_1Myr.txt":
-        #spl = LSQUnivariateSpline(teff, mass, [2980, 3101, 3619, 3995, 4257, 4512, 4691, 5183])
-        spl = LSQUnivariateSpline(teff, mass, [3427, 3927, 4088, 4667, 5016, 5316, 5373, 5400, 5589])
+        spl = LSQUnivariateSpline(teff, mass, [2980, 3101, 3619, 3995, 4257, 4512, 4691, 5183])
+        #spl = LSQUnivariateSpline(teff, mass, [3427, 3927, 4088, 4667, 5016, 5316, 5373, 5400, 5589][2:-1])
         spl_mesa = LSQUnivariateSpline(teff, mass, [3427, 3927, 4088, 4667, 5016, 5316, 5373, 5400, 5589])
-        spl_lum = LSQUnivariateSpline(teff, loglum, [3298, 3355, 3462, 4068, 4646, 5219, 6277, 6319, 11738, 11943, 14123, 14281])
-        spl_mesa_lum = LSQUnivariateSpline(teff, loglum, [3298, 3355, 3462, 4068, 4646, 5219, 6277, 6319, 11738, 11943, 14123, 14281])
+        spl_lum = LSQUnivariateSpline(teff, loglum, [3298, 3355, 3462, 4068, 4646, 5219, 6277, 6319])
+        spl_mesa_lum = LSQUnivariateSpline(teff, loglum, [3298, 3355, 3462, 4068, 4646, 5219, 6277, 6319])
         linecolor = 'green'                 
 
     elif modelname == "Baraffe2015_1Myr.txt":    
         #spl = LSQUnivariateSpline(teff, mass, [2864, 2896, 2897, 2898, 2908]) # these are the "knots" around 0.08 Msun, where the model is discontinuous
-        spl = LSQUnivariateSpline(teff, mass, [2864, 2866, 2896, 2897, 2900, 2908])
+        spl = LSQUnivariateSpline(teff, mass, [2864, 2896, 2897, 2898, 2908]) # these are the "knots" around 0.08 Msun, where the model is discontinuous
         spl_b15_1myr = LSQUnivariateSpline(teff, mass, [2864, 2866, 2896, 2897, 2900, 2908])
         spl_lum = LSQUnivariateSpline(teff, loglum, [2599, 2869, 2898, 2902, 2911, 3437])
         spl_b15_lum = LSQUnivariateSpline(teff, loglum, [2599, 2869, 2898, 2902, 2911, 3437])

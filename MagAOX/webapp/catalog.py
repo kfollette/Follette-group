@@ -68,10 +68,11 @@ def server():
         
         print(table)
         
-        visib = txt_to_df('visibility.txt')
-        print(visib)
+        #visib = txt_to_df('visibility.txt')
+        #print(visib)
+        
         #return render_template("log.html", text=content, IM=img)
-        return render_template("log.html", text=content, t1=table, t2=visib)
+        return render_template("log.html", text=content, t1=table)
 
     else:
         return render_template("test2.html")

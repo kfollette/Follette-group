@@ -139,7 +139,7 @@ for idx, modelname in enumerate(models):
     plt.plot(newteff, newmass, linestyle=linestyles[idx], color=linecolor, label = labelname)
     plt.xlim(1500, 10000)
     plt.ylim(0, 5.0)
-    plt.xlabel(r'T$_\textnormal{eff}$ (K)')
+    plt.xlabel(r'T$_{eff}$ (K)')
     plt.ylabel(r'Mass (M$_{\odot}$)')
     plt.xscale('log')
     plt.yscale('log')
@@ -278,7 +278,7 @@ if ages == "2":
 
     # and write the combination to file:
 
-    to_txt = zip(TargetName_lim_combo, TargSpTy_lim_combo, TargSpTyNum_lim_combo, TargTeff_lim_combo, DerivedMasses_lim_combo, DerivedMasses_minlim_combo, DerivedMasses_maxlim_combo, DerivedMasses_lim_b98_combo, DerivedMasses_minlim_b98_combo, DerivedMasses_maxlim_b98_combo, DerivedLuminosities_lim_combo, DerivedLuminosities_minlim_combo, DerivedLuminosities_maxlim_combo, DerivedLuminosities_lim_b98_combo, DerivedLuminosities_minlim_b98_combo, DerivedLuminosities_maxlim_b98_combo)
+    to_txt = np.c_[(TargetName_lim_combo, TargSpTy_lim_combo, TargSpTyNum_lim_combo, TargTeff_lim_combo, DerivedMasses_lim_combo, DerivedMasses_minlim_combo, DerivedMasses_maxlim_combo, DerivedMasses_lim_b98_combo, DerivedMasses_minlim_b98_combo, DerivedMasses_maxlim_b98_combo, DerivedLuminosities_lim_combo, DerivedLuminosities_minlim_combo, DerivedLuminosities_maxlim_combo, DerivedLuminosities_lim_b98_combo, DerivedLuminosities_minlim_b98_combo, DerivedLuminosities_maxlim_b98_combo)]
 
 
     np.savetxt(targets_to_convert.split('.')[0] + '_DerivedMass_Results_B98+B15+MESA_2Myr.txt', to_txt, delimiter=';', fmt='%s', header = 'Name; SpTy; SpTyNum; Teff; Mstar_b15+mesa; Mstar_ll; Mstar_ul; Mstar_b98+mesa; Mstar_b98_ll; Mstar_b98_ul; LogLstar_b15+mesa; LogLstar_ll; LogLstar_ul; LogLstar_b98+mesa; LogLstar_b98_ll; LogLstar_b98_ul')
@@ -400,7 +400,7 @@ if ages == "1":
 
     # and write the combination to file:
 
-    to_txt = zip(TargetName_lim_combo, TargSpTy_lim_combo, TargSpTyNum_lim_combo, TargTeff_lim_combo, DerivedMasses_lim_combo, DerivedMasses_minlim_combo, DerivedMasses_maxlim_combo, DerivedMasses_lim_b98_combo, DerivedMasses_minlim_b98_combo, DerivedMasses_maxlim_b98_combo, DerivedLuminosities_lim_combo, DerivedLuminosities_minlim_combo, DerivedLuminosities_maxlim_combo, DerivedLuminosities_lim_b98_combo, DerivedLuminosities_minlim_b98_combo, DerivedLuminosities_maxlim_b98_combo)
+    to_txt = np.c_[(TargetName_lim_combo, TargSpTy_lim_combo, TargSpTyNum_lim_combo, TargTeff_lim_combo, DerivedMasses_lim_combo, DerivedMasses_minlim_combo, DerivedMasses_maxlim_combo, DerivedMasses_lim_b98_combo, DerivedMasses_minlim_b98_combo, DerivedMasses_maxlim_b98_combo, DerivedLuminosities_lim_combo, DerivedLuminosities_minlim_combo, DerivedLuminosities_maxlim_combo, DerivedLuminosities_lim_b98_combo, DerivedLuminosities_minlim_b98_combo, DerivedLuminosities_maxlim_b98_combo)]
 
 
     np.savetxt(targets_to_convert.split('.')[0] + '_DerivedMass_Results_B98+B15+MESA_%.0fMyr.txt' % float(ages), to_txt, delimiter=';', fmt='%s', header = 'Name; SpTy; SpTyNum; Teff; Mstar_b15+mesa; Mstar_ll; Mstar_ul; Mstar_b98+mesa; Mstar_b98_ll; Mstar_b98_ul; LogLstar_b15+mesa; LogLstar_ll; LogLstar_ul; LogLstar_b98+mesa; LogLstar_b98_ll; LogLstar_b98_ul')

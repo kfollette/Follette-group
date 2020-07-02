@@ -32,7 +32,7 @@ for ii in mesamodels:
     models.append(ii)
 
 
-print models
+print(models)
 
 #targets_to_convert = 'AndrewsClassII_SpectralTypes_DerivedTeff_Results.txt'
 
@@ -135,7 +135,7 @@ for idx, modelname in enumerate(models):
         linecolor = 'r'           
 
     else:
-        print "error!"    
+        print("error!")
 
     DerivedMasses_lim = spl(TargTeff_lim)
 

@@ -65,7 +65,7 @@ derived_teffs_earlylim = spl(TargSpTyNum_earlylim)
 derived_teffs_latelim = spl(TargSpTyNum_latelim)
 
 # Write to a file:
-to_txt = zip(TargetName, TargSpTy, TargSpTyNum, derived_teffs, derived_teffs_earlylim, derived_teffs_latelim)
+to_txt = np.c_[(TargetName, TargSpTy, TargSpTyNum, derived_teffs, derived_teffs_earlylim, derived_teffs_latelim)]
 np.savetxt(targets_to_convert.split('.')[0] + '_DerivedTeff_Results_HH14.txt', to_txt, delimiter=';', fmt='%s')
 
 

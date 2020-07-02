@@ -4,19 +4,8 @@ from scipy import optimize
 from scipy import stats
 from scipy.interpolate import LSQUnivariateSpline
 from scipy.interpolate import UnivariateSpline
-from matplotlib import rcParams
 import sys
 import glob
-
-rcParams['axes.labelsize'] = 16
-rcParams['xtick.labelsize'] = 16
-rcParams['ytick.labelsize'] = 16
-rcParams['legend.fontsize'] = 12
-rcParams['font.family'] = 'serif'
-rcParams['font.serif'] = ['Times']
-rcParams['text.usetex'] = True
-rcParams['axes.linewidth'] = 2 
-
 
 
 # How to run: python ComboMassTeff_Interp_B98-B15-MESA_1myr-2myr.py on filename_with_teffULs+LLs 2 
@@ -160,7 +149,7 @@ for idx, modelname in enumerate(models):
     plt.subplot(212)
     plt.plot(teff, loglum, 'x', mfc=linecolor, mec=linecolor)
     plt.plot(newteff, newloglum, linestyle=linestyles[idx], color=linecolor, label = labelname)
-    plt.xlabel(r'T$_\textnormal{eff}$ (K)')
+    plt.xlabel(r'T$_{eff}$ (K)')
     plt.ylabel(r'Log Luminosity (L$_{\odot}$)')
     plt.ylim(-3, 2.5)
     plt.xlim(1500, 10000)

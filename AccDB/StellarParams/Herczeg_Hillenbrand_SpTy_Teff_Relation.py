@@ -3,17 +3,8 @@ import matplotlib.pyplot as plt
 from scipy import optimize
 from scipy import stats
 from scipy.interpolate import UnivariateSpline
-from matplotlib import rcParams
 import sys
 
-rcParams['axes.labelsize'] = 16
-rcParams['xtick.labelsize'] = 16
-rcParams['ytick.labelsize'] = 16
-rcParams['legend.fontsize'] = 16
-rcParams['font.family'] = 'serif'
-rcParams['font.serif'] = ['Times']
-rcParams['text.usetex'] = True
-rcParams['axes.linewidth'] = 2 
 
 # How to run: python Herczeg_Hillenbrand_SpTy_Teff_Relation.py "on"(or "off") listofSpTys_toconvert
 plotcheck = str(sys.argv[1])
@@ -78,7 +69,7 @@ if plotcheck == "on":
     newteff = spl(type_spacing)
     plt.plot(SpTyNum, Teff, 'k.', type_spacing, newteff, 'b-')
     plt.xlabel('Spectral Type')
-    plt.ylabel(r'T$_\textnormal{eff}$ (K)')
+    plt.ylabel(r'T$_{eff}$ (K)')
     plt.xticks(SpTyNum[::3], SpTy[::3])
     plt.xlim(23,60)
     plt.ylim(2000,8000)

@@ -142,14 +142,22 @@ def plot(start_Date,end_Date,objects):
     plt.clf()
     # In[ ]:
 
-def vis(start_Date,end_Date,objects): #Needs fixing
+def vis(start_Date,end_Date,objects,obj_tab): #Needs fixing
 	
 	#This tool is designed for the Magellan Telescope @ Las Camapanas Observatory, in Chile
 	las = Observer.at_site('LCO')
 	#both las and los are the locations of MagAO, but one is used for the plot and the other for the time
 	lco = EarthLocation.of_site('Las Campanas Observatory')
+	
 	userEntered_list = list(objects.split(","))
 	target_list = userEntered_list
+	
+	targets = []
+	for i in range(1, len(obj_tab)):
+		ra=(obj_tab.iloc[i, 2])[1:] + ' hours'
+		dec=(obj_tab.iloc[i, 3])[1:] + ' degrees'
+		print(ra + ',' + dec)
+		targets.append(FixedTarget(coord=SkyCoord(ra=ra, dec=dec), name=target_list[i-1]))
 	
 	constraints = [AltitudeConstraint(10*u.deg, 80*u.deg),
                AirmassConstraint(5), AtNightConstraint.twilight_civil()]
@@ -171,10 +179,10 @@ def vis(start_Date,end_Date,objects): #Needs fixing
 	
 	
 	# Are targets *ever* observable in the time range?
-	ever_observable = is_observable(constraints, las, target_list, time_range=time_range)
+	ever_observable = is_observable(constraints, las, targets, time_range=time_range)
 	
 	# Are targets *always* observable in the time range?
-	always_observable = is_always_observable(constraints, las, target_list, time_range=time_range)
+	always_observable = is_always_observable(constraints, las, targets, time_range=time_range)
 	
 	# During what months are the targets ever observable?
 	best_months = months_observable(constraints, las, target_list)
@@ -183,7 +191,7 @@ def vis(start_Date,end_Date,objects): #Needs fixing
 	# In[ ]:
 	
 	
-	table = observability_table(constraints, las, target_list, time_range=time_range)
+	table = observability_table(constraints, las, targets, time_range=time_range)
 	print(table)
 	
 	table = table.to_pandas()

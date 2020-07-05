@@ -142,7 +142,7 @@ def plot(start_Date,end_Date,objects):
     plt.clf()
     # In[ ]:
 
-def vis(start_Date,end_Date,objects,obj_tab): #Needs fixing
+def vis(start_Date,end_Date,objects,obj_tab):
 	
 	#This tool is designed for the Magellan Telescope @ Las Camapanas Observatory, in Chile
 	las = Observer.at_site('LCO')

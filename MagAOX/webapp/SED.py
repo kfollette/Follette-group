@@ -388,7 +388,7 @@ def gen(objects):
 
 
 		plt.savefig('static/'+target_list[x]+'_sed.png', bbox_inches='tight', pad_inches=0.25)
-
+		plt.clf()
 
 		x += 1	
 		

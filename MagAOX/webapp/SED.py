@@ -392,4 +392,4 @@ def gen(objects):
 
 		x += 1	
 		
-gen('vega,sirius,gq lupi')
+#gen('vega,sirius,gq lupi')

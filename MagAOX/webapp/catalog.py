@@ -66,8 +66,9 @@ def server():
         objects = req.get("Objects")
         mode = req["Mode"]  #change req["mode"] to req.get("Objects")
         offset = request.form["Offset"]
-        end = req.get("end_Date")
-        start = req.get("start_Date")
+        time_frame=getTimeFrame(req.get("Date"))
+        start = time_frame[0]
+        end = time_frame[1]
 
 
         create(objects,mode,offset) #change call(objects,mode,offset) to create(objects,mode,offset)

@@ -7,11 +7,6 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 </head>
 <body>
-  <!-- <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title>MagAOX Online Tool</title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="1894.4"> -->
   <title>MagAOX Online Tool Results</title>
   <style type="text/css">
       h1{
@@ -22,7 +17,7 @@
        }
        .header {
           overflow: hidden;
-          background-color: #f1f1f1;
+          background-color: #3f1f69;
           padding: 20px 10px;
         }
         .header a:hover {
@@ -32,9 +27,9 @@
 
         .header a {
           float: left;
-          color: black;
+          color: white;
           text-align: center;
-          padding: 12px;
+          padding: 12px; /* 12 to 10 */
           text-decoration: none;
           font-size: 18px;
           line-height: 25px;
@@ -52,27 +47,42 @@
         .header-right {
           float: right;
         }
+
   </style>
 <body>
   <div class="header">
-    <a href="https://visao.as.arizona.edu" class="logo">MagAOX</a>
+    <a href="https://www.amherst.edu">
+      <img src="static/Amherst_A_Outlined_WhiteRGB.png" width="40" height="40" class="logo">
+    </a>
+    <a href="http://follettelab.com/">
+      <img src="static/Lab.png" width="40" height="40" class="logo">
+    </a>
+    <a href="https://visao.as.arizona.edu/">
+      <img src="static/X.png" width="40" height="40" class="logo">
+    </a>
+
     <div class="header-right">
-      <a class="active" href="test2.html">Home</a> <!-- change href="#home" to href="test2.html" -->
-      <a href="#contact">Contact</a>
-      <a href="#about">About</a>
+      <a class="active" href="test2.html">
+        Home
+      </a> <!-- change href="#home" to href="test2.html" -->
+      <a href="about">
+        About
+      </a>
+      <a href="resources">
+        Resources
+      </a>
     </div>
   </div>
+
+
 
   <div id="carouselControls" class="carousel slide" data-ride="carousel">
     <div class="carousel-inner">
       <div class="carousel-item active">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Giant_Magellan_Telescope_-_artist%27s_concept.jpg" class="d-block w-100" alt="...">
+        <img src="static/IMG_1.jpg" class="d-block w-100" alt="...">
       </div>
       <div class="carousel-item">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcRYKOMB9q-zc5d-7ycdJKTkG8Stt1k1y-9jWNJy614eVrfIKGfM&usqp=CAU" class="d-block w-100" alt="...">
-      </div>
-      <div class="carousel-item">
-        <img src="..." class="d-block w-100" alt="...">
+        <img src="static/IMG_2.jpg" class="d-block w-100" alt="...">
       </div>
     </div>
     <a class="carousel-control-prev" href="#carouselControls" role="button" data-slide="prev">
@@ -91,52 +101,16 @@
     For more information on Rotator Mode and Offset, please click
     <a href="http://www.lco.cl/telescopes-information/magellan/instruments/observing-catalogs/observing-catalogs-format">here.</a>
   </h2>
-  <!--
 
-  </h1>
-  <h2>
-    Objects (Seperated by Commas)
-    <input name="View" type="text" placeholder="ex. Vega, Sirius, ... HD43691" required>
-  </h2>
-  <h2>
-    Observing Date(YYYY.MM.DD)
-    <input name="Date" type="text" placeholder="ex. 2020.07.19"
-  </h2>
-  <h2>
-    Start Time(HH.MM.SS)
-    <input name="Start" type="text" placeholder="ex. 1:00:00"
-  </h2>
-  <h2>
-    End Time(HH.MM.SS)
-    <input name="End" type="text" placeholder="ex. 3:00:00"
-  </h2>
-  <h2>
-    <label for="Mode">Rotator Mode:</label>
-    <select name="Mode" id="Mode">
-      <option value="Off">Off</option>
-      <option value="EQU">EQU</option>
-      <option value="HRZ">HRZ</option>
-      <option value="GRV">GRV</option>
-    </select>
-  </h2>
-  <h2>
-    Rotator Offset (0.00°-360.00°)
-    <input name="Offset" type="number" step="0.01" min="0.00" max="360.00" value="0.00"
-  </h2>
-  <h2>
-    For more information on Rotator Mode and Offset, please click
-    <a href="http://www.lco.cl/telescopes-information/magellan/instruments/observing-catalogs/observing-catalogs-format">here.</a>
-  </h2>
-  -->
   <h2>
     <form action="/" method="POST"> <!-- changing "action="/initial"" to "action="/"" -->
       <div class="form-group">
         Objects (Seperated by Commas)
         <input class="form-control" name="Objects" type="text" placeholder="ex. Vega, Sirius, ... HD43691" required>
       </div>
-
+<!--
       <div class="form-group">
-        Start Time & Date In Military Time (YYYY-MM-DD HH:MM:SS) <!--maybe have a way to by default have current time the start time -->
+        Start Time & Date In Military Time (YYYY-MM-DD HH:MM:SS)
         <input class="form-control" name="start_Date" type="text" placeholder="ex. 2020-07-19 22:00:00" required>
       </div>
 
@@ -144,7 +118,11 @@
         End Time & Date In Military Time (YYYY-MM-DD HH:MM:SS)
         <input class="form-control" name="end_Date" type="text" placeholder="ex. 2020-07-20 6:00:00" required>
       </div>
-
+-->
+      <div class="form-group">
+        Date (YYYY-MM-DD)
+        <input class="form-control" name="Date" type="date" required>
+      </div>
       <div class="form-group">
         <label for="Mode">Rotator Mode:</label>
         <select name="Mode" name="Mode"> <!-- change id to name -->
@@ -160,7 +138,7 @@
         <input class="form-control" name="Offset" type="number" step="0.01" min="0.00" max="360.00" value="0.00"
       </div>
 
-      <button type="submit" class="btn btn-primary" >Submit</button> <!-- idk if href is necessary -->
+      <button type="submit" class="btn btn-primary" >Submit</button>
     </form>
   </h2>
 

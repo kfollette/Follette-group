@@ -91,9 +91,5 @@ def server():
     else:
         return render_template("test2.html")
 
-@app.route('/test2.html') #if home if spressed, render home template
-def home():
-    return render_template("test2.html")
-
 if __name__ == "__main__":
     app.run()

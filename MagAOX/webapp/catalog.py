@@ -41,6 +41,19 @@ from helper import *
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 #attempts to prevent caching
 
+
+@app.route('/test2.html') #if home if spressed, render home template
+def home():
+    return render_template("test2.html")
+
+@app.route('/about') #if home if spressed, render home template
+def about_page():
+    return render_template("about.html")
+
+@app.route('/resources') #if home if spressed, render home template
+def resources_page():
+    return render_template("resources.html")
+
 #@app.route("/test2", methods=["GET", "POST"])
 @app.route('/', methods=["GET", "POST"])
 def server():

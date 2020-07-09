@@ -56,7 +56,7 @@ from subprocess import *
 from flask import Flask
 from flask import request, redirect, render_template
 
-def plot(start_Date,end_Date,objects):
+def plot(date,objects):
     # In[ ]:
 
     print(objects)
@@ -69,11 +69,9 @@ def plot(start_Date,end_Date,objects):
     # In[ ]:
 
 
-    #start_time = Time('2019-07-18 21:00:00', location = lco)
-    #end_time = Time('2019-07-19 13:00:00', location = lco)
-    start_time = Time(start_Date, location = lco)
-    end_time = Time(end_Date, location = lco)
-    date = str(start_time)[:10] + ' to ' + str(end_time)[:10]
+    start_time = las.sun_set_time(Time(date), which='nearest')
+    end_time = las.sun_rise_time(Time(date), which='nearest')
+    date = start_time.iso[:10] + ' to ' + end_time.iso[:10]
 
 
     # In[ ]:
@@ -142,7 +140,7 @@ def plot(start_Date,end_Date,objects):
     plt.clf()
     # In[ ]:
 
-def vis(start_Date,end_Date,objects,obj_tab):
+def vis(date,objects,obj_tab):
 	
 	#This tool is designed for the Magellan Telescope @ Las Camapanas Observatory, in Chile
 	las = Observer.at_site('LCO')
@@ -162,11 +160,11 @@ def vis(start_Date,end_Date,objects,obj_tab):
 	constraints = [AltitudeConstraint(10*u.deg, 80*u.deg),
                AirmassConstraint(5), AtNightConstraint.twilight_civil()]
 	
-	start_time = Time(start_Date, location = lco)
-	end_time = Time(end_Date, location = lco)
-	date = str(start_time)[:10] + ' to ' + str(end_time)[:10]
+	start_time = las.sun_set_time(Time(date), which='nearest')
+	end_time = las.sun_rise_time(Time(date), which='nearest')
+	date = start_time.iso[:10] + ' to ' + end_time.iso[:10]
 	
-	time_range = Time([start_Date, end_Date])
+	time_range = Time([start_time, end_time])
 	
 	
     # In[ ]:

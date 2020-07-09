@@ -183,5 +183,5 @@ def create(objects,mode,offset):
     # In[ ]:
 
 
-    np.savetxt('catalog.txt', MagCatEntry, fmt="%-15s",
+    np.savetxt('static/catalog.txt', MagCatEntry, fmt="%-15s",
                header='               name           RA              Dec             equinox         RApm            Decpm           offset          rot             RA_probe1       Dec_probe1      equinox_probe1         RA_probe2       Dec_probe2      equinox_probe2         pm_epoch')

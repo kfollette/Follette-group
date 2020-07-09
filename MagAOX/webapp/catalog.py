@@ -73,19 +73,17 @@ def server():
         plot(date,objects)
 
         #img = mpimg.imread('static/airmass.png')
-        with open("catalog.txt", "r") as f:
-            content = f.read()
-        table = txt_to_df('catalog.txt')
+        table = txt_to_df('static/catalog.txt')
         
         print(table)
         
         vis(date,objects,table)
-        visib = txt_to_df('visibility.txt')
+        visib = txt_to_df('static/visibility.txt')
         
         print(visib)
         
         #return render_template("log.html", text=content, IM=img)
-        return render_template("log.html", text=content, t1=table.to_html(index=False), t2=visib.to_html(index=False))
+        return render_template("log.html", t1=table.to_html(index=False), t2=visib.to_html(index=False))
 
     else:
         return render_template("test2.html")

@@ -66,13 +66,11 @@ def server():
         objects = req.get("Objects")
         mode = req["Mode"]  #change req["mode"] to req.get("Objects")
         offset = request.form["Offset"]
-        time_frame=getTimeFrame(req.get("Date"))
-        start = time_frame[0]
-        end = time_frame[1]
+        date = req.get("Date")
 
 
         create(objects,mode,offset) #change call(objects,mode,offset) to create(objects,mode,offset)
-        plot(start,end,objects)
+        plot(date,objects)
 
         #img = mpimg.imread('static/airmass.png')
         with open("catalog.txt", "r") as f:
@@ -81,7 +79,7 @@ def server():
         
         print(table)
         
-        vis(start,end,objects,table)
+        vis(date,objects,table)
         visib = txt_to_df('visibility.txt')
         
         print(visib)

@@ -194,7 +194,7 @@ def vis(date,objects,obj_tab):
 	
 	table = table.to_pandas()
 	
-	np.savetxt('visibility.txt', table, fmt="%-30s", header = 'Target name                  ever observable                always observable              fraction of time observable')
+	np.savetxt('static/visibility.txt', table, fmt="%-30s", header = 'Target name                  ever observable                always observable              fraction of time observable')
 
     #plot_airmass?
 

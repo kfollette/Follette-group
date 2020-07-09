@@ -102,27 +102,35 @@
 	    </div>
 	  </div>
 
-    <h1>
-      <pre>
-         {{ text }}
-      </pre>
-      <!-- TESTING -->
-    </h1>
-    <h2>
-    	<a href="catalog.txt" download>Download File</a>
-    </h2>
+    <h1>Magellan-Formatted Catalog</h1>
     <div class="t1">
     	{{ t1 | safe }}
     </div>
+    <h5>
+    	<a href="{{url_for('static', filename='catalog.txt')}}" download>Download File</a>
+    </h5>
+    
+    <h1>Visibility</h1>
+    
+    <h3><i>Airmass</i></h3>
     <h1>
         <img src="{{url_for('static', filename='airmass.png')}}" alt="Air Mass Plot" width="80%">
     </h1>
-   <div class="t1">
+    <h5>
+    	<a href="{{url_for('static', filename='airmass.png')}}" download>Download Image</a>
+    </h5>
+    <h3><i>Statistics</i></h3>
+      <div class="t1">
     	{{ t2 | safe }}
     </div>
+    <h5>
+    	<a href="{{url_for('static', filename='visibility.txt')}}" download>Download File</a>
+    </h5>
+    
+    <h1>Photometric Data with Spectral Energy Distribution Template</h1>
     {%for i in range(0,len)%}
-	<h1><img src="{{url_for('static', filename=obj_list[i]+'_sed.png')}}" alt="obj_list[i]+' SED'" width="80%"></h1>
-		
+		<h1><img src="{{url_for('static', filename=obj_list[i]+'_sed.png')}}" alt="obj_list[i]+' SED'" width="80%"></h1>
+		<h5><a href="{{url_for('static', filename=obj_list[i]+sed.png')}}" download>Download Image</a></h5>
     {%endfor%}
 
 </body>

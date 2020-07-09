@@ -324,12 +324,9 @@ def gen(objects):
 
 		#First, let's get a dataframe of existing photometric data from Vizier
 		print(vis[x][0])
-		#s = query_sed(vis[x][0].replace(" ", ""))
-		#del s['_ID'], s['_tabname'], s['_RAJ2000'], s['_DEJ2000']
-		s = {'wavelength' : [0,0.355,0.467,0.616,0.747,0.892,1.031,1.248,1.631,0,0,2.201,0,0], 'sed_freq' : [5.490,0,0,0,0,0,0,2.394,1.802,1.413,1.395,1.364,0.798,0.635], 'sed_flux' : [3.68e-8,3.66e-8,5.41e-8,2.5e-8,1.39e-8,8.32e-9,5.71e-9,2.98e-9,1.16e-9,4.57e-10,4.35e-10,3.95e-10,5.31e-11,2.22e-11]}
-		print(str(len(s['wavelength'])) + "," + str(len(s['sed_freq'])) + ',' + str(len(s['sed_flux'])))
-		#s = s.to_pandas()
-		s = pd.DataFrame(s)
+		s = query_sed(vis[x][0].replace(" ", ""))
+		del s['_ID'], s['_tabname'], s['_RAJ2000'], s['_DEJ2000']
+		s = s.to_pandas()
 
 		#Now let us get the spectral template, using first character of spectral type
 		spec = Spectrum1D.read("SDSS DR2 Spectral Templates/" + vis[x][1][0] + "(4).fit", format = "SDSS-I/II spSpec")

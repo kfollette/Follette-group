@@ -73,12 +73,12 @@ def server():
         plot(date,objects)
 
         #img = mpimg.imread('static/airmass.png')
-        table = txt_to_df('static/catalog.txt')
+        table = txt_to_df('static/data/catalog.txt')
         
         print(table)
         
         vis(date,objects,table)
-        visib = txt_to_df('static/visibility.txt')
+        visib = txt_to_df('static/data/visibility.txt')
         
         print(visib)
         

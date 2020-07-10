@@ -107,30 +107,30 @@
     	{{ t1 | safe }}
     </div>
     <h5>
-    	<a href="{{url_for('static', filename='catalog.txt')}}" download>Download File</a>
+    	<a href="{{url_for('static', filename='data/catalog.txt')}}" download>Download File</a>
     </h5>
 	
     <h1>Photometric Data with Spectral Energy Distribution Template</h1>
     {%for i in range(0,len)%}
-		<h1><img src="{{url_for('static', filename=obj_list[i]+'_sed.png')}}" alt="obj_list[i]+' SED'" width="80%"></h1>
-		<h5><a href="{{url_for('static', filename=obj_list[i]+sed.png')}}" download>Download Image</a></h5>
+		<h1><img src="{{url_for('static', filename='data/'+obj_list[i]+'_sed.png')}}" alt="obj_list[i]+' SED'" width="80%"></h1>
+		<h5><a href="{{url_for('static', filename='data/'+obj_list[i]+sed.png')}}" download>Download Image</a></h5>
     {%endfor%}
 	
     <h1>Visibility</h1>
     
     <h3><i>Airmass</i></h3>
     <h1>
-        <img src="{{url_for('static', filename='airmass.png')}}" alt="Air Mass Plot" width="80%">
+        <img src="{{url_for('static', filename='data/airmass.png')}}" alt="Air Mass Plot" width="80%">
     </h1>
     <h5>
-    	<a href="{{url_for('static', filename='airmass.png')}}" download>Download Image</a>
+    	<a href="{{url_for('static', filename='data/airmass.png')}}" download>Download Image</a>
     </h5>
     <h3><i>Statistics</i></h3>
       <div class="t1">
     	{{ t2 | safe }}
     </div>
     <h5>
-    	<a href="{{url_for('static', filename='visibility.txt')}}" download>Download File</a>
+    	<a href="{{url_for('static', filename='data/visibility.txt')}}" download>Download File</a>
     </h5>
     
 

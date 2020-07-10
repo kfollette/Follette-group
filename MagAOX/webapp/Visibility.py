@@ -136,7 +136,7 @@ def plot(date,objects):
     plt.title('Airmass Curve for Night of ' + date)
 
     #os.remove("static/airmass.png") idk if necesarry
-    plt.savefig('static/airmass.png', bbox_inches='tight', pad_inches=0.25)
+    plt.savefig('static/data/airmass.png', bbox_inches='tight', pad_inches=0.25)
     plt.clf()
     # In[ ]:
 
@@ -194,7 +194,7 @@ def vis(date,objects,obj_tab):
 	
 	table = table.to_pandas()
 	
-	np.savetxt('static/visibility.txt', table, fmt="%-30s", header = 'Target name                  ever observable                always observable              fraction of time observable')
+	np.savetxt('static/data/visibility.txt', table, fmt="%-30s", header = 'Target name                  ever observable                always observable              fraction of time observable')
 
     #plot_airmass?
 

@@ -13,10 +13,10 @@ def txt_to_df(filename):
 	li = newList
 	print(li)
 	
-	if filename == 'catalog.txt':
+	if filename == 'static/data/catalog.txt':
 		column = 16
 	
-	if filename == 'visibility.txt':
+	if filename == 'static/data/visibility.txt':
 		column = 4
 	
 	return makeTable(li,column)

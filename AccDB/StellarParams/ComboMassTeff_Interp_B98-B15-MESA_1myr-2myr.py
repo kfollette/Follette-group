@@ -4,19 +4,8 @@ from scipy import optimize
 from scipy import stats
 from scipy.interpolate import LSQUnivariateSpline
 from scipy.interpolate import UnivariateSpline
-from matplotlib import rcParams
 import sys
 import glob
-
-rcParams['axes.labelsize'] = 16
-rcParams['xtick.labelsize'] = 16
-rcParams['ytick.labelsize'] = 16
-rcParams['legend.fontsize'] = 12
-rcParams['font.family'] = 'serif'
-rcParams['font.serif'] = ['Times']
-rcParams['text.usetex'] = True
-rcParams['axes.linewidth'] = 2 
-
 
 
 # How to run: python ComboMassTeff_Interp_B98-B15-MESA_1myr-2myr.py on filename_with_teffULs+LLs 2 
@@ -26,13 +15,13 @@ targets_to_convert = str(sys.argv[2])
 
 ages = str(sys.argv[3])
 
-models = glob.glob('/Users/Kim/Research/ALMA/TaurusContinuumDraft/DustMassCalculations/Baraffe*txt')
-mesamodels = glob.glob('/Users/Kim/Research/ALMA/TaurusContinuumDraft/DustMassCalculations/MESA_*.txt') #format is the same: Mass    Teff    LogLum  Logg    Radius
+models = glob.glob('./Baraffe*txt')
+mesamodels = glob.glob('./MESA_*.txt') #format is the same: Mass    Teff    LogLum  Logg    Radius
 for ii in mesamodels:
     models.append(ii)
 
 
-print models
+print(models)
 
 #targets_to_convert = 'AndrewsClassII_SpectralTypes_DerivedTeff_Results.txt'
 
@@ -97,16 +86,16 @@ for idx, modelname in enumerate(models):
         linecolor = 'green'    
 
     elif modelname == "MESA_1Myr.txt":
-        #spl = LSQUnivariateSpline(teff, mass, [2980, 3101, 3619, 3995, 4257, 4512, 4691, 5183])
-        spl = LSQUnivariateSpline(teff, mass, [3427, 3927, 4088, 4667, 5016, 5316, 5373, 5400, 5589])
+        spl = LSQUnivariateSpline(teff, mass, [2980, 3101, 3619, 3995, 4257, 4512, 4691, 5183])
+        #spl = LSQUnivariateSpline(teff, mass, [3427, 3927, 4088, 4667, 5016, 5316, 5373, 5400, 5589][2:-1])
         spl_mesa = LSQUnivariateSpline(teff, mass, [3427, 3927, 4088, 4667, 5016, 5316, 5373, 5400, 5589])
-        spl_lum = LSQUnivariateSpline(teff, loglum, [3298, 3355, 3462, 4068, 4646, 5219, 6277, 6319, 11738, 11943, 14123, 14281])
-        spl_mesa_lum = LSQUnivariateSpline(teff, loglum, [3298, 3355, 3462, 4068, 4646, 5219, 6277, 6319, 11738, 11943, 14123, 14281])
+        spl_lum = LSQUnivariateSpline(teff, loglum, [3298, 3355, 3462, 4068, 4646, 5219, 6277, 6319])
+        spl_mesa_lum = LSQUnivariateSpline(teff, loglum, [3298, 3355, 3462, 4068, 4646, 5219, 6277, 6319])
         linecolor = 'green'                 
 
     elif modelname == "Baraffe2015_1Myr.txt":    
         #spl = LSQUnivariateSpline(teff, mass, [2864, 2896, 2897, 2898, 2908]) # these are the "knots" around 0.08 Msun, where the model is discontinuous
-        spl = LSQUnivariateSpline(teff, mass, [2864, 2866, 2896, 2897, 2900, 2908])
+        spl = LSQUnivariateSpline(teff, mass, [2864, 2896, 2897, 2898, 2908]) # these are the "knots" around 0.08 Msun, where the model is discontinuous
         spl_b15_1myr = LSQUnivariateSpline(teff, mass, [2864, 2866, 2896, 2897, 2900, 2908])
         spl_lum = LSQUnivariateSpline(teff, loglum, [2599, 2869, 2898, 2902, 2911, 3437])
         spl_b15_lum = LSQUnivariateSpline(teff, loglum, [2599, 2869, 2898, 2902, 2911, 3437])
@@ -135,7 +124,7 @@ for idx, modelname in enumerate(models):
         linecolor = 'r'           
 
     else:
-        print "error!"    
+        print("error!")
 
     DerivedMasses_lim = spl(TargTeff_lim)
 
@@ -150,7 +139,7 @@ for idx, modelname in enumerate(models):
     plt.plot(newteff, newmass, linestyle=linestyles[idx], color=linecolor, label = labelname)
     plt.xlim(1500, 10000)
     plt.ylim(0, 5.0)
-    plt.xlabel(r'T$_\textnormal{eff}$ (K)')
+    plt.xlabel(r'T$_{eff}$ (K)')
     plt.ylabel(r'Mass (M$_{\odot}$)')
     plt.xscale('log')
     plt.yscale('log')
@@ -160,7 +149,7 @@ for idx, modelname in enumerate(models):
     plt.subplot(212)
     plt.plot(teff, loglum, 'x', mfc=linecolor, mec=linecolor)
     plt.plot(newteff, newloglum, linestyle=linestyles[idx], color=linecolor, label = labelname)
-    plt.xlabel(r'T$_\textnormal{eff}$ (K)')
+    plt.xlabel(r'T$_{eff}$ (K)')
     plt.ylabel(r'Log Luminosity (L$_{\odot}$)')
     plt.ylim(-3, 2.5)
     plt.xlim(1500, 10000)
@@ -289,7 +278,7 @@ if ages == "2":
 
     # and write the combination to file:
 
-    to_txt = zip(TargetName_lim_combo, TargSpTy_lim_combo, TargSpTyNum_lim_combo, TargTeff_lim_combo, DerivedMasses_lim_combo, DerivedMasses_minlim_combo, DerivedMasses_maxlim_combo, DerivedMasses_lim_b98_combo, DerivedMasses_minlim_b98_combo, DerivedMasses_maxlim_b98_combo, DerivedLuminosities_lim_combo, DerivedLuminosities_minlim_combo, DerivedLuminosities_maxlim_combo, DerivedLuminosities_lim_b98_combo, DerivedLuminosities_minlim_b98_combo, DerivedLuminosities_maxlim_b98_combo)
+    to_txt = np.c_[(TargetName_lim_combo, TargSpTy_lim_combo, TargSpTyNum_lim_combo, TargTeff_lim_combo, DerivedMasses_lim_combo, DerivedMasses_minlim_combo, DerivedMasses_maxlim_combo, DerivedMasses_lim_b98_combo, DerivedMasses_minlim_b98_combo, DerivedMasses_maxlim_b98_combo, DerivedLuminosities_lim_combo, DerivedLuminosities_minlim_combo, DerivedLuminosities_maxlim_combo, DerivedLuminosities_lim_b98_combo, DerivedLuminosities_minlim_b98_combo, DerivedLuminosities_maxlim_b98_combo)]
 
 
     np.savetxt(targets_to_convert.split('.')[0] + '_DerivedMass_Results_B98+B15+MESA_2Myr.txt', to_txt, delimiter=';', fmt='%s', header = 'Name; SpTy; SpTyNum; Teff; Mstar_b15+mesa; Mstar_ll; Mstar_ul; Mstar_b98+mesa; Mstar_b98_ll; Mstar_b98_ul; LogLstar_b15+mesa; LogLstar_ll; LogLstar_ul; LogLstar_b98+mesa; LogLstar_b98_ll; LogLstar_b98_ul')
@@ -411,7 +400,7 @@ if ages == "1":
 
     # and write the combination to file:
 
-    to_txt = zip(TargetName_lim_combo, TargSpTy_lim_combo, TargSpTyNum_lim_combo, TargTeff_lim_combo, DerivedMasses_lim_combo, DerivedMasses_minlim_combo, DerivedMasses_maxlim_combo, DerivedMasses_lim_b98_combo, DerivedMasses_minlim_b98_combo, DerivedMasses_maxlim_b98_combo, DerivedLuminosities_lim_combo, DerivedLuminosities_minlim_combo, DerivedLuminosities_maxlim_combo, DerivedLuminosities_lim_b98_combo, DerivedLuminosities_minlim_b98_combo, DerivedLuminosities_maxlim_b98_combo)
+    to_txt = np.c_[(TargetName_lim_combo, TargSpTy_lim_combo, TargSpTyNum_lim_combo, TargTeff_lim_combo, DerivedMasses_lim_combo, DerivedMasses_minlim_combo, DerivedMasses_maxlim_combo, DerivedMasses_lim_b98_combo, DerivedMasses_minlim_b98_combo, DerivedMasses_maxlim_b98_combo, DerivedLuminosities_lim_combo, DerivedLuminosities_minlim_combo, DerivedLuminosities_maxlim_combo, DerivedLuminosities_lim_b98_combo, DerivedLuminosities_minlim_b98_combo, DerivedLuminosities_maxlim_b98_combo)]
 
 
     np.savetxt(targets_to_convert.split('.')[0] + '_DerivedMass_Results_B98+B15+MESA_%.0fMyr.txt' % float(ages), to_txt, delimiter=';', fmt='%s', header = 'Name; SpTy; SpTyNum; Teff; Mstar_b15+mesa; Mstar_ll; Mstar_ul; Mstar_b98+mesa; Mstar_b98_ll; Mstar_b98_ul; LogLstar_b15+mesa; LogLstar_ll; LogLstar_ul; LogLstar_b98+mesa; LogLstar_b98_ll; LogLstar_b98_ul')

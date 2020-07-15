@@ -113,7 +113,7 @@
     <h1>Photometric Data with Spectral Energy Distribution Template</h1>
     {%for i in range(0,len)%}
 		<h1><img src="{{url_for('static', filename='data/'+obj_list[i]+'_sed.png')}}" alt="obj_list[i]+' SED'" width="80%"></h1>
-		<h5><a href="{{url_for('static', filename='data/'+obj_list[i]+'sed.png')}}" download>Download Image</a></h5>
+		<h5><a href="{{url_for('static', filename='data/'+obj_list[i]+'_sed.png')}}" download>Download Image</a></h5>
     {%endfor%}
 	
     <h1>Visibility</h1>

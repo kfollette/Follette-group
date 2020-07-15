@@ -71,6 +71,7 @@ def server():
 
         create(objects,mode,offset) #change call(objects,mode,offset) to create(objects,mode,offset)
         plot(date,objects)
+        gen(objects)
 
         #img = mpimg.imread('static/airmass.png')
         table = txt_to_df('static/data/catalog.txt')

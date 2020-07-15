@@ -82,8 +82,9 @@ def server():
         
         print(visib)
         
+        obj_list=list(objects.split(","))
         #return render_template("log.html", text=content, IM=img)
-        return render_template("log.html", t1=table.to_html(index=False), t2=visib.to_html(index=False))
+        return render_template("log.html", t1=table.to_html(index=False), t2=visib.to_html(index=False), obj_list=obj_list, len=len(obj_list))
 
     else:
         return render_template("test2.html")

@@ -36,6 +36,7 @@ from flask import Flask
 from flask import request, redirect, render_template
 from call import create #change import call to "from call.py import create"
 from Visibility import plot, vis
+from SED import gen
 from helper import *
 
 app = Flask(__name__)

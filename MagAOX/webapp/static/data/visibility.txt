@@ -1,0 +1,4 @@
+# Target name                  ever observable                always observable              fraction of time observable
+Vega                           True                           False                          0.2631578947368421            
+sirius                         True                           False                          0.02631578947368421           
+gq lupi                        True                           False                          0.3157894736842105            

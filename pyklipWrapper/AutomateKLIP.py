@@ -11,6 +11,12 @@
 # 4) cleaned up file reading and writing to use fits.getdata and fits.getheader rather than hdulist stuff
 # 5) added comments, removed redundancies
 
+#Kate Follette
+#Version 2.1 - 6/2/20
+#Various Modifications
+# 1) PE input values come now from SNRMap output for self-consistency
+# 2) Removing skipping of annuli values that put planets close to zone boundary. Make this an optional keyword in the future
+
 ##################################################################
 #############                                        #############
 #############                 IMPORTS                #############
@@ -296,7 +302,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
     dr = float(owa-iwa)/a
     #creates list of zone radii
     all_bounds = [dr*rad+iwa for rad in range(a+1)]
-    print('annuli bounds are', all_bounds)
+    #print('annuli bounds are', all_bounds)
     numAnn = a
     
     if(singleAnn):
@@ -312,98 +318,98 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
         dataset.OWA = upBound
 
     #check to see if any planets fall very close to a zone boundary 
-    if (len( [b for b in all_bounds for r in ra if(b <= r+FWHM/2 and b >= r-FWHM/2)] ) == 0):
+    #if (len( [b for b in all_bounds for r in ra if(b <= r+FWHM/2 and b >= r-FWHM/2)] ) == 0):
 
-        #keeps track of number of movement values that have been tested, used for indexing
-        mcount = 0
+    #keeps track of number of movement values that have been tested, used for indexing
+    mcount = 0
 
-        for m in np.arange(movement_start, movement_stop+1, movement_inc):
+    for m in np.arange(movement_start, movement_stop+1, movement_inc):
 
-            scount = 0
+        scount = 0
 
-            for s in range(subsections_start, subsections_stop+1, subsections_inc):
+        for s in range(subsections_start, subsections_stop+1, subsections_inc):
                 
-                if(singleAnn):
-                    print("Parameters: movement = %s; subections = %d" %(m,s))
-                    print("Running for %d annuli, equivalent to single annulus of width %s pixels" %(annuli_start+acount, dr))
-                else:
-                    print("Parameters: annuli = %d; movement = %s; subections = %d" %(a, m,s))
+            if(singleAnn):
+                print("Parameters: movement = %s; subections = %d" %(m,s))
+                print("Running for %d annuli, equivalent to single annulus of width %s pixels" %(annuli_start+acount, dr))
+            else:
+                print("Parameters: annuli = %d; movement = %s; subections = %d" %(a, m,s))
 
                 #creates cube to hold snr maps 
                 #snrMapCube = np.zeros((2,len(klmodes),yDim,xDim))
 
-                runKLIP = True
+            runKLIP = True
 
-                if (os.path.isfile(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + suff + '_klmodes-all.fits')):
-                    print("match")
-                    incube = fits.getdata(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + suff + '_klmodes-all.fits')
-                    head = fits.getheader(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + suff + '_klmodes-all.fits')
-                    klmodes2 = head['KLMODES'][1:-1]
-                    klmodes2 = list(map(int, klmodes2.split(",")))
-                    print(klmodes, klmodes2)
+            if (os.path.isfile(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + suff + '_klmodes-all.fits')):
+                print("match")
+                incube = fits.getdata(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + suff + '_klmodes-all.fits')
+                head = fits.getheader(str(pathToFiles) + "_klip/med_" + outputFileName + "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) + suff + '_klmodes-all.fits')
+                klmodes2 = head['KLMODES'][1:-1]
+                klmodes2 = list(map(int, klmodes2.split(",")))
 
-                    if (len([k for k in klmodes if not k in klmodes2]) == 0):
-                        print("Found KLIP processed images for same parameters saved to disk. Reading in data.")
-                        #don't re-run KLIP
-                        runKLIP = False
+                if (len([k for k in klmodes if not k in klmodes2]) == 0):
+                    print("Found KLIP processed images for same parameters saved to disk. Reading in data.")
+                    #don't re-run KLIP
+                    runKLIP = False
 
-                if (runKLIP):
-                    print("Starting KLIP")
-                    #run klip for given parameters
-                    parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"),
-                                              fileprefix=outputFileName, annuli=numAnn, subsections=s, movement=m,
-                                              numbasis=klmodes, calibrate_flux=True, mode="ADI", highpass = highpass, time_collapse='median')
+            if (runKLIP):
+                print("Starting KLIP")
+                #run klip for given parameters
+                parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, 
+                    annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, 
+                    mode="ADI", highpass = highpass, time_collapse='median')
 
-                    #collapse in time dimension
-                    incube = np.nanmedian(dataset.output, axis=1)
-                    #truncates wavelength dimension, which we don't use
-                    incube = incube[:,0,:,:]
-                    #print('check: input image shape goes from', dataset.output.shape, 'to', incube.shape)
+                #collapse in time dimension
+                incube = np.nanmedian(dataset.output, axis=1)
+                #truncates wavelength dimension, which we don't use
+                incube = incube[:,0,:,:]
+                #print('check: input image shape goes from', dataset.output.shape, 'to', incube.shape)
 
-                #list of noise calculation methods
-                methods = ['stddev', 'med']
+            #list of noise calculation methods
+            methods = ['stddev', 'med']
 
                 # makes SNR map
-                snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(incube, FWHM, smooth=_smooth, planets=mask, saveOutput=False)
-                print(snrspurious.shape)
+            snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(incube, FWHM, smooth=_smooth, planets=mask, saveOutput=False)
+                #print(snrmaps.shape,peaksnr.shape,snrsums.shape,snrspurious.shape,PECube.shape)
 
                 #klmode index
-                kcount = 0
+                #kcount = 0
                 # iterates over kl modes
-                for k in klmodes:
-                    for methodctr in np.arange(2):
+                #for k in klmodes:
+                    #for methodctr in np.arange(2):
                         #loops over planets specified and returns their SNRs
-                        planetSNRs = [snr.getPlanet_peak(snrmaps[methodctr,kcount,:,:], ra[x], pa[x], int(FWHM / 2) + 1) for x in range(len(ra))]
+                     #   planetSNRs = [snr.getPlanet_peak(snrmaps[methodctr,kcount,:,:], ra[x], pa[x], int(FWHM / 2) + 1) for x in range(len(ra))]
                         #print("planet SNRs are", planetSNRs, 'for', methods[methodctr])
-                        planetSNR = np.nanmean(planetSNRs)
+                      #  planetSNR = np.nanmedian(planetSNRs)
+                       # print(planetSNR)
                         #print("average planet SNR is", planetSNR, 'for', methods[methodctr])
 
-                        #adds peak values from getPlanet_peak to PE cube
-                        PECube[methodctr,scount,kcount,acount,mcount] = planetSNR
-                    kcount+=1
+                        #adds peak values from getPlanet_peak to PE cube first two slices of PE cube
+                       # PECube[methodctr,scount,kcount,acount,mcount] = planetSNR
+                    #kcount+=1
                     # adds sums under mask from snr.create_map to PE cube
-                    PECube[2:4, scount, :, acount, mcount] = snrsums
-                    PECube[4:6, scount, :, acount, mcount] = snrspurious[:,:,0]
-                    PECube[6:8, scount, :, acount, mcount] = snrspurious[:,:,1]
+            PECube[0:2, scount, :, acount, mcount] = np.nanmedian(peaksnr, axis=2)
+            PECube[2:4, scount, :, acount, mcount] = np.nanmedian(snrsums, axis=2)
+            PECube[4:6, scount, :, acount, mcount] = snrspurious[:,:,0]
+            PECube[6:8, scount, :, acount, mcount] = snrspurious[:,:,1]
 
-                if(runKLIP) and np.median(planetSNR)>3:
-                    #write median combination cube to disk 
-                    print("Writing median image combinations to " + pathToFiles + "_klip/")
-                    writeData(incube, hdr, pre = 'med_')
+            if(runKLIP) and np.nanmedian(peaksnr)>3:
+                #write median combination cube to disk 
+                print("Median peak SNR > 3. Writing median image combinations to " + pathToFiles + "_klip/")
+                writeData(incube, hdr, pre = 'med_')
 
-                if (saveSNR) and np.median(planetSNR)>3:
+                if (saveSNR):
                     print("Writing SNR maps to " + pathToFiles + "_klip/")
                     writeData(snrmaps, hdr, snrmap = True, pre = 'snrmap_')
-                print()
 
-                scount+=1
-            mcount+=1
+            scount+=1
+        mcount+=1
 
-    else: 
-        print("Planet near annulus boundary; skipping KLIP for annuli = " + str(a))
-        print()
+    #else: 
+     #   print("Planet near annulus boundary; skipping KLIP for annuli = " + str(a))
+     #   print()
         #assign a unique value as a flag for these cases in the parameter explorer map
-        PECube[:,:,:,acount,:] = -1000
+     #   PECube[:,:,:,acount,:] = -1000
                 
     acount+=1
 

@@ -1,0 +1,12 @@
+Name	SimpleSpTy	SpTyIdentifer
+ISO-Oph 023	M7	57
+ISO-Oph 032	M6.5	56.5
+ISO-Oph 033	M8	58
+ISO-Oph 082	M2.5	52.5
+ISO-Oph 094	M1.5	51.5
+ISO-Oph 158	M2	52
+ISO-Oph 160	M7.5	57.5
+ISO-Oph 165	M2.5	52.5
+
+
+

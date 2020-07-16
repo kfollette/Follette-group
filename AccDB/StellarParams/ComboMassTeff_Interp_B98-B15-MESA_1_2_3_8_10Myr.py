@@ -62,6 +62,9 @@ elif ages == "1":
 elif ages == "3":
     linestyles = ['-', '--', '-.']
     models = ['Baraffe1998_1Myr.txt', 'Baraffe2015_3Myr.txt', 'MESA_1Myr.txt']
+elif ages == "8":
+    linestyles = ['-', '--', '-.']
+    models = ['Baraffe1998_1Myr.txt', 'Baraffe2015_8Myr.txt', 'MESA_1Myr.txt']
 elif ages == "10":
     linestyles = ['-', '--', '-.']
     models = ['Baraffe1998_1Myr.txt', 'Baraffe2015_10Myr.txt', 'MESA_1Myr.txt']
@@ -139,6 +142,13 @@ for idx, modelname in enumerate(models):
         spl_lum = LSQUnivariateSpline(teff, loglum, [2458, 2714, 2913, 2974, 3231])
         spl_b15_lum = LSQUnivariateSpline(teff, loglum, [2458, 2714, 2913, 2974, 3231])
         linecolor = 'beige'
+    
+    elif modelname == "Baraffe2015_8Myr.txt":
+        spl = LSQUnivariateSpline(teff, mass, [2575,2660,2899,2900,2956,3481]) # these are the "knots" around 0.08 Msun, where the model is discontinuous
+        spl_b15_8myr = LSQUnivariateSpline(teff, mass, [2275,2660,2899,2900,2956,3481]) 
+        spl_lum = LSQUnivariateSpline(teff, loglum, [2458, 2714, 2913, 2974, 3231])
+        spl_b15_lum = LSQUnivariateSpline(teff, loglum, [2458, 2714, 2913, 2974, 3231])
+        linecolor = 'orange'
         
     elif modelname == "Baraffe2015_10Myr.txt":
         spl = LSQUnivariateSpline(teff, mass, [2222,2520,2960,2977,2997,3001,3035]) # these are the "knots" around 0.08 Msun, where the model is discontinuous
@@ -593,6 +603,125 @@ if ages == "3":
     DerivedMasses_lim = spl_b15_3myr(TargTeff_lim) # for the values
     DerivedMasses_maxlim = spl_b15_3myr(TargTeff_maxlim) # for the upper limit (earlier spty - hotter)
     DerivedMasses_minlim = spl_b15_3myr(TargTeff_minlim) # for the lower limit (later spty - cooler)
+
+    DerivedLuminosities_lim = spl_b15_lum(TargTeff_lim)
+    DerivedLuminosities_maxlim = spl_b15_lum(TargTeff_maxlim)
+    DerivedLuminosities_minlim = spl_b15_lum(TargTeff_minlim)
+
+
+    '''
+    WARNING: NOT TO BE TRUSTED!
+    # Then Baraffe 1998 only!'''
+    #Apply interpolation for all values within the Baraffe models (older)
+
+    DerivedMasses_lim_b98 = spl_b98_1myr(TargTeff_lim) # for the values 
+    DerivedMasses_maxlim_b98 = spl_b98_1myr(TargTeff_maxlim) # for the upper limit (earlier spty - hotter)
+    DerivedMasses_minlim_b98 = spl_b98_1myr(TargTeff_minlim) # for the lower limit (later spty - cooler)
+
+    DerivedLuminosities_lim_b98 = spl_b98_lum(TargTeff_lim)
+    DerivedLuminosities_maxlim_b98 = spl_b98_lum(TargTeff_maxlim)
+    DerivedLuminosities_minlim_b98 = spl_b98_lum(TargTeff_minlim)
+
+
+    '''
+    WARNING: NOT TO BE TRUSTED!
+    # Then MESA only!'''
+
+    #Apply interpolation for higher mass targets:
+    TargTeff_lim_mesa = TargTeff[np.where(TargTeff > 4211.)]
+
+    TargTeff_maxlim_mesa = TargTeff_max[np.where(TargTeff > 4211.)]
+
+    TargTeff_minlim_mesa = TargTeff_min[np.where(TargTeff > 4211.)]
+
+    # And match the target name, etc, arrays to correspond to these values:
+    TargetName_lim_mesa = TargetName[np.where(TargTeff > 4211.)]
+    TargSpTy_lim_mesa = TargSpTy[np.where(TargTeff > 4211.)]
+    TargSpTyNum_lim_mesa = TargSpTyNum[np.where(TargTeff > 4211.)]
+
+    DerivedMasses_lim_mesa = spl_mesa(TargTeff_lim_mesa) # for the values
+    DerivedMasses_maxlim_mesa = spl_mesa(TargTeff_maxlim_mesa) # for the upper limit (earlier spty - hotter)
+    DerivedMasses_minlim_mesa = spl_mesa(TargTeff_minlim_mesa) # for the lower limit (later spty - cooler)
+
+    DerivedLuminosities_lim_mesa = spl_mesa_lum(TargTeff_lim_mesa) # for the values
+    DerivedLuminosities_maxlim_mesa = spl_mesa_lum(TargTeff_maxlim_mesa) # for the upper limit (earlier spty - hotter)
+    DerivedLuminosities_minlim_mesa = spl_mesa_lum(TargTeff_minlim_mesa) # for the lower limit (later spty - cooler)
+
+
+    '''# combine everything to write to output file'''
+
+    TargetName_lim_combo = np.concatenate([TargetName_lim, TargetName_lim_mesa])
+    TargSpTy_lim_combo = np.concatenate([TargSpTy_lim, TargSpTy_lim_mesa])
+    TargSpTyNum_lim_combo = np.concatenate([TargSpTyNum_lim,TargSpTyNum_lim_mesa])
+    TargTeff_lim_combo = np.concatenate([TargTeff_lim, TargTeff_lim_mesa])
+    DerivedMasses_lim_combo = np.concatenate([DerivedMasses_lim, DerivedMasses_lim_mesa])
+    DerivedMasses_minlim_combo = np.concatenate([DerivedMasses_minlim, DerivedMasses_minlim_mesa])
+    DerivedMasses_maxlim_combo = np.concatenate([DerivedMasses_maxlim, DerivedMasses_maxlim_mesa])
+
+    DerivedMasses_lim_b98_combo = np.concatenate([DerivedMasses_lim_b98, DerivedMasses_lim_mesa])
+    DerivedMasses_minlim_b98_combo = np.concatenate([DerivedMasses_minlim_b98, DerivedMasses_minlim_mesa])
+    DerivedMasses_maxlim_b98_combo = np.concatenate([DerivedMasses_maxlim_b98, DerivedMasses_maxlim_mesa])
+
+    DerivedLuminosities_lim_combo = np.concatenate([DerivedLuminosities_lim, DerivedLuminosities_lim_mesa])
+    DerivedLuminosities_minlim_combo = np.concatenate([DerivedLuminosities_minlim, DerivedLuminosities_minlim_mesa])
+    DerivedLuminosities_maxlim_combo = np.concatenate([DerivedLuminosities_maxlim, DerivedLuminosities_maxlim_mesa])
+
+    DerivedLuminosities_lim_b98_combo = np.concatenate([DerivedLuminosities_lim_b98, DerivedLuminosities_lim_mesa])
+    DerivedLuminosities_minlim_b98_combo = np.concatenate([DerivedLuminosities_minlim_b98, DerivedLuminosities_minlim_mesa])
+    DerivedLuminosities_maxlim_b98_combo = np.concatenate([DerivedLuminosities_maxlim_b98, DerivedLuminosities_maxlim_mesa])
+
+
+    # and write the combination to file:
+
+    to_txt = np.c_[(TargetName_lim_combo, TargSpTy_lim_combo, TargSpTyNum_lim_combo, TargTeff_lim_combo, DerivedMasses_lim_combo, DerivedMasses_minlim_combo, DerivedMasses_maxlim_combo, DerivedMasses_lim_b98_combo, DerivedMasses_minlim_b98_combo, DerivedMasses_maxlim_b98_combo, DerivedLuminosities_lim_combo, DerivedLuminosities_minlim_combo, DerivedLuminosities_maxlim_combo, DerivedLuminosities_lim_b98_combo, DerivedLuminosities_minlim_b98_combo, DerivedLuminosities_maxlim_b98_combo)]
+
+
+    np.savetxt(targets_to_convert.split('.')[0] + '_DerivedMass_Results_B98+B15+MESA_%.0fMyr.txt' % float(ages), to_txt, delimiter=';', fmt='%s', header = 'Name; SpTy; SpTyNum; Teff; Mstar_b15+mesa; Mstar_ll; Mstar_ul; Mstar_b98+mesa; Mstar_b98_ll; Mstar_b98_ul; LogLstar_b15+mesa; LogLstar_ll; LogLstar_ul; LogLstar_b98+mesa; LogLstar_b98_ll; LogLstar_b98_ul')
+
+'''
+# Assuming we want to look at the 8 Myr models:
+'''
+
+if ages == "8":
+    # Now write the new Baraffe+1998/2015 1-myr models and MESA 1-myr models to a new output file for central object mass:
+
+
+    ##########
+    # Unpack the target file, which is an output from Luhman2003-KenyonHartmann_SpTy_Teff_relation.py
+    # That output file should be in the following form:
+    # Target SpTy NumericalSpTy Teff
+    ##########
+
+    TargetName, TargSpTy, TargSpTyNum, TargTeff, TargTeff_earlylim, TargTeff_latelim = np.genfromtxt(targets_to_convert, delimiter=';', dtype='str').T
+
+    TargetName_lim_combo, TargSpTy_lim_combo, TargSpTyNum_lim_combo, TargTeff_lim_combo, DerivedMasses_lim_combo, DerivedMasses_minlim_combo, DerivedMasses_maxlim_combo = [],[],[],[],[],[],[]
+
+    # Make the Teff and its min and max values into an array of floats
+    TargTeff = [float(x) for x in TargTeff]
+    TargTeff = np.array(TargTeff)
+
+    TargTeff_max = [float(x) for x in TargTeff_earlylim] # assuming earlier spectral types have larger Teffs...
+    TargTeff_max = np.array(TargTeff_max)
+
+    TargTeff_min = [float(x) for x in TargTeff_latelim] # assuming later spectral types have smaller Teffs...
+    TargTeff_min = np.array(TargTeff_min)
+
+    '''# First Baraffe 2015 only!'''
+    #Apply interpolation for all values within the Baraffe models 
+    TargTeff_lim = TargTeff[np.where(TargTeff < 4211.)]
+
+    TargTeff_maxlim = TargTeff_max[np.where(TargTeff < 4211.)]
+
+    TargTeff_minlim = TargTeff_min[np.where(TargTeff < 4211.)]
+
+    # And match the target name, etc, arrays to correspond to these values:
+    TargetName_lim = TargetName[np.where(TargTeff < 4211.)]
+    TargSpTy_lim = TargSpTy[np.where(TargTeff < 4211.)]
+    TargSpTyNum_lim = TargSpTyNum[np.where(TargTeff < 4211.)]
+
+    DerivedMasses_lim = spl_b15_8myr(TargTeff_lim) # for the values
+    DerivedMasses_maxlim = spl_b15_8myr(TargTeff_maxlim) # for the upper limit (earlier spty - hotter)
+    DerivedMasses_minlim = spl_b15_8myr(TargTeff_minlim) # for the lower limit (later spty - cooler)
 
     DerivedLuminosities_lim = spl_b15_lum(TargTeff_lim)
     DerivedLuminosities_maxlim = spl_b15_lum(TargTeff_maxlim)

@@ -34,7 +34,8 @@ def create(objects,mode,offset):
 
     customSimbad = Simbad()
 
-    target_list = []
+    target_list = [] #list of resolvable target names
+    non_resolvable = [] #list of non-resolvable target names
 
     x = 0
 
@@ -45,6 +46,7 @@ def create(objects,mode,offset):
             print('\033[1m' + 'ERROR: The star [ '
                   + userEntered_list[x] + ' ] was not resolvable in Simbad. Please check the spelling of the name.')
             print('\033[0m')
+            non_resolvable.append(userEntered_list[x])
 
         if type(star) != type(None):
             target_list.append(userEntered_list[x])
@@ -185,3 +187,5 @@ def create(objects,mode,offset):
 
     np.savetxt('static/data/catalog.txt', MagCatEntry, fmt="%-15s",
                header='               name           RA              Dec             equinox         RApm            Decpm           offset          rot             RA_probe1       Dec_probe1      equinox_probe1         RA_probe2       Dec_probe2      equinox_probe2         pm_epoch')
+    return non_resolvable #returns list of non_resolvable names to main script
+    

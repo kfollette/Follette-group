@@ -301,7 +301,7 @@ def noisemap(indiv, planets, fwhm, method='stdev'):
 
 
 
-def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveOutput = True, outputName = None, method = 'all', checkmask=False, makenoisemap=False):
+def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveOutput = True, ctrlrad=30, outputName = None, method = 'all', checkmask=False, makenoisemap=False):
     """
     creates signal to noise ratio map of image.
     
@@ -335,7 +335,8 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
 
     #checks data type of 'filename'
     # if 'filename' is a string, assumes it is a filepath and reads in file
-    if(isinstance(filename, str)):
+    if filename[-5:] == '.fits':
+        print("found fits file", filename)
         inp, head = read_file(filename)
         
     #if data type is not a string, reads in python object holding data
@@ -343,10 +344,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
         inp = np.copy(filename)
         if head == None:
             head = fits.Header()
-            head['KLMODES'] = str(list(np.arange(inp.shape[0])))
-
-    klmodes = head['KLMODES'][1:-1]
-    klmodes = list(map(int, klmodes.split(",")))
+            head['NKLMODES'] = str(inp.shape[0])
 
     #smooth input image by specified amount
     if smooth > 0:
@@ -413,7 +411,8 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
 
         #creates dictionary holding the noise value at each radius for this method
             NoiseMap = noisemap(indiv, planets, fwhm, method=method)
-
+            fivesig = 0
+            fivesig_atmask=0
 
             # loops through all pixels in array
             for x in range (xdim):
@@ -441,8 +440,6 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                     #BEGIN PLANET STUFF
                     #if known or injected planets are present, mask them and measure their SNRs
                     if planets != False:
-                        fivesig = 0
-                        fivesig_atmask=0
 
                         #returns whether this location has a planet and, if so, which planet in the list
                         isplanetpix, iscorepix, p = isPlanet(radius, angle, planets)
@@ -465,13 +462,14 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                                     npospix[methodctr][s][p]+=1
 
                         #count up how many pixels OUTSIDE the mask have >5 sigma values
-                        if not (isPlanet(radius, angle, planets)):
+                        if not isplanetpix:
                             if indiv[x][y] > 5:
                                 fivesig+=1
 
-                        #count up how many pixels OUTSIDE the mask AND at the same radius have >5 sigma values
-                        if (radius<rads[0]+wid[0]) and (radius>rads[0]-wid[0]):
-                            if not (isPlanet(radius, angle, planets)):
+                        #count up how many pixels OUTSIDE the mask AND inside the control radius have >5 sigma values
+                        if (radius>fwhm) and (radius<ctrlrad):
+                            
+                            if not isplanetpix:
                                 if indiv[x][y] > 5:
                                     fivesig_atmask += 1
 
@@ -493,10 +491,10 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                 #print("max SNR under mask is", snrs[methodctr,s], "for slice", s)
                 #print("sum of SNRs under mask is", snr_sums[methodctr,s], "for slice", s)
                     max_toprint = [round(n,5) for n in snrs[methodctr,s]]
-                    head["MX"+method[0:2]+'_'+str(klmodes[s])]= str(max_toprint)
+                    head["MX"+method[0:2]+'_'+'KL'+str(s)]= str(max_toprint)
                     sums_toprint = [round(n,1) for n in snr_sums[methodctr,s]]
-                    head["SM"+method[0:2]+'_'+str(klmodes[s])]= str(sums_toprint)
-                    head["EX" + method[0:2] + '_' + str(klmodes[s])] = str(snr_spurious[methodctr,s,:])
+                    head["SM"+method[0:2]+'_'+'KL'+str(s)]= str(sums_toprint)
+                    head["EX" + method[0:2] + '_' + 'KL'+str(s)] = str(snr_spurious[methodctr,s,:])
 
         methodctr += 1
 

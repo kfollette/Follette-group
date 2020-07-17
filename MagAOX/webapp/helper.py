@@ -1,15 +1,16 @@
 import pandas as pd
 
 def txt_to_df(filename):
+	#read .txt file as a string
 	cat = open(filename,'r')
 	str = cat.read()
 	
-	li = list(str.replace('\n', '  ').split('  '))
-	#newList = [li[0], li[1]]
+	#divide string into list of each of the table's boxes' content
+	li = list(str.replace('\n', '  ').split('  ')) #use a double space as the separator (some data points have single spaces in them)
 	newList = []
 	for i in range(len(li)):
 		if not li[i] == '':
-			newList.append(li[i])
+			newList.append(li[i]) #discard any blank strings created by above code
 	li = newList
 	print(li)
 	
@@ -21,7 +22,7 @@ def txt_to_df(filename):
 	
 	return makeTable(li,column)
 	
-def makeTable(li,n):	
+def makeTable(li,n): #convert list of strings into a dictionary, then convert dictionary into dataframe	
 	dict = {}
 	for i in range(0, n):
 		dict[li[i]] = []
@@ -37,7 +38,7 @@ def makeTable(li,n):
 	table = pd.DataFrame(dict)
 	return table
 
-def getTimeFrame(date): # get starting time and end time for observations on a given day
+def getTimeFrame(date): # get starting time and end time for observations on a given day (unused as of current version)
 	#separate date string into year, mont, day (as ints)
 	ymd = date.split('-')
 	li = []

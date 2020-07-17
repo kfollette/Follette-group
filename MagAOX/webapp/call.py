@@ -166,7 +166,7 @@ def create(objects,mode,offset):
     y = 0
     for i in target_list:
         MagCatEntry.at[x, '#'] = '{0:03}'.format(x)
-        MagCatEntry.at[x, ' '] = targets[y][0].decode('utf-8')
+        MagCatEntry.at[x, ' '] = targets[y][0].decode('utf-8').replace('  ', ' ')
         MagCatEntry.at[x, 'RA'] = targets[y][1]
         MagCatEntry.at[x, 'Dec'] = targets[y][2]
         MagCatEntry.at[x, 'equinox'] = equinox

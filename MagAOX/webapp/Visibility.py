@@ -183,7 +183,7 @@ def vis(date,objects,obj_tab):
 	always_observable = is_always_observable(constraints, las, targets, time_range=time_range)
 	
 	# During what months are the targets ever observable?
-	best_months = months_observable(constraints, las, target_list)
+	best_months = months_observable(constraints, las, targets)
 	
 	
 	# In[ ]:

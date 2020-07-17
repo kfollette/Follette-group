@@ -36,6 +36,7 @@ from flask import Flask
 from flask import request, redirect, render_template
 from call import create #change import call to "from call.py import create"
 from Visibility import plot, vis
+from SED import gen
 from helper import *
 
 app = Flask(__name__)
@@ -46,11 +47,11 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 #attempts to prevent caching
 def home():
     return render_template("test2.html")
 
-@app.route('/about') #if home if spressed, render home template
+@app.route('/about') #"about us" page
 def about_page():
     return render_template("about.html")
 
-@app.route('/resources') #if home if spressed, render home template
+@app.route('/resources') #resources page
 def resources_page():
     return render_template("resources.html")
 
@@ -63,27 +64,27 @@ def server():
         req = request.form
 
 
-        objects = req.get("Objects")
-        mode = req["Mode"]  #change req["mode"] to req.get("Objects")
+        objects = req.get("Objects") #get list of objects from 
+        mode = req["Mode"]
         offset = request.form["Offset"]
         date = req.get("Date")
 
 
-        create(objects,mode,offset) #change call(objects,mode,offset) to create(objects,mode,offset)
-        plot(date,objects)
+        create(objects,mode,offset) #create catalog.txt
+        plot(date,objects) #create airmass.png
+        gen(objects) #create a SED plot for each object (<object_name>_sed.png)
 
-        #img = mpimg.imread('static/airmass.png')
-        table = txt_to_df('static/data/catalog.txt')
+        table = txt_to_df('static/data/catalog.txt') #generate a Pandas DataFrame from the table in catalog.txt
         
         print(table)
         
-        vis(date,objects,table)
-        visib = txt_to_df('static/data/visibility.txt')
+        vis(date,objects,table) #create visibility.txt
+        visib = txt_to_df('static/data/visibility.txt') #generate a Pandas DataFrame from the table in visibility.txt
         
         print(visib)
         
-        #return render_template("log.html", text=content, IM=img)
-        return render_template("log.html", t1=table.to_html(index=False), t2=visib.to_html(index=False))
+        obj_list=list(objects.split(","))
+        return render_template("log.html", t1=table.to_html(index=False), t2=visib.to_html(index=False), obj_list=obj_list, len=len(obj_list))
 
     else:
         return render_template("test2.html")

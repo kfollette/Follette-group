@@ -70,7 +70,13 @@ def server():
         date = req.get("Date")
 
 
-        create(objects,mode,offset) #create catalog.txt
+        non_resolvable = create(objects,mode,offset) #create catalog.txt and return list of names not resolvable by Simbad
+        #remove non-resolvable names from objects
+        for i in non_resolvable:
+                objects = objects.replace(i,"").replace(",,", ",")
+        if objects[0] == ',':
+                objects = objects[1:]
+        
         plot(date,objects) #create airmass.png
         gen(objects) #create a SED plot for each object (<object_name>_sed.png)
 
@@ -84,7 +90,7 @@ def server():
         print(visib)
         
         obj_list=list(objects.split(","))
-        return render_template("log.html", t1=table.to_html(index=False), t2=visib.to_html(index=False), obj_list=obj_list, len=len(obj_list))
+        return render_template("log.html", t1=table.to_html(index=False), t2=visib.to_html(index=False), obj_list=obj_list, len=len(obj_list), nr=non_resolvable, len_nr=len(non_resolvable))
 
     else:
         return render_template("test2.html")

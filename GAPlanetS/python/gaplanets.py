@@ -1372,7 +1372,7 @@ def find_best_new(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.
     avgkl_stdevSNR, stdevkl_stdevSNR = collapsekl(pedir, pename, kllist, snrmeth='stdev', writestr=writestr)
     # stdevkl[stdevkl < 0.01] = np.nan
 
-    #print(avgkl_absmedSNR[0,:,:].shape)
+    #print(avgkl_stdevSNR[:,:,:].shape)
 
     #finds location of peak
     maxind_absmedSNR = np.where(avgkl_absmedSNR[0,:,:] == np.nanmax(avgkl_absmedSNR[0,:,:]))
@@ -1453,11 +1453,11 @@ def find_best_new(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.
     spurpix_norm_avg = (spurpix_norm_absmedSNR + spurpix_norm_stdevSNR) / 2.
 
     #computes neighbor quality by smoothing with Gaussian
-    kern = conv.Gaussian2DKernel(stddev=2)
-    nq_snr = conv.convolve(snr_norm_avg, kern, preserve_nan=True, boundary='extend')
-    nq_stdev = conv.convolve(stdev_norm_avg, kern, preserve_nan = True, boundary='extend')
-    nq_snr_umask = conv.convolve(snr_norm_avg_umask, kern, preserve_nan=True, boundary='extend')
-    nq_stdev_umask = conv.convolve(stdev_norm_avg_umask, kern, preserve_nan = True, boundary='extend')
+    kern = conv.Gaussian2DKernel(x_stddev=2)
+    nq_snr = conv.convolve(snr_norm_avg, kern, preserve_nan=True, nan_treatment='interpolate')
+    nq_stdev = conv.convolve(stdev_norm_avg, kern, preserve_nan = True, nan_treatment='interpolate')
+    nq_snr_umask = conv.convolve(snr_norm_avg_umask, kern, preserve_nan=True, nan_treatment='interpolate')
+    nq_stdev_umask = conv.convolve(stdev_norm_avg_umask, kern, preserve_nan = True, nan_treatment='interpolate')
 
     #normalizes neighbor quality
     nq_snr /= np.nanmax(nq_snr)
@@ -1520,7 +1520,8 @@ def find_best_new(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.
     ann_val = ymin + ind[0] * ystep
     movm_val = xmin + ind[1] * xstep
 
-    print(ind, avgkl_absmedSNR[0][ind])
+    #print("ind", ind, avgkl_absmedSNR[0][ind])
+
     avgSNR = avgkl_absmedSNR[0][ind] + avgkl_absmedSNR[1][ind]  + avgkl_stdevSNR[0][ind] + avgkl_stdevSNR[1][ind] 
     avgSNR /= 4
 

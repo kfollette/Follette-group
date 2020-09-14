@@ -1881,7 +1881,7 @@ def indivobj_fig(lineim, contim, sdiim, prefix, IWA=0, outputdir='final_ims/', s
     high = int(cen + stampsz / 2 + 1)
 
     if smooth != 0:
-        gauss = conv.Gaussian2DKernel(stddev=smooth)
+        gauss = conv.Gaussian2DKernel(x_stddev=smooth)
         lineim = conv.convolve(lineim, gauss, preserve_nan=True)
         contim = conv.convolve(contim, gauss, preserve_nan=True)
         sdiim = conv.convolve(sdiim, gauss, preserve_nan=True)

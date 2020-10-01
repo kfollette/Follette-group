@@ -102,6 +102,19 @@
 	    </div>
 	  </div>
 
+<<<<<<< HEAD
+=======
+    {%if len_nr != 0%}
+	<h3>The following objects were not resolvable by Simbad:
+	<ul>
+		{%for i in range(0,len_nr)%}
+		<li>{{nr[i]}}</li>
+		{%endfor%}
+	</ul>
+	</h3>
+    {%endif%}
+	
+>>>>>>> 7505f87630859e40d0fca89b5ed7d5897cc9bdd2
     <h1>Magellan-Formatted Catalog</h1>
     <div class="t1">
     	{{ t1 | safe }}

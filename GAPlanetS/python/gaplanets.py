@@ -224,7 +224,7 @@ def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_fl
             pykh.addstarpeak(outdir, debug=debug, mask=True)
 
         # record relevant quantities for this data cut to dataframe
-        datalist = pd.DataFrame([[data_str, wl, pctcuts[j], new_nims, cuts[j], np.nanmedian(goodfwhm),
+        datalist = pd.DataFrame([[data_str[:-1], wl, pctcuts[j], new_nims, cuts[j], np.nanmedian(goodfwhm),
                                   rotrange]], columns=['Dataset', 'wl', 'pctcut', 'nims', 'minpeak', 'medfwhm','rotrange'])
         df = df.append(datalist)
         j += 1
@@ -291,8 +291,8 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
     # if directory doesn't already exist, create it
     if os.path.exists(outputdir) == False:
-        print(outputdir, 'already exists')
-        os.mkdir(outputdir)
+        print(outputdir, 'doesn\'t exist yet')
+        os.makedirs(outputdir)
     prefix = make_prefix(data_str, wl, cut)
 
     ###load data
@@ -346,7 +346,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     dataset_copy = np.copy(dataset.input)
     imsz = dataset.input.shape[1]
 
-    thrpts = np.zeros((iterations, len(thrpt_seps)))
+    thrpts = np.zeros((len(KLlist), iterations, len(thrpt_seps)))
 
     prefix_fakes = prefix +'_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
 
@@ -357,12 +357,24 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     calcthrpt=True
     
     if os.path.exists(tpt_fname):
-        print("throughput file", tpt_fname, "already exists. reading in values.")
+        print("throughput file", tpt_fname, "already exists.")
         calcthrpt=False
         thrpt_cube = fits.getdata(tpt_fname)
-        thrpt_seps = thrpt_cube[0]
-        thrpt_avgs = thrpt_cube[1]
-        thrpts = thrpt_cube[2:]
+
+        #check whether KL modes same
+        thrpt_header = fits.getheader(tpt_fname)
+        file_kl = list(map(int, thrpt_header['KLMODES'].split(","))) 
+        
+        if file_kl == KLlist:
+            print("KLmodes match. reading in values.")
+            #seps are same for all KL modes. Just pull from first.
+            thrpt_seps = thrpt_cube[0,0,:]
+            thrpt_avgs = thrpt_cube[:,1,:]
+            thrpts = thrpt_cube[:,2:,:]
+        else: 
+            print("but KL mdoes don't match.")
+            print("KL modes are", file_kl, "for file and", KLlist, "in function call")
+            calcthrpt = True
 
     # full sequence of planet injection, recovery and throughput calculation as many times as the iterations keyword, with
     # starting planet locations clocked by 75 degrees each cycle
@@ -371,14 +383,27 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         theta=75.*iter
         
         #make prefixes for output files
-        pfx=prefix_fakes + '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + '_set' + str(iter+1)
+        pfx=prefix_fakes + '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + '_set' + str(iter+1) 
 
         #check whether fake files or throughputs with these parameters have already been calculated
         runfakes=True
 
         if os.path.exists(outputdir+pfx+'-KLmodes-all.fits'):
             print("file with prefix", pfx, "already exists")
-            runfakes=False
+            #check whether KL modes same
+            fakes_header = fits.getheader(outputdir+pfx+'-KLmodes-all.fits')
+            #pyklip writes out each KL mode value to separate keyword
+            kls = fakes_header["KLMODE*"]
+            #make a list and populate it with KL mode values
+            fake_kls = []
+            for i in np.arange(len(kls)):
+                fake_kls.append(fakes_header["KLMODE"+str(i)])
+            if fake_kls == KLlist:
+                print('and KL modes match')
+                runfakes=False
+            else:
+                print('but KL modes don\'t match. Regenerating.')
+                runfakes = True
 
         #special case where pipeline broke in between the two steps - needs whole cube in memory to do throughput calc.
         if runfakes == False and calcthrpt == True:
@@ -416,126 +441,153 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
                                       highpass=True, save_aligned=False, time_collapse='median')
 
         # reset initial theta for recovery loop
-        theta = 75.*iter
+        inittheta = 75.*iter
 
         # create a list that will store throughputs for this iteration
-        thrpt_list = []
+        thrpt_list = np.zeros((len(KLlist),len(thrpt_seps)))
 
-        # loop counter
-        i = 0
 
         #calculate a few fixed quantities
         annspacing = (imsz / 2. - IWA) / numann
-        zone_boundaries = np.arange(1, numann) * annspacing + IWA
+        zone_boundaries_p = np.arange(1, numann) * annspacing + IWA
+        zone_boundaries = [int(bdry) for bdry in zone_boundaries_p]
 
         if calcthrpt==True:
 
             nimages = dataset.output.shape[1]
             fake_fluxes = np.zeros((n_planets, nimages))
 
+            #klloop
+            klctr=0
+            for KL in KLlist:
+
             #planet recovery loop
-            for sep in thrpt_seps:
-                # thetas for retrieve planet call are measured from +x axis, so should always add 90 to pa for thetas keyword
-                # dataset shape is [KL modes, n images, 1(wl dim), xdim, ydim]
-                fake_flux = fakes.retrieve_planet_flux(dataset.output[0, :, 0, :, :], dataset.centers, dataset.wcs, sep, theta,
-                                                       searchrad=8, guessfwhm=fwhm,
-                                                       guesspeak=contrast * np.median(dataset.star_flux),
-                                                       thetas=np.repeat(theta + 90, dataset.output.shape[1]), refinefit=True)
-                fake_fluxes[i,:] = fake_flux
-                newthpt = np.nanmedian(fake_flux / (contrast))
-                if (newthpt > 1) or (newthpt < 0):
-                    print('invalid throughput value of', newthpt, 'for planet at separation', sep, '. Replacing with NaN')
-                    newthpt = np.nan
-               
-                #check for bad value - throughput should increase with distance. decrease suggests inner point may not have been a true recovery
-                if len(thrpt_list) > 1:
-                    if newthpt < thrpt_list[-1]:
-                        if abs(newthpt - thrpt_list[-1]) > 0.1:
-                            print('suspicious trend in throughput. Value at', sep, 'is', newthpt, 'but was', thrpt_list[-1], 'in previous iteration.')
-                            #if planet is within 10 pixels of zone boundary, relax the requirement that the trend has to be upward
-                            if len(zone_boundaries) > 0:
-                                if min(abs(zone_boundaries - sep)) < 10:
-                                    print(min(abs(zone_boundaries - sep)), 'pixels from zone boundary. Keeping.')
-                                else:
-                                    print('planet is', min(abs(zone_boundaries - sep)), 'pixels from nearest zone boundary. Setting to NaN.')
-                                    newthpt=np.nan
 
-                thrpt_list.append(newthpt)
+                plctr=0
+                theta=inittheta
+                for sep in thrpt_seps:
+
+                    # thetas for retrieve planet call are measured from +x axis, so should always add 90 to pa for thetas keyword
+                    # dataset shape is [KL modes, n images, 1(wl dim), xdim, ydim]
+                    fake_flux = fakes.retrieve_planet_flux(dataset.output[klctr, :, 0, :, :], dataset.centers, dataset.wcs, sep, theta,
+                                                           searchrad=8, guessfwhm=fwhm,
+                                                           guesspeak=contrast * np.median(dataset.star_flux),
+                                                           thetas=np.repeat(theta + 90, dataset.output.shape[1]), refinefit=True)
+                    #record fake flux for this planet for each image in cube
+                    fake_fluxes[plctr,:] = fake_flux
+                    #translate to throughput (images come out in contrast units)
+                    newthpt = np.nanmedian(fake_flux) / (contrast)
+                    if (newthpt > 1) or (newthpt < 0):
+                        print('invalid throughput value of', newthpt, 'for planet at separation', sep, '. Replacing with NaN')
+                        newthpt = np.nan
+                   
+                    #check for bad value - throughput should increase with distance. decrease suggests inner point may not have been a true recovery
+                    if len(thrpt_list) > 1:
+                        if newthpt < thrpt_list[klctr,-1]:
+                            if abs(newthpt - thrpt_list[klctr,-1]) > 0.1:
+                                print('suspicious trend in throughput. Value at', sep, 'is', newthpt, 'but was', thrpt_list[klctr,-1], 'in previous iteration.')
+                                #if planet is within 10 pixels of zone boundary, relax the requirement that the trend has to be upward
+                                if len(zone_boundaries) > 0:
+                                    if min(abs(zone_boundaries - sep)) < 10:
+                                        print(min(abs(zone_boundaries - sep)), 'pixels from zone boundary. Keeping.')
+                                    else:
+                                        print('planet is', min(abs(zone_boundaries - sep)), 'pixels from nearest zone boundary. Setting to NaN.')
+                                        newthpt=np.nan
+
+                    thrpt_list[klctr,plctr]=newthpt
+                    
+                    #if debug == True:
+                        #print("fake planet at ", sep, " pixels has a mean throughput of", np.nanmean(fake_flux / (contrast)),
+                          #"median of", np.nanmedian(fake_flux / (contrast)), " and stdev of ",
+                          #np.nanstd(fake_flux / (contrast)))
+                    theta += clockang
+                    plctr += 1
+
+                thrpts[klctr,iter,:] = thrpt_list[klctr,:]
                 
-                #if debug == True:
-                    #print("fake planet at ", sep, " pixels has a mean throughput of", np.nanmean(fake_flux / (contrast)),
-                      #"median of", np.nanmedian(fake_flux / (contrast)), " and stdev of ",
-                      #np.nanstd(fake_flux / (contrast)))
-                theta += clockang
-                i += 1
-            thrpts[iter, :] = thrpt_list
+                if debug==True:
+                    print('throughputs for iteration', iter, 'KL mode', KL, 'are', thrpt_list[klctr,:])
+                klctr += 1
+                #print('check: dataset output dims are', dataset.output.shape)
 
-    thrpt_avgs=np.nanmean(thrpts,axis=0)
+    #reset KL mode counter
+    klctr=0
+    thrpt_avgs = np.zeros((len(KLlist),len(thrpt_seps)))
 
-    #up to 10 iterations. will break if do more. 
-    cx = ['rx','gx','yx','cx','mx','rs','gs','ys','cs','ms']
-    #if on last iteration, make plot and save
-    ctrl_rad = get_control_rad() 
+    for KL in KLlist:
+        #average iterations
+        thrpt_avgs[klctr,:]=np.nanmean(thrpts[klctr,:,:],axis=0)
 
-    if (savefig == True) and (iter==iterations-1):
-        #plot the individual points
-        plt.figure(figsize=(10, 5), dpi=750)
-        for iter in np.arange(iterations):
-            plt.plot(thrpt_seps, thrpts[iter,:], cx[iter], label="set"+str(iter+1))
-        # plot the throughput averages (should all be <1 and should increase outward until they hit a zone boundary)
-        plt.plot(thrpt_seps, thrpt_avgs, 'bo', label="average")
-        plt.plot((IWA, IWA),(0,1),'k-', label="IWA")
-        plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
+        #up to 10 iterations. will break if do more. 
+        cx = ['rx','gx','yx','cx','mx','rs','gs','ys','cs','ms']
+        #if on last iteration, make plot and save
+        ctrl_rad = get_control_rad() 
 
-        for bd in zone_boundaries:
-            if bd == zone_boundaries[0]:
-                plt.plot((bd, bd), (0, 1), '--',color='grey',label='zone boundary')
-            else:
-                plt.plot((bd, bd), (0, 1), '--', color='grey',)
-        plt.xlabel("separation in pixels")
-        plt.ylabel("throughput")
-        plt.title(dataset_prefix+" Throughput")
-        plt.legend()
-        plt.savefig(outputdir + dataset_prefix + '_throughput.jpg')
-        plt.show()
-        plt.clf()
+        if (savefig == True):
+            #plot the individual points
+            plt.figure(figsize=(10, 5), dpi=750)
+            for iter in np.arange(iterations):
+                plt.plot(thrpt_seps, thrpts[klctr,iter,:], cx[iter], label="set"+str(iter+1))
+            # plot the throughput averages (should all be <1 and should increase outward until they hit a zone boundary)
+            plt.plot(thrpt_seps, thrpt_avgs[klctr,:], 'bo', label="average")
+            plt.plot((IWA, IWA),(0,1),'k-', label="IWA")
+            plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
 
-    # locations to record throughputs in table
-    platescale = 0.0078513
+            for bd in zone_boundaries:
+                if bd == zone_boundaries[0]:
+                    plt.plot((bd, bd), (0, 1), '--',color='grey',label='zone boundary')
+                else:
+                    plt.plot((bd, bd), (0, 1), '--', color='grey',)
+            plt.xlabel("separation in pixels")
+            plt.ylabel("throughput")
+            plt.title(dataset_prefix+ ' KL '+str(KL)+ " Throughput")
+            plt.legend()
+            plt.savefig(outputdir + dataset_prefix + '_KL'+str(KL)+ '_throughput.jpg')
+            plt.show()
+            plt.clf()
 
-    # blank array to store interpolated throughputs
-    thrpt_table_vals = []
-    # loop through locations, find throughput and record
-    for loc in record_seps:
-        # interpolate over throughputs to find value at loc
-        if loc < dataset.input.shape[1]/2*platescale:
-            tpt = np.interp(loc / platescale, thrpt_seps, thrpt_avgs)
-        else:
-            tpt = np.nan
-        thrpt_table_vals.append(tpt)
-        # if df keyword is set, records in dataframe.
-        if len(df) > 1:
-            colname = "tpt_" + str(loc)
-            # if column doesn't already exist, create and fill with nans
-            if colname not in df:
-                df[colname] = np.nan
-                print("creating column", colname)
-            df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = tpt
+            # locations to record throughputs in table
+            platescale = 0.0078513
 
-    thrpt_out=np.zeros((2+iterations, len(thrpt_seps)))
-    thrpt_out[0]=thrpt_seps
-    thrpt_out[1]=thrpt_avgs
-    thrpt_out[2:]=thrpts
+            # blank array to store interpolated throughputs
+            thrpt_table_vals = []
+            # loop through locations, find throughput and record
+            for loc in record_seps:
+                # interpolate over throughputs to find value at loc
+                if loc < dataset.input.shape[1]/2*platescale:
+                    tpt = np.interp(loc / platescale, thrpt_seps, thrpt_avgs[klctr,:])
+                else:
+                    tpt = np.nan
+                thrpt_table_vals.append(tpt)
+                # if df keyword is set, records in dataframe.
+                if len(df) > 1:
+                    colname = "tpt_" + str(loc)+'_KL'+str(KL)
+                    # if column doesn't already exist, create and fill with nans
+                    if colname not in df:
+                        df[colname] = np.nan
+                        print("creating column", colname)
+                    df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = tpt
+            klctr+=1
+
+    thrpt_out=np.zeros((len(KLlist), 2+iterations, len(thrpt_seps)))
+    thrpt_out[:,0,:]=thrpt_seps
+    thrpt_out[:,1,:]=thrpt_avgs
+    thrpt_out[:,2:,:]=thrpts
 
     head["NPLANET"]=n_planets
     head["CTRST"]=contrast
     head["ITERS"]=iterations
     head["PASTART"]=0
     head["CLOCKANG"]=clockang
+    head["KLMODES"]=str(KLlist)[1:-1]
+    head["NUMANN"]=numann
+    head["MOVM"]=movm
+    head["IWA"]=IWA
+    head["ZONEBDRY"]=str(zone_boundaries)[1:-1]
     head["ROW1"]="separations (pix)"
     head["ROW2"]="average throughput"
     head["OTHROWS"]="individual throughputs"
-        
+                
     fits.writeto(tpt_fname, thrpt_out, header=head, overwrite=True)
 
     df.to_csv(cuts_dfname, index=False)
@@ -576,7 +628,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
     #read in or make data frame
     df = get_cuts_df(cuts_dfname)
 
-    iterations = len(thrpt_out[:,0])-2
+    iterations = len(thrpt_out[0,:,0])-2
     platescale = 0.0078513
 
     # set up directories and naming
@@ -585,14 +637,14 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
         os.makedirs(outputdir)
 
     #pull throughput info 
-    thrpt_seps = thrpt_out[0]
-    thrpt_avgs = thrpt_out[1]
-    thrpts = thrpt_out[2:]
+    thrpt_seps = thrpt_out[0,0,:]
+    thrpt_avgs = thrpt_out[:,1,:]
+    thrpts = thrpt_out[:,2:,:]
 
     if os.path.exists(outputdir+dataset_prefix+'-KLmodes-all.fits'):
-        print('KLIPed image without fakes already exists for these parameters')
         klcube = fits.getdata(outputdir+dataset_prefix+'-KLmodes-all.fits')
         klheader = fits.getheader(outputdir+dataset_prefix+'-KLmodes-all.fits')
+        print('KLIPed image without fakes already exists for these parameters')
 
     else:
         # specify directory and read in data again. This time we will NOT inject fakes
@@ -628,7 +680,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
 
     #raw contrast is independent of fake injection so simpler name string
     rawc_prefix = make_prefix(data_str, wl, cut)
-    rawc_prefix += '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA)
+    rawc_prefix += '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA)+ '_KL'+str(KLlist[0]) 
 
     #set OWA
     klim = klcube[0, :, :]
@@ -646,100 +698,116 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
     #if not, generate raw contrast and write out as .jpg and .fits
     else:
         dataset_center = [klheader['PSFCENTX'], klheader['PSFCENTY']]
-        contrast_seps, contrast = klip.meas_contrast(klim, IWA, OWA, dataset_fwhm,
+        
+        klctr=0
+        
+        #loop over KL modes
+        for KL in KLlist:
+
+            contrast_seps, contrast = klip.meas_contrast(klcube[klctr,:,:], IWA, OWA, dataset_fwhm,
                                                      center=dataset_center, low_pass_filter=False)
+            if klctr == 0:
+                contrast_out=np.zeros((len(KLlist), 3+iterations, len(contrast_seps)))
+            
+            contrast_out[klctr,0,:]=contrast_seps
+            contrast_out[klctr,1,:]=contrast
 
-    ctrl_rad = get_control_rad()
-    ctrl_rad = ctrl_rad * platescale
+            ctrl_rad = get_control_rad()
+            ctrl_rad = ctrl_rad * platescale
 
-    if savefig == True:
-        plt.figure(figsize=(10, 5), dpi=750)
-        imsz = klim.shape[1]
-        annspacing = (imsz / 2. - IWA) / numann
-        zone_boundaries = np.arange(1, numann) * annspacing + IWA
-        plt.plot(contrast_seps * platescale, contrast)
-        plt.plot(contrast_seps * platescale, contrast, 'bo')
-        plt.yscale("log")
-        plt.ylim(np.nanmin(contrast), 1e-1)
-        plt.xlim(0, platescale * OWA)
-        plt.xlabel("distance in arcseconds")
-        plt.ylabel("contrast")
-        if IWA > 0:
-            plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
-        plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
-        for bd in zone_boundaries * platescale:
-            if bd < OWA * platescale:
-                if bd == zone_boundaries[0]*platescale:
-                    plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
-                else:
-                    plt.plot((bd, bd), (0, 1), '--', color='grey')
-        plt.legend()
-        plt.title(rawc_prefix+" Raw Contrast")
-        plt.savefig(outputdir + rawc_prefix + '_rawcontrast.jpg')
-        plt.show()
-        plt.clf()  # clear figure
+            if savefig == True:
 
-        contrast_out=np.zeros((2, len(contrast_seps)))
-        contrast_out[0,:]=contrast_seps
-        contrast_out[1,:]=contrast
-        fits.writeto(outputdir+rawc_prefix+'_rawcontrast.fits', contrast_out, overwrite=True)
+                plt.figure(figsize=(10, 5), dpi=750)
+                imsz = klim.shape[1]
+                annspacing = (imsz / 2. - IWA) / numann
+                zone_boundaries = np.arange(1, numann) * annspacing + IWA
+                plt.plot(contrast_seps * platescale, contrast)
+                plt.plot(contrast_seps * platescale, contrast, 'bo')
+                plt.yscale("log")
+                plt.ylim(np.nanmin(contrast), 1e-1)
+                plt.xlim(0, platescale * OWA)
+                plt.xlabel("distance in arcseconds")
+                plt.ylabel("contrast")
+                if IWA > 0:
+                    plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
+                plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
+                for bd in zone_boundaries * platescale:
+                    if bd < OWA * platescale:
+                        if bd == zone_boundaries[0]*platescale:
+                            plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
+                        else:
+                            plt.plot((bd, bd), (0, 1), '--', color='grey')
+                plt.legend()
+                plt.title(rawc_prefix+" KL"+str(KL)+ " Raw Contrast")
+                plt.savefig(outputdir + rawc_prefix + "_KL"+str(KL)+ '_rawcontrast.jpg')
+                plt.show()
+                plt.clf()  # clear figure
+
 
     ## corrected contrast figure
-    corrected_contrast_curve = np.copy(contrast)
+            corrected_contrast_curve = np.copy(contrast)
+            interp_thrpts = []
 
-    interp_thrpts = []
+            #interpolate average throughputs at the same separations as the contrasts
+            for i, sep in enumerate(contrast_seps):
+                thrpt_interp = np.interp(sep, thrpt_seps, thrpt_avgs[klctr,:])
+                if debug == True:
+                    closest_throughput_index = np.argmin(np.abs(thrpt_seps - sep))
+                    print('for separation', sep, " closest throughput is at separation ", thrpt_seps[closest_throughput_index])
+                    print('interpolated throughput is', thrpt_interp, 'for separation', sep)
+                corrected_contrast_curve[i] /= thrpt_interp
+                interp_thrpts.append(thrpt_interp)
 
-    for i, sep in enumerate(contrast_seps):
-        thrpt_interp = np.interp(sep, thrpt_seps, thrpt_avgs)
-        if debug == True:
-            closest_throughput_index = np.argmin(np.abs(thrpt_seps - sep))
-            print('for separation', sep, " closest throughput is at separation ", thrpt_seps[closest_throughput_index])
-            print('interpolated throughput is', thrpt_interp, 'for separation', sep)
-        corrected_contrast_curve[i] /= thrpt_interp
-        interp_thrpts.append(thrpt_interp)
+            ctrsts = np.zeros((iterations, len(contrast_seps)))
+            #compute contrast curves independently for each set of throughputs (use for range)
+            for iter in np.arange(iterations):
+                thrpts_thisset = np.interp(contrast_seps, thrpt_seps, thrpts[klctr,iter,:])
+                ctrst_thisset = contrast/thrpts_thisset
+                ctrsts[iter,:]=ctrst_thisset
 
-    ctrsts = np.zeros((iterations, len(contrast_seps)))
-    #compute contrast curves independently for each set of throughputs (use for range)
-    for iter in np.arange(iterations):
-        thrpts_thisset = np.interp(contrast_seps, thrpt_seps, thrpts[iter,:])
-        ctrst_thisset = contrast/thrpts_thisset
-        ctrsts[iter,:]=ctrst_thisset
+            if debug==True:
+                #check throughput interpolations
+                plt.plot(contrast_seps, interp_thrpts, 'k-', label="interpolated")
+                plt.plot(thrpt_seps, thrpt_avgs[klctr,:], 'r--', label = "measured")
+                plt.title("checking interpolated throughputs")
+                plt.legend()
+                plt.show()
+                plt.clf()
 
-    if debug==True:
-        #check throughput interpolations
-        plt.plot(contrast_seps, interp_thrpts, 'k-', label="interpolated")
-        plt.plot(thrpt_seps, thrpt_avgs, 'r--', label = "measured")
-        plt.legend()
-        plt.show()
-        plt.clf()
+            if savefig == True:
+                plt.figure(figsize=(10, 5), dpi=750)
+                cx = ['r-','g-','y-','c-','m-','r:','g:','y:','c:','m:']
+                #plot the individual points
+                for iter in np.arange(iterations):
+                    thrpts_thisset = np.interp(contrast_seps, thrpt_seps, thrpts[klctr,iter,:])
+                    plt.plot(contrast_seps * platescale, contrast/thrpts_thisset, cx[iter], label="set"+str(iter+1))
+                plt.plot(contrast_seps * platescale, corrected_contrast_curve, label='average 5$\sigma$ contrast')
+                plt.plot(contrast_seps * platescale, contrast, label='raw 5$\sigma$ contrast', color='gray')
+                plt.yscale("log")
+                plt.ylim(np.nanmin(contrast), 1e-1)
+                plt.xlabel("distance in arcseconds")
+                plt.ylabel("contrast")
+                if IWA > 0:
+                    plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
+                plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
+                for bd in zone_boundaries * platescale:
+                    if bd < OWA * platescale:
+                        if bd == zone_boundaries[0]*platescale:
+                            plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
+                        else:
+                            plt.plot((bd, bd), (0, 1), '--', color='grey')
+                plt.legend()
+                plt.title(dataset_prefix + " KL"+str(KL)+" Corrected Contrast")
+                plt.savefig(outputdir + dataset_prefix + "_KL"+str(KL)+ '_contrastcurve.jpg')
+                plt.show()
+                plt.clf()  # clear figure
 
-    if savefig == True:
-        plt.figure(figsize=(10, 5), dpi=750)
-        cx = ['r-','g-','y-','c-','m-','r:','g:','y:','c:','m:']
-        #plot the individual points
-        for iter in np.arange(iterations):
-            thrpts_thisset = np.interp(contrast_seps, thrpt_seps, thrpts[iter,:])
-            plt.plot(contrast_seps * platescale, contrast/thrpts_thisset, cx[iter], label="set"+str(iter+1))
-        plt.plot(contrast_seps * platescale, corrected_contrast_curve, label='average 5$\sigma$ contrast')
-        plt.plot(contrast_seps * platescale, contrast, label='raw 5$\sigma$ contrast', color='gray')
-        plt.yscale("log")
-        plt.ylim(np.nanmin(contrast), 1e-1)
-        plt.xlabel("distance in arcseconds")
-        plt.ylabel("contrast")
-        if IWA > 0:
-            plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
-        plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
-        for bd in zone_boundaries * platescale:
-            if bd < OWA * platescale:
-                if bd == zone_boundaries[0]*platescale:
-                    plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
-                else:
-                    plt.plot((bd, bd), (0, 1), '--', color='grey')
-        plt.legend()
-        plt.title(dataset_prefix + " Corrected Contrast")
-        plt.savefig(outputdir + dataset_prefix + '_contrastcurve.jpg')
-        plt.show()
-        plt.clf()  # clear figure
+                contrast_out[klctr,2,:]=corrected_contrast_curve
+                contrast_out[klctr,3:,:]=ctrsts
+            klctr+=1
+
+    fits.writeto(outputdir + dataset_prefix +  '_contrasts.fits', contrast_out, overwrite=True)
+    
 
     # locations to record throughputs in table
     # ctrst_table_loc = np.array(record_seps)/platescale
@@ -760,16 +828,8 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
             df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = contrast
 
     df.to_csv(cuts_dfname, index=False)
-    
-    contrast_out=np.zeros((2+iterations, len(contrast_seps)))
-    contrast_out[0]=contrast_seps
-    contrast_out[1]=corrected_contrast_curve
-    contrast_out[2:]=ctrsts
 
-    fits.writeto(outputdir + dataset_prefix +  '_contrast.fits', contrast_out, overwrite=True)
-
-
-    return (contrast_seps, corrected_contrast_curve, ctrsts, df, OWA)
+    return (contrast_out, df, OWA)
 
 def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                    contrast=1e-2, numann=3, movm=4, KLlist=[10], IWA=0, savefig=False, ghost=False, cuts_dfname="dq_cuts/cuts.csv", debug=False,
@@ -795,13 +855,16 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
     IWA = inner working angle
 
     written by Kate Follette June 2019
+    NOTE NOT COMPATIBLE WITH MULTIPLE KL MODES AT PRESENT
     """
     #read in or make data frame
     df = get_cuts_df(cuts_dfname)
 
     fakestr = '_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
-    klipstr =  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA)
+    klipstr =  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) #+'_KL'+str(KLlist[0])
     outstr = fakestr + klipstr
+
+    i=0
 
     ##loop through data quality cuts
     for cut in pctcuts:
@@ -813,8 +876,8 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
         if os.path.exists(outputdir + namestr + '_throughputs.fits'):
             print ('found existing throughput file', outputdir + namestr + '_throughputs.fits')
             thrpt_out = fits.getdata(outputdir + namestr + '_throughputs.fits')
-            #thrpt_seps = thrpt_out[0,:]
-            #thrpt_list = thrpt_out[1,:]
+            head = fits.getheader(outputdir + namestr + '_throughputs.fits')
+            zone_boundaries = list(map(int, head['ZONEBDRY'].split(",")))
 
         else:
             print('computing throughputs for', cut, 'pct cut')
@@ -829,13 +892,11 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
 
         if os.path.exists(outputdir + prefix +  klipstr + '_contrast.fits'):
             print ('found existing contrast curve', outputdir + prefix +  klipstr + '_contrast.fits')
-            curve = fits.getdata(outputdir + prefix +  klipstr + '_contrast.fits')
-            contrast_seps = curve[0,:]
-            corrected_curve = curve[1,:]
+            ctrsts = fits.getdata(outputdir + prefix +  klipstr + '_contrast.fits')
 
         else:
             print('computing contrasts for', cut, 'pct cut')
-            contrast_seps, corrected_curve, ctrsts, df, OWA = make_contrast_curve(data_str, wl, cut,
+            ctrsts, df, OWA = make_contrast_curve(data_str, wl, cut,
                                                                  thrpt_out, namestr, record_seps=record_seps,
                                                                  savefig=savefig, outputdir=outputdir,
                                                                  ##KLIP parameters
@@ -843,21 +904,25 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
                                                                  cuts_dfname=cuts_dfname, debug=debug)
 
         # compile contrasts for all cuts into array
+        contrast_seps = ctrsts[0,0,:]
+        #note assumes here just one kl mode in slice with index 0
         if cut == 0:
             # create a blank array to store contrast curves
-            contrasts = np.zeros([len(pctcuts), len(corrected_curve)])
-            contrasts[0, :] = corrected_curve
-            i = 0
-        else:
-            contrasts[i, :] = corrected_curve
+            contrasts = np.zeros([len(pctcuts), len(KLlist), len(ctrsts[0,2,:])])
+        
+        klctr=0
+        for kl in KLlist:
+            #pull only throughput corrected average curve (slide 2 in ctrsts)
+            contrasts[i,klctr,:] = ctrsts[klctr,2,:]
+            klctr+=1
 
         # loop counter
         i += 1
 
-    return (contrast_seps, contrasts, zone_boundaries, IWA, df, OWA, outstr)
+    return (contrast_seps, contrasts, zone_boundaries, IWA, df, OWA, KLlist, outstr)
 
 
-def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, outstr, outputdir = 'dq_cuts/contrastcurves/', OWA=225, IWA=0,
+def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLlist, outstr, outputdir = 'dq_cuts/contrastcurves/', OWA=225, IWA=0,
                     pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90]):
     """
     PURPOSE
@@ -879,6 +944,7 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, out
 
     written by Kate Follette June 2019
     """
+    
     platescale = 0.0078513
     ctrl_rad = get_control_rad()
     ctrl_rad*=platescale
@@ -888,38 +954,42 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, out
     else:
         OWA_asec=1
 
-    # plt.style.use('seaborn-colorblind')
-    plt.figure(figsize=(10, 5), dpi=750)
-    for i in np.arange(len(pctcuts)):
-        cut = pctcuts[i]
-        j = i / len(pctcuts)
-        if i % 2 == 0:
-            linesty = '-'
-        else:
-            linesty = '--'
-        plt.plot(contrast_seps * platescale, contrasts[i, :],
-                 label=str(cut) + ' cut', linestyle=linesty, color=cm.plasma(j))
-    floor = np.log10(np.nanmin(contrasts)) - 0.2
-    plt.yscale("log")
-    plt.title(data_str[:-1] + outstr)
-    plt.xlim(0, OWA_asec)
-    plt.ylim(10 ** floor, 1e-1)
-    plt.xlabel("distance in arcseconds")
-    plt.ylabel("contrast")
-    if IWA > 0:
-        plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
-    plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
-    for bd in zone_boundaries * platescale:
-        if bd < OWA * platescale:
-            if bd == zone_boundaries[0]*platescale:
-                plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
+    klctr=0
+    for kl in KLlist:
+
+        # plt.style.use('seaborn-colorblind')
+        plt.figure(figsize=(10, 5), dpi=750)
+        for i in np.arange(len(pctcuts)):
+            cut = pctcuts[i]
+            j = i / len(pctcuts)
+            if i % 2 == 0:
+                linesty = '-'
             else:
-                plt.plot((bd, bd), (0, 1), '--', color='grey')
-    plt.legend()
-    # write out in data directory
-    plt.savefig(outputdir + data_str[:-1] + outstr + '_contrastsbycut.jpg')
-    plt.show()
-    plt.clf()
+                linesty = '--'
+            plt.plot(contrast_seps * platescale, contrasts[i,klctr, :],
+                     label=str(cut) + ' cut', linestyle=linesty, color=cm.plasma(j))
+        floor = np.log10(np.nanmin(contrasts)) - 0.2
+        plt.yscale("log")
+        plt.title(data_str[:-1] + outstr+' KL '+str(kl))
+        plt.xlim(0, OWA_asec)
+        plt.ylim(10 ** floor, 1e-1)
+        plt.xlabel("distance in arcseconds")
+        plt.ylabel("contrast")
+        if IWA > 0:
+            plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
+        plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
+        for bd in np.multiply(zone_boundaries,platescale):
+            if bd < OWA * platescale:
+                if bd == zone_boundaries[0]*platescale:
+                    plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
+                else:
+                    plt.plot((bd, bd), (0, 1), '--', color='grey')
+        plt.legend()
+        # write out in data directory
+        plt.savefig(outputdir + data_str[:-1] + outstr + '_KL'+str(kl)+'_contrastsbycut.jpg')
+        plt.show()
+        plt.clf()
+        klctr+=1
     return
 
 
@@ -945,9 +1015,9 @@ def clean_cuts(wl, subdir, keeplist, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 
     return
 
 
-def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, movm=5, KLlist=[10],
+def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, movm=5, KLlist=[1,2,3,4,5,10,20,50,100],
                  contrasts=[1e-2,1e-2,1e-2], seps=[10, 10, 10], thetas=[0, 120, 240], debug=True,
-                 ghost=False, mask=[3, 15], slicefakes=True):
+                 ghost=False, mask=[3, 15], slicefakes=True,ctrlrad=30):
     """
     PURPOSE
     Injects false planets at specified locations, runs through KLIP, calculates throughput and
@@ -982,7 +1052,10 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
     prefix=make_prefix(data_str, wl, cut)
-    strklip = '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + 'KL' + str(KLlist[0])
+    klstr=str(KLlist)
+    klstr=klstr[1:-1]
+    klstr=klstr.replace(', ','_')
+    strklip = '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_KL' + klstr
     
     sepstr=''
     thetastr = ''
@@ -1075,7 +1148,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
     planetspecs = (seps, thetas, mask)
     # make a SNRMap cube
     Output, snrs, snr_sums, snr_spurious, maskedims = snr.create_map(klcube, fwhm, saveOutput=True, outputName=outputdir+prefix_fakes+strklip + '_SNRMap.fits',
-                                       planets=planetspecs, checkmask=True, method='med')
+                                       planets=planetspecs, checkmask=True, method='all',ctrlrad=ctrlrad)
     # create a list that will store throughputs
     thrpt_list = []
 
@@ -1112,8 +1185,23 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=3, mo
         i += 1
     print("throughputs are", thrpt_list)
 
-    print("snrs (max pixel) are", snrs)
-    print("snrs (avg under mask) are", snr_sums)
+    #print("snrs (max pixel) for median SNR map are", snrs[0,:,:])
+    print("stdev SNR map results")
+    for pl in np.arange(n_planets):
+        print("average peak SNR across KL modes for planet", str(pl+1), 'is', np.nanmean(snrs[0,:,pl]), 'and median is', np.nanmedian(snrs[0,:,pl]))
+
+    #print("snrs (avg under mask) for median SNR map is", snr_sums)
+    for pl in np.arange(n_planets):
+        print("average average under mask SNR across KL modes for planet", str(pl+1), 'is', np.nanmean(snr_sums[0,:,pl]), 'and median is', np.nanmedian(snr_sums[0,:,pl]))
+
+    print("median SNR map results")
+    #print("snrs (max pixel) for stdev SNR map are", snrs[0,:,:])
+    for pl in np.arange(n_planets):
+        print("average peak SNR across KL modes for planet", str(pl+1), 'is', np.nanmean(snrs[1,:,pl]), 'and median is', np.nanmedian(snrs[1,:,pl]))
+
+    #print("snrs (avg under mask) for stdev SNR map is", snr_sums)
+    for pl in np.arange(n_planets):
+        print("average average under mask SNR across KL modes for planet", str(pl+1), 'is', np.nanmean(snr_sums[1,:,pl]), 'and median is', np.nanmedian(snr_sums[1,:,pl]))
 
     return (dataset.input, dataset.prihdrs, prefix_fakes)
 
@@ -1145,12 +1233,14 @@ def collapsekl(pedir, pename, kllist, snrmeth='absmed', writestr=False):
     if snrmeth == "stdev":
         slice = 0
 
-    klcube=klcube[slice,:,:,:,:]
+    print('cube shape', klcube.shape)
+    klcube=klcube[slice::2,:,:,:,:]
+    print('cube shape', klcube.shape)
 
     dims = klcube.shape
 
     # set up a blank array to be filled
-    klkeep = np.zeros([dims[2], dims[3], len(kllist)])
+    klkeep = np.zeros([4, dims[3], dims[4], len(kllist)])
 
     # pull KL modes of parameter explorer from the header
     allkl = list(map(int, head['KLMODES'][1:-1].split(",")))
@@ -1162,7 +1252,8 @@ def collapsekl(pedir, pename, kllist, snrmeth='absmed', writestr=False):
     for kl in allkl:
         if kl in kllist:
             keepind.append(i)
-            klkeep[:, :, j] = klcube[0, i, :, :]
+            print('keeping kl', kl, "with index", i)
+            klkeep[:, :, :, j] = klcube[:, 0, i, :, :]
             j += 1
         i += 1
 
@@ -1170,8 +1261,8 @@ def collapsekl(pedir, pename, kllist, snrmeth='absmed', writestr=False):
     klkeep[klkeep == -1000] = np.nan
 
     # make mean and stdev arrays
-    avgkl = np.mean(klkeep, axis=2)
-    stdevkl = np.std(klkeep, axis=2)
+    avgkl = np.mean(klkeep, axis=3)
+    stdevkl = np.std(klkeep, axis=3)
 
     # update header to reflect KL modes used
     head["KLMODES"] = str(kllist)
@@ -1262,6 +1353,185 @@ def find_best(pedir, pename, kllist, snrmeth='absmed', writestr=False, weights=[
     return (snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores)
 
 
+def find_best_new(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.5], debug=False):
+    """
+    collapses parameter explorer file and extracts the optimal parameter value
+
+    PARAMETERS:
+    pedir: directory holding parameter explorer file
+    pename: name of paramexplore file
+    kllist: list of KL modes you want to collapse over
+    weights: weights for parameter quality metric. [SNR, SNR neighbors, stdev, stdev neighbors]
+
+    RETURNS:
+
+
+    """
+    #collapse KL mode cube
+    avgkl_absmedSNR, stdevkl_absmedSNR = collapsekl(pedir, pename, kllist, snrmeth='absmed', writestr=writestr)
+    avgkl_stdevSNR, stdevkl_stdevSNR = collapsekl(pedir, pename, kllist, snrmeth='stdev', writestr=writestr)
+    # stdevkl[stdevkl < 0.01] = np.nan
+
+    #print(avgkl_stdevSNR[:,:,:].shape)
+
+    #finds location of peak
+    maxind_absmedSNR = np.where(avgkl_absmedSNR[0,:,:] == np.nanmax(avgkl_absmedSNR[0,:,:]))
+    maxind_stdevSNR = np.where(avgkl_stdevSNR[0,:,:] == np.nanmax(avgkl_stdevSNR[0,:,:]))
+
+    maxind_absmedSNR_umask = np.where(avgkl_absmedSNR[1,:,:] == np.nanmax(avgkl_absmedSNR[1,:,:]))
+    maxind_stdevSNR_umask = np.where(avgkl_stdevSNR[1,:,:] == np.nanmax(avgkl_stdevSNR[1,:,:]))
+
+    #translates to x and y coordinates
+    xcoord_absmedSNR = maxind_absmedSNR[0][0]
+    ycoord_absmedSNR = maxind_absmedSNR[1][0]
+    print("peak value for median absolute value SNR is at coordinates:", xcoord_absmedSNR, ycoord_absmedSNR)
+
+    xcoord_stdevSNR = maxind_stdevSNR[0][0]
+    ycoord_stdevSNR = maxind_stdevSNR[1][0]
+    print("peak value for standard deviation SNR is at coordinates:", xcoord_stdevSNR, ycoord_stdevSNR)
+
+    #translates to x and y coordinates
+    xcoord_absmedSNR_umask = maxind_absmedSNR_umask[0][0]
+    ycoord_absmedSNR_umask = maxind_absmedSNR_umask[1][0]
+    print("peak value for median absolute value SNR under mask is at coordinates:", xcoord_absmedSNR, ycoord_absmedSNR)
+
+    xcoord_stdevSNR_umask = maxind_stdevSNR_umask[0][0]
+    ycoord_stdevSNR_umask = maxind_stdevSNR_umask[1][0]
+    print("peak value for standard deviation SNR under mask is at coordinates:", xcoord_stdevSNR, ycoord_stdevSNR)
+
+
+    #extracts parameter explorer inputs from the filename (assumes was autonamed by parameter explorer)
+    namelist = pename.split('_')
+    params = [s for s in namelist if s[0] == 'a']
+    params = params[0]
+    params = re.split('a|-|x|m|s|iwa', params)
+    ymin = int(params[1])
+    ymax = int(params[2])
+    ystep = int(params[3])
+    xmin = int(float(params[4]))
+    xmax = int(float(params[5]))
+    xstep = int(float(params[6]))
+    nstepx = int((xmax - xmin) / xstep) + 1
+    nstepy = int((ymax - ymin) / ystep) + 1
+
+    #sets up arrays for filling
+    nq_snr = np.zeros([nstepy, nstepx])
+    nq_stdev = np.zeros([nstepy, nstepx])
+
+    #normalize the SNR (where high values = good) maps normally
+    snr_norm_absmedSNR = avgkl_absmedSNR[0,:,:] / np.nanmax(avgkl_absmedSNR[0,:,:])
+    snr_norm_absmedSNR_umask = avgkl_absmedSNR[1,:,:] / np.nanmax(avgkl_absmedSNR[1,:,:])
+    snr_norm_stdevSNR = avgkl_stdevSNR[0,:,:] / np.nanmax(avgkl_stdevSNR[0,:,:])
+    snr_norm_stdevSNR_umask = avgkl_stdevSNR[1,:,:] / np.nanmax(avgkl_stdevSNR[1,:,:])
+
+    #average the two SNR computation methods
+    snr_norm_avg = (snr_norm_absmedSNR + snr_norm_stdevSNR) / 2.
+    snr_norm_avg_umask = (snr_norm_absmedSNR_umask + snr_norm_stdevSNR_umask) / 2.
+
+
+    # stdevkl[avgkl<3]=np.nan
+    # stdev_norm = 1/(stdevkl/np.nanmin(stdevkl))
+    
+    #normalize standard deviations across KL modes. Low values = good
+    stdev_norm_absmedSNR_cube = stdevkl_absmedSNR[0:2,:,:] / avgkl_absmedSNR[0:2,:,:]
+    #print(stdev_norm_absmedSNR_cube.shape)
+    stdev_norm_absmedSNR = 1 - (stdev_norm_absmedSNR_cube[0,:,:]/np.nanmax(stdev_norm_absmedSNR_cube[0,:,:]))
+    stdev_norm_absmedSNR_umask = 1 - (stdev_norm_absmedSNR_cube[1,:,:]/np.nanmax(stdev_norm_absmedSNR_cube[1,:,:]))
+    stdev_norm_stdevSNR_cube = stdevkl_stdevSNR[0:2,:,:] / avgkl_stdevSNR[0:2,:,:]
+    stdev_norm_stdevSNR = 1 - (stdev_norm_stdevSNR_cube[0,:,:]/np.nanmax(stdev_norm_stdevSNR_cube[0,:,:]))
+    stdev_norm_stdevSNR_umask = 1 - (stdev_norm_stdevSNR_cube[1,:,:]/np.nanmax(stdev_norm_stdevSNR_cube[1,:,:]))
+
+    #average the two SNR computation methods
+    stdev_norm_avg = (stdev_norm_absmedSNR + stdev_norm_stdevSNR) / 2.
+    stdev_norm_avg_umask = (stdev_norm_absmedSNR_umask + stdev_norm_stdevSNR_umask) / 2.
+
+    #spurious pixels metrics
+    spurpix_norm_absmedSNR = 1 - (avgkl_absmedSNR[3,:,:]/np.nanmax(avgkl_absmedSNR[3,:,:]))
+    spurpix_norm_stdevSNR = 1 - (avgkl_stdevSNR[3,:,:]/np.nanmax(avgkl_stdevSNR[3,:,:]))
+
+    #average the two SNR computation methods
+    spurpix_norm_avg = (spurpix_norm_absmedSNR + spurpix_norm_stdevSNR) / 2.
+
+    #computes neighbor quality by smoothing with Gaussian
+    kern = conv.Gaussian2DKernel(x_stddev=2)
+    nq_snr = conv.convolve(snr_norm_avg, kern, preserve_nan=True, nan_treatment='interpolate')
+    nq_stdev = conv.convolve(stdev_norm_avg, kern, preserve_nan = True, nan_treatment='interpolate')
+    nq_snr_umask = conv.convolve(snr_norm_avg_umask, kern, preserve_nan=True, nan_treatment='interpolate')
+    nq_stdev_umask = conv.convolve(stdev_norm_avg_umask, kern, preserve_nan = True, nan_treatment='interpolate')
+
+    #normalizes neighbor quality
+    nq_snr /= np.nanmax(nq_snr)
+    nq_stdev /= np.nanmax(nq_stdev)
+    nq_snr_umask /= np.nanmax(nq_snr_umask)
+    nq_stdev_umask /= np.nanmax(nq_stdev_umask)
+
+    if debug==True:
+        #make a cube of all these metrics for sanity checking
+        qual_cube = np.zeros([19,nstepy,nstepx])
+        qual_cube[0,:,:]=snr_norm_absmedSNR
+        qual_cube[1,:,:]=snr_norm_stdevSNR
+        qual_cube[2,:,:]=snr_norm_avg
+        qual_cube[3,:,:]=snr_norm_absmedSNR_umask
+        qual_cube[4,:,:]=snr_norm_stdevSNR_umask
+        qual_cube[5,:,:]=snr_norm_avg_umask
+        qual_cube[6,:,:]=stdev_norm_absmedSNR
+        qual_cube[7,:,:]=stdev_norm_stdevSNR
+        qual_cube[8,:,:]=stdev_norm_avg
+        qual_cube[9,:,:]=stdev_norm_absmedSNR_umask
+        qual_cube[10,:,:]=stdev_norm_stdevSNR_umask
+        qual_cube[11,:,:]=stdev_norm_avg_umask
+        qual_cube[12,:,:]=spurpix_norm_absmedSNR
+        qual_cube[13,:,:]=spurpix_norm_stdevSNR
+        qual_cube[14,:,:]=spurpix_norm_avg
+        qual_cube[15,:,:]=nq_snr
+        qual_cube[16,:,:]=nq_snr_umask
+        qual_cube[17,:,:]=nq_stdev
+        qual_cube[18,:,:]=nq_stdev_umask
+
+        fits.writeto(pedir+pename[:-4]+'_paramqual_cube.fits', qual_cube, overwrite=True)
+
+    #average under mask and peak pixel estimates
+    snr_norm_combo = (snr_norm_avg + snr_norm_avg_umask) / 2.
+    nq_snr_combo = (nq_snr + nq_snr_umask) / 2.
+    stdev_norm_combo = (stdev_norm_avg + stdev_norm_avg_umask) / 2.
+    nq_stdev_combo = (nq_stdev + nq_stdev_umask) / 2.
+
+    #write out the cubes being used for the final metric
+    metric_cube = np.zeros([6,nstepy,nstepx])
+    metric_cube[0,:,:]= snr_norm_combo
+    metric_cube[1,:,:]= nq_snr_combo
+    metric_cube[2,:,:]= stdev_norm_combo
+    metric_cube[3,:,:]= nq_stdev_combo
+    metric_cube[4,:,:]= spurpix_norm_avg
+
+    #calculate parameter quality metric by summing the four quantities
+    agg = weights[0] * snr_norm_combo + weights[1] * nq_snr_combo + weights[2] * stdev_norm_combo + weights[3] * nq_stdev_combo + weights[4] * spurpix_norm_avg
+    metric_cube[5,:,:]=agg
+
+    fits.writeto(pedir+pename[:-4]+'_paramqual_metrics.fits', metric_cube, overwrite=True)
+
+    ##find location or peak of parameter quality metric and print info
+    ind = np.where(agg == np.nanmax(agg))
+
+    #extract metric scores for this location
+    metric_scores = [snr_norm_combo[ind][0], nq_snr_combo[ind][0], stdev_norm_combo[ind][0], nq_stdev_combo[ind][0], spurpix_norm_avg[ind][0], agg[ind][0]]
+
+    #translate to annuli and mocement values
+    ann_val = ymin + ind[0] * ystep
+    movm_val = xmin + ind[1] * xstep
+
+    #print("ind", ind, avgkl_absmedSNR[0][ind])
+
+    avgSNR = avgkl_absmedSNR[0][ind] + avgkl_absmedSNR[1][ind]  + avgkl_stdevSNR[0][ind] + avgkl_stdevSNR[1][ind] 
+    avgSNR /= 4
+
+    print('peak is at', [ind[0][0], ind[1][0]], 'corresponding to annuli', ann_val, ' and movement', movm_val)
+    print('SNR value for fake planets (avg of SNR methods and planets) is', avgSNR)
+    print('metric scores for peak (snr, snr neigbors, stdev, stdev neighbors, agg) are:', metric_scores)
+    return (snr_norm_combo, nq_snr_combo, stdev_norm_combo, nq_stdev_combo, spurpix_norm_avg, agg, ann_val, movm_val, metric_scores, avgSNR)
+
+
+
 def radarr(xdim,ydim):
     '''
     make an image of size xdim x ydim where every pixel has a value equal to its distance from the center of the array
@@ -1284,10 +1554,10 @@ def ctrlmask(xdim, ydim, rin, rout):
     new[(arr >= rin) & (arr <= rout)] = np.nan
     return(new)
 
-def paramexplore_fig(pedir, pename, kllist, snrmeth='absmed', writestr=False, weights=[1,1,0.5,0.5], lowsnr=False):
+def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.5], lowsnr=False):
     
-    snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores = \
-        find_best(pedir, pename, kllist, snrmeth=snrmeth, writestr=writestr, weights=weights)
+    snr_norm, nq_snr, stdev_norm, nq_stdev, spurpix, agg, ann_val, movm_val, metric_scores, avgSNR = \
+        find_best_new(pedir, pename, kllist, writestr=writestr, weights=weights)
 
     if writestr == False:
         writestr = pename[:-17]
@@ -1306,18 +1576,23 @@ def paramexplore_fig(pedir, pename, kllist, snrmeth='absmed', writestr=False, we
     nstepy = (ymax - ymin) / ystep
 
     # set up tick labels according to parameter ranges
-    fig = plt.figure(tight_layout=True, figsize=(12,5))
+    fig_xdim = nstepx*0.5
+    fig_ydim = nstepy
+
+    fig = plt.figure(tight_layout=True, figsize=(fig_ydim,fig_xdim))
     gs = fig.add_gridspec(2, 4)
     ax1 = fig.add_subplot(gs[0,0])
     ax2 = fig.add_subplot(gs[0,1])
     ax3 = fig.add_subplot(gs[1,0])
     ax4 = fig.add_subplot(gs[1,1])
-    ax5 = fig.add_subplot(gs[:,2:])
+    ax5 = fig.add_subplot(gs[0,2])
+    ax6 = fig.add_subplot(gs[1,2])
+    #ax5 = fig.add_subplot(gs[:,2:])
 
-    plt.setp((ax5), xticks=np.arange(nstepx + 1), xticklabels=np.arange(xmin, xmax + 1, xstep),
-             yticks=np.arange(nstepy + 1), yticklabels=np.arange(ymin, ymax + 1, ystep))
+    plt.setp((ax1, ax2, ax3, ax4, ax5, ax6), xticks=np.arange(nstepx + 1), xticklabels=np.arange(xmin, xmax + 1),
+             yticks=np.arange(nstepy + 1), yticklabels=np.arange(ymin, ymax + 1))
 
-    plt.setp((ax1, ax2, ax3, ax4), xticks=np.arange(nstepx + 1), yticks=np.arange(nstepy + 1), xticklabels=[], yticklabels=[])
+    #plt.setp((ax1, ax2, ax3, ax4, ax5), xticks=np.arange(nstepx + 1), yticks=np.arange(nstepy + 1), xticklabels=[], yticklabels=[])
 
     im1 = ax1.imshow(snr_norm, origin='lower', cmap='magma', vmin=0, vmax=1)
 
@@ -1325,11 +1600,12 @@ def paramexplore_fig(pedir, pename, kllist, snrmeth='absmed', writestr=False, we
     ax1.set_ylabel("annuli parameter")
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im1, cax=cax, orientation='vertical', label="Average Signal-to-Noise ratio")
+    plt.colorbar(im1, cax=cax, orientation='vertical', label="Average SNR Metric")
 
     im2 = ax2.imshow(nq_snr, origin='lower',
                      cmap='magma', vmin=0, vmax=1)
     ax2.set_xlabel("movement parameter")
+    ax2.set_ylabel("annuli parameter")
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im2, cax=cax, orientation='vertical', label="SNR Neighbor Quality")
@@ -1340,28 +1616,35 @@ def paramexplore_fig(pedir, pename, kllist, snrmeth='absmed', writestr=False, we
     ax3.set_ylabel("annuli parameter")
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im3, cax=cax, orientation='vertical', label="1 - $\sigma$/$\mu$ metric (normalized)")
+    plt.colorbar(im3, cax=cax, orientation='vertical', label="Standard Deviation Metric")
 
     im4 = ax4.imshow(nq_stdev, origin='lower',
                      cmap='magma', vmin=0, vmax=1)
     ax4.set_xlabel("movement parameter")
+    ax4.set_ylabel("annuli parameter")
     divider = make_axes_locatable(ax4)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im4, cax=cax, orientation='vertical', label="Stdev Neighbor Quality")
 
-    # plot metric
-    im5 = ax5.imshow(agg, origin='lower', vmin=0, vmax=np.nanmax(agg))
-    ax5.set_ylabel("annuli parameter")
+    im5 = ax5.imshow(spurpix, origin='lower', cmap='magma', vmin=0, vmax=1)
     ax5.set_xlabel("movement parameter")
     divider = make_axes_locatable(ax5)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im5, cax=cax, orientation='vertical', label="Parameter Quality Metric")
+    plt.colorbar(im5, cax=cax, orientation='vertical', label="Spurious Pixel Metric")
+
+    # plot metric
+    im6 = ax6.imshow(agg, origin='lower', vmin=1, vmax=np.nanmax(agg))
+    ax6.set_ylabel("annuli parameter")
+    ax6.set_xlabel("movement parameter")
+    divider = make_axes_locatable(ax6)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im6, cax=cax, orientation='vertical', label="Parameter Quality Metric")
 
     ind = np.where(agg == np.nanmax(agg))
     label_text = 'a' + str(ann_val[0]) + 'm' + str(movm_val[0])
     rect = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
-    ax5.add_patch(rect)
-    ax5.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
+    ax6.add_patch(rect)
+    ax6.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
 
     plt.savefig(pedir+writestr+'_paramqual.png')
     return(ann_val, movm_val)
@@ -1376,17 +1659,17 @@ def get_pe_df(dfname):
         print("creating new data frame")
         #if none found, make one
         df_cols =['Dataset','Object', 'Date','subset','Wavelength','pctcut', 'optimal movement', 'optimal annuli', 'IWA', 'KL combo used',
-        'SNR value', 'SNR metric', 'SNR neighbors metric', 'stdev metric', 'stdev neighbors metric', 'total metric', 'date added']
+        'SNR value', 'SNR metric', 'SNR neighbors metric', 'stdev metric', 'stdev neighbors metric', 'spurious pixels metric', 'total metric', 'date added']
         # make a blank pandas dataframe
         df = pd.DataFrame({})
         for name in df_cols:
             df[name] = []
     return(df, df_cols)
 
-def add_to_pe_df(data_str, pedir, pename, kllist, pe_dfname='../../optimal_params.csv'):
+def add_to_pe_df(data_str, pedir, pename, kllist, weights=[1,1,0.5,0.5,0.5], pe_dfname='../../optimal_params.csv'):
     df, df_cols =get_pe_df(pe_dfname)
     avgkl, stdevkl = collapsekl(pedir, pename, kllist)
-    snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores = find_best(pedir, pename, kllist)
+    snr_norm, nq_snr, stdev_norm, nq_stdev, spurpix, agg, ann_val, movm_val, metric_scores, avgSNR = find_best_new(pedir, pename, kllist, weights=weights)
     ind=np.where(agg == np.nanmax(agg))
     data_split=re.split('_',data_str)
     objname = data_split[0]
@@ -1418,8 +1701,7 @@ def add_to_pe_df(data_str, pedir, pename, kllist, pe_dfname='../../optimal_param
 
     cut=[s for s in pedir_info if 'cut' in s]
     cut=(cut[0].split('pctcut'))[0]
-    datalist=pd.DataFrame([[data_str[:-1],objname,date,subset,wl,cut,movm_val[0],ann_val[0],IWA,str(kllist),avgkl[ind][0],snr_norm[ind][0], nq_snr[ind][0],
-                            stdev_norm[ind][0], nq_stdev[ind][0], agg[ind][0], dt_string]], columns=df_cols)
+    datalist=pd.DataFrame([[data_str[:-1],objname,date,subset,wl,cut,movm_val[0],ann_val[0],IWA,str(kllist),avgSNR[0],snr_norm[ind][0], nq_snr[ind][0],stdev_norm[ind][0], nq_stdev[ind][0], spurpix[ind][0], agg[ind][0], dt_string]], columns=df_cols)
     df = df.append(datalist)
     df.to_csv(pe_dfname, index=False)
     return(df)
@@ -1454,6 +1736,9 @@ def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', cuts_df
     """
     df, df_cols =get_pe_df(pe_dfname)
     df2=get_cuts_df(cuts_dfname)
+    name_split=re.split('_',data_str_uniq)
+    objname = name_split[0]
+    date = name_split[1]
 
     match = [line for line in df["Dataset"] if data_str_uniq == line]
 
@@ -1471,15 +1756,18 @@ def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', cuts_df
     return (objname, date, cut, movm, numann, fwhm, IWA, kllist)
 
 
-def klip_data(data_str, wl, params=False, fakes=False, planets=False, indir='dq_cuts/', imstring='_clip451_flat_reg_nocosmics_', outputdir='final_ims/'):
+def klip_data(data_str, wl, params=False, fakes=False, planets=False, klinput = False, indir='dq_cuts/', imstring='_clip451_flat_reg_nocosmics_', outputdir='final_ims/', ctrlrad=30):
 
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
 
     if params == False:
-        objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(indir)
+        objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
     else:
         [objname, date, cut, movm, numann, fwhm, IWA, kllist] = params
+
+    if klinput != False:
+        kllist = klinput
     
     if fakes==False:
         namestr = wl + '_' + str(cut) +'pctcut_sliced'
@@ -1499,9 +1787,24 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, indir='dq_
     prefix =namestr[:-6] + 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA)
 
     #check whether this KLIP image has already been generated
+    runrdx=True
     if os.path.exists(outputdir+prefix+'-KLmodes-all.fits'):
-        klcube=fits.getdata(outputdir+prefix+'-KLmodes-all.fits')
-    else:   
+        klcube_header = fits.getheader(outputdir+prefix+'-KLmodes-all.fits')
+        #pyklip writes out each KL mode value to separate keyword
+        kls = klcube_header["KLMODE*"]
+        #make a list and populate it with KL mode values
+        im_kls = []
+        for i in np.arange(len(kls)):
+            im_kls.append(klcube_header["KLMODE"+str(i)])
+        if im_kls == kllist:
+            print('and KL modes match')
+            klcube=fits.getdata(outputdir+prefix+'-KLmodes-all.fits')
+            runrdx=False
+        else:
+            print('but KL modes don\'t match. Regenerating.')
+            runrdx = True
+
+    if runrdx==True:   
         filelist = glob.glob(slicedir + "/sliced*.fits")
         dataset = MagAO.MagAOData(filelist, highpass=True) 
         parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix, algo='klip', annuli=numann, subsections=1, movement=movm,
@@ -1509,28 +1812,30 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, indir='dq_
         klcube = fits.getdata("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix))
     
     #check whether this SNRMap has already been generated
-    if os.path.exists(outputdir+prefix + '_SNRMap.fits'):
-        snmap = fits.getdata(outputdir+prefix + '_SNRMap.fits')
-    else:
-        if planets != False:
-            snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits')
-        else: 
-            snmap = snr.create_map(klcube, fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits')
+    #if os.path.exists(outputdir+prefix + '_SNRMap.fits'):
+        #snmap = fits.getdata(outputdir+prefix + '_SNRMap.fits')
+    #else:
+    if planets != False:
+        snmap, snrs, snr_sums, snr_spurious = snr.create_map("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix), fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits', ctrlrad=ctrlrad)
+    else: 
+        snmap = snr.create_map("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix), fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits')
     #snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=prefix + '_SNRMap.fits')
     return (klcube, snmap, fwhm)
 
 
-def get_scale_factor(data_str, scalefile = '../../apphot_scales.csv'):
+def get_scale_factor(data_str, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
+    #scalefile=scalefile.decode('utf-8')
     df3 = pd.read_csv(scalefile)
-    scale = df3[df3["Dataset"] == data_str]["scale"].values[0]
+    scale = df3[df3["Folder Name"] == data_str]["Scale Factor"].values[0]
     return (scale)
 
 
-def run_redx(data_str, scale = False, indir='dq_cuts/',imstring='_clip451_flat_reg_nocosmics_', outputdir = 'final_ims/'):
+def run_redx(data_str, scale = False, indir='dq_cuts/',imstring='_clip451_flat_reg_nocosmics_', outputdir = 'final_ims/', klinput=False):
     wls = ['Line', 'Cont']
     objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
-    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], imstring=imstring, indir=indir, outputdir=outputdir)
-    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], imstring=imstring, indir=indir, outputdir=outputdir)
+    #print(data_str, imstring, indir, outputdir)
+    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput)
+    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput)
     
     if scale == False:
         scale = get_scale_factor(data_str)
@@ -1540,11 +1845,11 @@ def run_redx(data_str, scale = False, indir='dq_cuts/',imstring='_clip451_flat_r
     sdicube = linecube - scale * contcube
     prefix = data_str+'SDI_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
         movm) + 'iwa' + str(IWA)
-    sdisnr, snrs, snr_sums, snr_spurious= snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=prefix + '_SNRMap.fits')
+    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=prefix + '_SNRMap.fits')
     return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix)
 
 
-def indivobj_fig(lineim, contim, sdiim, prefix, outputdir='final_ims/', stampsz=75, smooth=0, lims = False):
+def indivobj_fig(lineim, contim, sdiim, prefix, IWA=0, outputdir='final_ims/', stampsz=75, smooth=0, lims = False):
     """
     creates a three panel figure with line, continuum and SDI images
 
@@ -1553,31 +1858,39 @@ def indivobj_fig(lineim, contim, sdiim, prefix, outputdir='final_ims/', stampsz=
 
     """
     f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
-    f.set_figwidth(15)
+    f.set_figwidth(18)
     f.set_figheight(10)
     pixscale = 0.0078513
-
     imsz = lineim.shape[1]
 
-    ticks = (np.arange(11) - 10 / 2.) * 0.25 / pixscale
-    ticklabels = str(ticks * pixscale)
-    # ticks = np.arange(imsz)-(imsz-1)/2
-    # ticklabels = str(ticks*pixscale)+'\"'
+    #mask IWA
+    IWAmask = ctrlmask(imsz, imsz, 0, IWA)
+    lineim*=IWAmask
+    contim*=IWAmask
+    sdiim*=IWAmask
+
+    ##NOT DONE. LABEL COORDS  NEED TO BE RELATIVE TO STAMP CENTER
+    stampcen = (stampsz - 1)/2.
+    stampsz_asec = stampsz*pixscale
+    nticks = np.floor(stampsz_asec/2/0.25)
+    ticklabels = np.arange(-1*nticks, nticks+1)*0.25
+    ticklabels_str = [str(lab)+'\"' for lab in ticklabels]
+    ticks = ticklabels/pixscale + stampcen
 
     cen = (imsz - 1) / 2
     low = int(cen - stampsz / 2)
     high = int(cen + stampsz / 2 + 1)
 
     if smooth != 0:
-        gauss = conv.Gaussian2DKernel(stddev=smooth)
-        lineimsm = conv.convolve(lineim, gauss, preserve_nan=True)
-        contimsm = conv.convolve(contim, gauss, preserve_nan=True)
-        sdiimsm = conv.convolve(sdiim, gauss, preserve_nan=True)
+        gauss = conv.Gaussian2DKernel(x_stddev=smooth)
+        lineim = conv.convolve(lineim, gauss, preserve_nan=True)
+        contim = conv.convolve(contim, gauss, preserve_nan=True)
+        sdiim = conv.convolve(sdiim, gauss, preserve_nan=True)
 
     # set up tick labels according to parameter ranges
-    plt.setp((ax1, ax2, ax3), xticks=ticks, xticklabels=ticklabels,
-             yticks=ticks, yticklabels=ticklabels)
-    
+    plt.setp((ax1, ax2, ax3), xticks=ticks, xticklabels=ticklabels_str,
+             yticks=ticks, yticklabels=ticklabels_str)
+
     #user defined limits
     if lims != False:
         minm = lims[0]
@@ -1586,30 +1899,23 @@ def indivobj_fig(lineim, contim, sdiim, prefix, outputdir='final_ims/', stampsz=
     else:
         linemax = np.nanstd(lineim[low:high, low:high])*5
         minm = -1 * linemax / 2
-    if smooth > 0:
-        im1 = ax1.imshow(lineimsm[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    else:
-        im1 = ax1.imshow(lineim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
+
+    im1 = ax1.imshow(lineim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
+    
     # ax1.set_xlabel("")
     # ax1.set_ylabel("")
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im1, cax=cax, orientation='vertical', label="Intensity")
 
-    if smooth > 0:
-        im2 = ax2.imshow(contimsm[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    else:
-        im2 = ax2.imshow(contim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
+    im2 = ax2.imshow(contim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     # ax2.set_xlabel("movement parameter")
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im2, cax=cax, orientation='vertical', label="Intensity")
     # plot metric
 
-    if smooth > 0:
-        im3 = ax3.imshow(sdiimsm[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    else:
-        im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
+    im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     # ax3.set_xlabel("movement parameter")
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
@@ -1619,82 +1925,131 @@ def indivobj_fig(lineim, contim, sdiim, prefix, outputdir='final_ims/', stampsz=
     plt.clf()
     return
 
-def final_contrast_fig(data_str, hafakes_prefix, cont_prefix, klmode, indir = 'dq_cuts/contrastcurves/', outdir = 'final_ims/', ghost=False):
+
+def contrast_klcompare(data_str, ha_ctrsts, cont_ctrsts, KLlist, IWA, zone_boundaries, outdir = 'final_ims/'):
     
-    #pull final cut and KLIP parameters
-    objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
-
-    #pull H-a contrast curve
-    ha_curve = fits.getdata(indir + ha_prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_contrast.fits')
-    ha_contrast_seps = ha_curve[0,:]
-    ha_corrected_curve = ha_curve[1,:]
-    ha_contrasts = ha_curve[2:,:]
-
-    for i in np.arange(len(ha_contrast_seps)):
-        max_ctrst_ha = np.nanmax(ha_contrasts[:,i])
-        min_ctrst_ha = np.nanmin(ha_contrasts[:,i])
-
-    #generate Cont contrast curve
-    wl = 'Cont'
-    if os.path.exists(indir+ cont_prefix + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) +  '_throughputs.fits'):
-        print ('found existing throughput file', indir+ prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_throughputs.fits')
-        thrpt = fits.getdata(indir + cont_prefix + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_throughputs.fits')
-        thrpt_seps = thrpt[0,:]
-        thrpt_list = thrpt[1,:]
-
-    else:
-        print('computing throughputs for', cut, 'pct cut')
-        thrpt_out, zone_boundaries, df, dataset_prefix = compute_thrpt(data_str, wl, cut,
-                                                                savefig=savefig, ghost=ghost, contrast=contrast,
-                                                                record_seps=record_seps,
-                                                                outputdir=indir,
-                                                                #KLIP parameters
-                                                                numann=numann, movm=movm,
-                                                                KLlist=KLmode, IWA=IWA, cuts_dfname=cuts_dfname, 
-                                                                debug=debug, iterations=iterations)
-
-    if os.path.exists(indir + cont_prefix +  '_a' + str(numann) + 'm' + str(movm) + '_contrast.fits'):
-        print ('found existing contrast curve', indir + cont_prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_contrast.fits')
-        cont_curve = fits.getdata(indir + cont_prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + '_contrast.fits')
-        cont_contrast_seps = cont_curve[0,:]
-        cont_corrected_curve = cont_curve[1,:]
-        cont_contrasts = cont_curve[2:,:]
-
-    else:
-        print('computing contrasts for', cut, 'pct cut')
-        cont_contrast_seps, cont_corrected_curve, cont_contrasts, df, OWA = make_contrast_curve(data_str, wl, cut,
-                                                             thrpt_out, cont_prefix, record_seps=record_seps,
-                                                             savefig=savefig, outputdir=indir,
-                                                             ##KLIP parameters
-                                                             numann=numann, movm=movm, KLlist=KLmode, IWA=IWA,
-                                                             cuts_dfname=cuts_dfname, debug=debug)
-    
-
-    for i in np.arange(len(cont_contrast_seps)):
-        max_ctrst_cont = np.nanmax(cont_contrasts[:,i])
-        min_ctrst_cont = np.nanmin(cont_contrasts[:,i])
-
+    """
+    """
+    #check KL list
+    kldim = ha_ctrsts.shape[0]
+    if kldim != len(KLlist):
+        print("KL list is wrong shape relative to contrast files")
 
     platescale = 0.0078513
+    zone_boundaries_arcsec = [x*platescale for x in zone_boundaries]
 
     #make figure
     plt.figure(figsize=(10, 5), dpi=750)
-    plt.plot(ha_contrast_seps * platescale, ha_corrected_curve, label='H$\alpha$', color='blue')
-    plt.fill_between(ha_contrast_seps * platescale, min_ctrst_ha, max_ctrst_ha, color='blue', alpha=0.5)
-    plt.plot(cont_contrast_seps * platescale, cont_corrected_curve, label='Continuum', color='red')
-    plt.fill_between(cont_contrast_seps * platescale, min_ctrst_cont, max_ctrst_cont, color='red', alpha=0.5)
-    floor = np.log10(np.nanmin(ha_)) - 0.2
+    for klctr in np.arange(len(KLlist)):
+        j = klctr / len(KLlist)
+        ha_contrast_seps = ha_ctrsts[klctr,0,:]
+        ha_corrected_curve = ha_ctrsts[klctr,2,:]
+        ha_contrasts = ha_ctrsts[klctr,3:,:]     
+        plt.plot(ha_contrast_seps * platescale, ha_corrected_curve, label="H-alpha"+str(KLlist[klctr])+' KL', color=cm.plasma(j))
+
+    floor = np.log10(np.nanmin(ha_contrasts)) - 0.2
     plt.yscale("log")
     plt.title(data_str)
     plt.xlim(0, 1)
     plt.ylim(10 ** floor, 1e-1)
+    plt.yscale("log")
+    plt.xlim(0, 1)
+    plt.xlabel("distance in arcseconds")
+    plt.ylabel("contrast")
     plt.xlabel("distance in arcseconds")
     plt.ylabel("contrast")
     if IWA > 0:
-        plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k--', label='IWA')
-    for bd in zone_boundaries * platescale:
-        if bd < 1:
-            plt.plot((bd, bd), (0, 1), 'k-', lw=2, label='zone boundary')
+        plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k', label='IWA')
+    for bd in zone_boundaries_arcsec:
+        if bd == zone_boundaries_arcsec[0]:
+            plt.plot((bd, bd), (0, 1), 'k--', lw=1, label='zone boundary')
+        else:
+            plt.plot((bd, bd), (0, 1), 'k--', lw=1)
+    plt.legend()
+    # write out in data directory
+    plt.savefig(outdir+data_str+'Hacontrasts_byKLmode.jpg')
+    plt.show()
+    plt.clf()
+
+    plt.figure(figsize=(10, 5), dpi=750)
+    for klctr in np.arange(len(KLlist)):
+        j = klctr / len(KLlist)
+        cont_contrast_seps = cont_ctrsts[klctr,0,:]
+        cont_corrected_curve = cont_ctrsts[klctr,2,:]
+        cont_contrasts = cont_ctrsts[klctr,3:,:]        
+        plt.plot(cont_contrast_seps * platescale, cont_corrected_curve, label='Continuum'+str(KLlist[klctr])+' KL', color=cm.plasma(j))
+
+    plt.yscale("log")
+    plt.title(data_str)
+    plt.xlim(0, 1)
+    plt.ylim(10 ** floor, 1e-1)
+    plt.yscale("log")
+    plt.xlim(0, 1)
+    plt.xlabel("distance in arcseconds")
+    plt.ylabel("contrast")
+    plt.xlabel("distance in arcseconds")
+    plt.ylabel("contrast")
+    if IWA > 0:
+        plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k', label='IWA')
+    for bd in zone_boundaries_arcsec:
+        if bd == zone_boundaries_arcsec[0]:
+            plt.plot((bd, bd), (0, 1), 'k--', lw=1, label='zone boundary')
+        else:
+            plt.plot((bd, bd), (0, 1), 'k--', lw=1)
+    plt.legend()
+    # write out in data directory
+    plt.savefig(outdir+data_str+'Contcontrasts_byKLmode.jpg')
+    plt.show()
+    plt.clf()
+
+
+def final_contrast_fig(data_str, ha_ctrsts, cont_ctrsts, IWA, zone_boundaries, outdir = 'final_ims/'):
+    
+    """
+    """
+
+    kldim = ha_ctrsts.shape[0]
+
+    ha_contrast_seps = ha_ctrsts[0,0,:]
+    ha_corrected_curve = ha_ctrsts[0,2,:]
+    ha_contrasts = ha_ctrsts[0,3:,:]
+    cont_contrast_seps = cont_ctrsts[0,0,:]
+    cont_corrected_curve = cont_ctrsts[0,2,:]
+    cont_contrasts = cont_ctrsts[0,3:,:]
+
+    min_ctrst_ha = np.nanmin(ha_contrasts, axis=0)
+    max_ctrst_ha = np.nanmax(ha_contrasts, axis=0)
+
+    min_ctrst_cont = np.nanmin(cont_contrasts, axis=0)
+    max_ctrst_cont = np.nanmax(cont_contrasts, axis=0)
+
+    platescale = 0.0078513
+    zone_boundaries_arcsec = [x*platescale for x in zone_boundaries]
+
+    #make figure
+    plt.figure(figsize=(10, 5), dpi=750)
+    plt.plot(ha_contrast_seps * platescale, ha_corrected_curve, label="H-alpha", color='blue')
+    plt.fill_between(ha_contrast_seps * platescale, min_ctrst_ha, max_ctrst_ha, color='blue', alpha=0.5)
+    plt.plot(cont_contrast_seps * platescale, cont_corrected_curve, label='Continuum', color='red')
+    plt.fill_between(cont_contrast_seps * platescale, min_ctrst_cont, max_ctrst_cont, color='red', alpha=0.5)
+    floor = np.log10(np.nanmin(ha_contrasts)) - 0.2
+    plt.yscale("log")
+    plt.title(data_str)
+    plt.xlim(0, 1)
+    plt.ylim(10 ** floor, 1e-1)
+    plt.yscale("log")
+    plt.xlim(0, 1)
+    plt.xlabel("distance in arcseconds")
+    plt.ylabel("contrast")
+    plt.xlabel("distance in arcseconds")
+    plt.ylabel("contrast")
+    if IWA > 0:
+        plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k', label='IWA')
+    for bd in zone_boundaries_arcsec:
+        if bd == zone_boundaries_arcsec[0]:
+            plt.plot((bd, bd), (0, 1), 'k--', lw=1, label='zone boundary')
+        else:
+            plt.plot((bd, bd), (0, 1), 'k--', lw=1)
     plt.legend()
     # write out in data directory
     plt.savefig(outdir+data_str+'_contrast_curve.jpg')

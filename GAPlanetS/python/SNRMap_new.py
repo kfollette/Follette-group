@@ -392,7 +392,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
         #make some blank arrays for populating with planet statistics
         snrs = np.zeros((nmethods,kldim,nplanets))
         snr_sums = np.zeros((nmethods,kldim,nplanets))
-        snr_spurious = np.zeros((nmethods, kldim, 2)) * np.nan
+        snr_spurious = np.ones((nmethods, kldim, 2)) * np.nan
         planet_pixels = np.ones((ydim, xdim, nmethods, kldim, nplanets)) * np.nan
         planet_pixels_pos = np.ones((ydim, xdim, nmethods, kldim, nplanets)) * np.nan
         npospix=np.zeros((nmethods,kldim,nplanets))

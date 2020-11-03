@@ -214,6 +214,9 @@ print("Radius = " + str(ra))
 pa = list(map(int, sys.argv[17+argnum].split(",")))
 print("Position Angle = " + str(pa))
 
+nplanets = len(ra)
+print(nplanets, "planets with separations ", ra, "and PAs ", pa)
+
 #catch in case don't specify enough ras
 if len(ra) != len(pa):
     print("list of separations is not equal in length to list of position angles. Duplicating to match.")
@@ -287,7 +290,7 @@ owa = min(xDim,yDim)/2
 #creates cube to eventually hold parameter explorer data
 PECube = np.zeros((8,int((subsections_stop-subsections_start)/subsections_inc+1), len(klmodes),
                     int((annuli_stop-annuli_start)/annuli_inc+1),
-                    int((movement_stop-movement_start)/movement_inc+1)))
+                    int((movement_stop-movement_start)/movement_inc+1), int(nplanets)))
 
 
 
@@ -388,10 +391,11 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                        # PECube[methodctr,scount,kcount,acount,mcount] = planetSNR
                     #kcount+=1
                     # adds sums under mask from snr.create_map to PE cube
-            PECube[0:2, scount, :, acount, mcount] = np.nanmedian(peaksnr, axis=2)
-            PECube[2:4, scount, :, acount, mcount] = np.nanmedian(snrsums, axis=2)
-            PECube[4:6, scount, :, acount, mcount] = snrspurious[:,:,0]
-            PECube[6:8, scount, :, acount, mcount] = snrspurious[:,:,1]
+            print(peaksnr.shape, snrsums.shape, snrspurious.shape)
+            PECube[0:2, scount, :, acount, mcount,:] = peaksnr #np.nanmedian(peaksnr, axis=2)
+            PECube[2:4, scount, :, acount, mcount,:] = snrsums #np.nanmedian(snrsums, axis=2)
+            PECube[4:6, scount, :, acount, mcount,:] = snrspurious[:,:,0, None]
+            PECube[6:8, scount, :, acount, mcount,:] = snrspurious[:,:,1, None]
 
             if(runKLIP) and np.nanmedian(peaksnr)>3:
                 #write median combination cube to disk 

@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import gaussfitter
 import astropy.convolution as conv
+from astropy.modeling import models, fitting, functional_models
 import pyklip_headers as pykh
 import glob
 import pyklip.klip as klip
@@ -135,26 +136,63 @@ def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_fl
     #empty arrays to store fits
     fullfit = []
     peaklist = []
+    peaklist2 = []
     fwhmlist = []
 
     #size of image stamp
-    width = 61
+    width = 31
     stmpsz = int((width - 1) / 2)
 
     # loop through images fitting peaks and storing them
     for i in np.arange(0, nims):
         im = imcube[i, ycen - stmpsz-1:ycen + stmpsz, xcen - stmpsz-1:xcen + stmpsz]
-        p = gaussfitter.moments(im, circle=True, rotate=False, vheight=False, estimator=np.nanmedian)
+        y,x = np.mgrid[:width,:width]
+        #g_init=models.Gaussian2D(np.nanmax(im), stmpsz, stmpsz, 2, 2)
+        #Gaussian PSF model
+        g_init=models.Moffat2D(np.nanmax(im), stmpsz, stmpsz, 6, 1)
+        fit_g=fitting.LevMarLSQFitter()
+        p=fit_g(g_init,x,y,im)
+        fwhm=p.fwhm
+
         fullfit.append(p)
-        peaklist.append(p[0])
-        fwhmlist.append(p[3]*2.)
+        peaklist.append(p.amplitude)
+        fwhmlist.append(fwhm)
+        if debug==True:
+            if i%10 == 0:
+                cmax=np.nanmax(p(x,y))*0.8
+                cmin=0
+
+                f, (ax1, ax2, ax3) = plt.subplots(1, 3)
+                f1 = ax1.imshow(p(x,y), vmax=cmax, vmin=cmin)
+                f.colorbar(f1, ax=ax1, shrink=0.5)
+
+                f2 = ax2.imshow(im, vmax=cmax, vmin=cmin)
+                f.colorbar(f2, ax=ax2, shrink=0.5)
+
+                f3 = ax3.imshow(im-p(x,y))
+                f.colorbar(f3, ax=ax3, shrink=0.5)
+                #f.colorbar(plt3,ax=ax3,)
+                plt.show()
+
+        #print('check amplitude:', p.amplitude, '~', p2[0])
+        #print('check fwhm:', fwhm, '~', p2[3])
+
         if electrons == True:
             # if units are electrons, raise the peak threshhold
-            if (p[0] < 0) or (p[0] > 50000):
-                print("warning: unphysical peak value of", p[0], 'for image', i + 1)
+            if (p.amplitude < 0) or (p.amplitude > 50000):
+                print("warning: unphysical peak value of", p.amplitude, 'for image', i + 1)
         if electrons == False:
-            if (p[0] < 0) or (p[0] > 17000):
-                print("warning: unphysical peak value of", p[0], 'for image', i + 1)
+            if (p.amplitude < 0) or (p.amplitude > 17000):
+                print("warning: unphysical peak value of", p.amplitude, 'for image', i + 1)
+
+
+#    print('median fwhm', np.median(fwhmlist))
+#    plt.plot(peaklist, peaklist2, 'gx')
+#    plt.xlim(1000,5000)
+#    plt.xlabel('new')
+#    plt.ylabel('old')
+#    plt.ylim(1000,5000)
+#    plt.show()
 
     # empty array to store cuts
     cuts = []
@@ -211,6 +249,7 @@ def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_fl
             print("check:", len(goodims) / nims * 100, "pct of images")
             print("shape of new data cube is", newim.shape)
             print(rotrange, "pct of rotation")
+            print("median FWHM = ", np.nanmedian(goodfwhm))
             print("slicing cube", imname)
 
         # slice the newly created file in preparation for KLIP

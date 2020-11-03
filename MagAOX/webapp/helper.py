@@ -1,6 +1,17 @@
 import pandas as pd
 
 def txt_to_df(filename):
+<<<<<<< HEAD
+	cat = open(filename,'r')
+	str = cat.read()
+	
+	li = list(str.replace('\n', '  ').split('  '))
+	#newList = [li[0], li[1]]
+	newList = []
+	for i in range(len(li)):
+		if not li[i] == '':
+			newList.append(li[i])
+=======
 	#read .txt file as a string
 	cat = open(filename,'r')
 	str = cat.read()
@@ -11,6 +22,7 @@ def txt_to_df(filename):
 	for i in range(len(li)):
 		if not li[i] == '':
 			newList.append(li[i]) #discard any blank strings created by above code
+>>>>>>> 7505f87630859e40d0fca89b5ed7d5897cc9bdd2
 	li = newList
 	print(li)
 	
@@ -22,7 +34,11 @@ def txt_to_df(filename):
 	
 	return makeTable(li,column)
 	
+<<<<<<< HEAD
+def makeTable(li,n):	
+=======
 def makeTable(li,n): #convert list of strings into a dictionary, then convert dictionary into dataframe	
+>>>>>>> 7505f87630859e40d0fca89b5ed7d5897cc9bdd2
 	dict = {}
 	for i in range(0, n):
 		dict[li[i]] = []
@@ -38,7 +54,11 @@ def makeTable(li,n): #convert list of strings into a dictionary, then convert di
 	table = pd.DataFrame(dict)
 	return table
 
+<<<<<<< HEAD
+def getTimeFrame(date): # get starting time and end time for observations on a given day
+=======
 def getTimeFrame(date): # get starting time and end time for observations on a given day (unused as of current version)
+>>>>>>> 7505f87630859e40d0fca89b5ed7d5897cc9bdd2
 	#separate date string into year, mont, day (as ints)
 	ymd = date.split('-')
 	li = []

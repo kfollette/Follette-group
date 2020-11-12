@@ -47,19 +47,12 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 #attempts to prevent caching
 def home():
     return render_template("test2.html")
 
-<<<<<<< HEAD
-@app.route('/about') #if home if spressed, render home template
-def about_page():
-    return render_template("about.html")
 
-@app.route('/resources') #if home if spressed, render home template
-=======
 @app.route('/about') #"about us" page
 def about_page():
     return render_template("about.html")
 
 @app.route('/resources') #resources page
->>>>>>> 7505f87630859e40d0fca89b5ed7d5897cc9bdd2
 def resources_page():
     return render_template("resources.html")
 
@@ -71,31 +64,12 @@ def server():
 
         req = request.form
 
-
-<<<<<<< HEAD
-        objects = req.get("Objects")
-        mode = req["Mode"]  #change req["mode"] to req.get("Objects")
-=======
         objects = req.get("Objects") #get list of objects from 
         mode = req["Mode"]
->>>>>>> 7505f87630859e40d0fca89b5ed7d5897cc9bdd2
         offset = request.form["Offset"]
         date = req.get("Date")
 
 
-<<<<<<< HEAD
-        create(objects,mode,offset) #change call(objects,mode,offset) to create(objects,mode,offset)
-        plot(date,objects)
-        gen(objects)
-
-        #img = mpimg.imread('static/airmass.png')
-        table = txt_to_df('static/data/catalog.txt')
-        
-        print(table)
-        
-        vis(date,objects,table)
-        visib = txt_to_df('static/data/visibility.txt')
-=======
         non_resolvable = create(objects,mode,offset) #create catalog.txt and return list of names not resolvable by Simbad
         #remove non-resolvable names from objects
         for i in non_resolvable:
@@ -112,18 +86,12 @@ def server():
         
         vis(date,objects,table) #create visibility.txt
         visib = txt_to_df('static/data/visibility.txt') #generate a Pandas DataFrame from the table in visibility.txt
->>>>>>> 7505f87630859e40d0fca89b5ed7d5897cc9bdd2
         
         print(visib)
         
         obj_list=list(objects.split(","))
-<<<<<<< HEAD
-        #return render_template("log.html", text=content, IM=img)
-        return render_template("log.html", t1=table.to_html(index=False), t2=visib.to_html(index=False), obj_list=obj_list, len=len(obj_list))
-=======
         return render_template("log.html", t1=table.to_html(index=False), t2=visib.to_html(index=False), obj_list=obj_list, len=len(obj_list), nr=non_resolvable, len_nr=len(non_resolvable))
->>>>>>> 7505f87630859e40d0fca89b5ed7d5897cc9bdd2
-
+    
     else:
         return render_template("test2.html")
 

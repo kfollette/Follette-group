@@ -64,7 +64,11 @@ def server():
 
         req = request.form
 
-        objects = req.get("Objects") #get list of objects from 
+        objects = []
+		if 'file' in request.files and request.files['file'] != '':
+			objects = pd.read_csv(request.files['file'].filename).values.tolist()
+		elif req.get("Objects") is not None:
+			objects = req.get("Objects") #get list of objects from 
         mode = req["Mode"]
         offset = request.form["Offset"]
         date = req.get("Date")

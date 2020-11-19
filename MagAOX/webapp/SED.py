@@ -225,10 +225,96 @@ def gen(objects):
 	# In[ ]:
 
 
+	# ### Spectral Type ###
+
+	vis = get_vis(target_list)
+
+	# ### Getting Spectral Template ###
+
+	# In[ ]:
 
 
 
-	# ### CSVs Containing Spectral Type Data, to later get approx. temp, absolute magnitude, and solar luminosity ###
+	
+
+	# ### SED ###
+	
+	# In[33]:
+
+
+	x = 0
+
+	for i in target_list:
+
+		#First, let's get a dataframe of existing photometric data from Vizier
+		print(vis[x][0])
+		s = query_sed(vis[x][0].replace(" ", ""))
+		del s['_ID'], s['_tabname'], s['_RAJ2000'], s['_DEJ2000']
+		s = s.to_pandas()
+
+		#Now let us get the spectral template, using first character of spectral type
+		spec = get_spectral_template(vis,x)
+
+		#Need to convert the template's x-axis to micrometers, y-axis to janskys, using astropy.units
+		template_wavelength = spec.wavelength.to(u.micrometer)
+
+
+		#spec.new_flux_unit(u.Jy)
+
+		template_flux = spec.flux
+		#print(template_flux.unit)
+
+		#Plot template
+		plt.plot(template_wavelength, template_flux, label = "Spectral Template for: " + vis[x][1][0] + "Star", color = 'black')
+		#plt.xlim(0.2, 1)
+
+
+
+		plt.legend(shadow=True, loc='center left', bbox_to_anchor=(1.1, 1))
+		plt.xlabel("Wavelength (μm)")
+		plt.ylabel("Flux (Jy)")
+		plt.title('Spectral Energy Distribution of: ' + target_list[x])
+
+
+		#Now will plot photometry data from Vizier
+		#wavelength micrometer = speed of light / frequency in hz
+		s['wavelength'] = (299792458/(s['sed_freq']*(1e+9)))*(1e+6)
+
+		s['wavelength'] = s['wavelength']*u.micrometer
+		#s['sed_flux'] = s['sed_flux']*u.Jy
+
+
+		#print(s["sed_flux"].to_string())
+
+
+	
+		#sed_freq sed_flux sed_eflux sed_filter
+		#GHz Jy Jy
+		#float64 float32 float32 bytes32
+		#1 Jy = 10-23 erg s-1 cm-2 Hz-1 = 10-26 Watts m-2 Hz-1 = FsubV
+		#print(vis[x])
+		#plt.plot(template_wavelength, template_flux, label = "Spectral Template for: " + vis[x][1][0] + "Star", color = 'black')
+		#plt.scatter(s['wavelength'], s['sed_flux']*100, s=5, color = 'red')
+		plt.scatter(s['wavelength'], s['sed_flux']*100, s=5, color = 'red')
+
+		#plt.ylim(0, 8)
+
+
+		plt.xlim(0.3, 1)
+
+		#print(s.to_string())
+
+		#print(s["sed_flux"].to_string())
+
+
+
+		plt.savefig('static/data/'+target_list[x]+'_sed.png', bbox_inches='tight', pad_inches=0.25)
+		plt.clf()
+
+		x += 1	
+		
+def get_vis(target_list):
+# ### CSVs Containing Spectral Type Data, to later get approx. temp, absolute magnitude, and solar luminosity ###
 
 	# In[16]:
 
@@ -298,95 +384,14 @@ def gen(objects):
 		print(app)
 		vis[x].extend(app)
 		x += 1
-	
-
-	vis
-
 
 	# > The list is now [name, spectral type, temp (k), absolute magnitude, solar luminosity]
 
-	# ### Getting Spectral Template ###
+	return vis
 
-	# In[ ]:
+def get_spectral_template(vis,x):
 
-
-
+	return Spectrum1D.read("SDSS DR2 Spectral Templates/" + vis[x][1][0] + ".fit", format = "SDSS-I/II spSpec")
 	
 
-	# ### SED ###
-	
-	# In[33]:
-
-
-	x = 0
-
-	for i in target_list:
-
-		#First, let's get a dataframe of existing photometric data from Vizier
-		print(vis[x][0])
-		s = query_sed(vis[x][0].replace(" ", ""))
-		del s['_ID'], s['_tabname'], s['_RAJ2000'], s['_DEJ2000']
-		s = s.to_pandas()
-
-		#Now let us get the spectral template, using first character of spectral type
-		spec = Spectrum1D.read("SDSS DR2 Spectral Templates/" + vis[x][1][0] + "(4).fit", format = "SDSS-I/II spSpec")
-
-		#Need to convert the template's x-axis to micrometers, y-axis to janskys, using astropy.units
-		template_wavelength = spec.wavelength.to(u.micrometer)
-
-
-		#spec.new_flux_unit(u.Jy)
-
-		template_flux = spec.flux
-		#print(template_flux.unit)
-
-		#Plot template
-		plt.plot(template_wavelength, template_flux, label = "Spectral Template for: " + vis[x][1][0] + "Star", color = 'black')
-		#plt.xlim(0.2, 1)
-
-
-
-		plt.legend(shadow=True, loc='center left', bbox_to_anchor=(1.1, 1))
-		plt.xlabel("Wavelength (μm)")
-		plt.ylabel("Flux (Jy)")
-		plt.title('Spectral Energy Distribution of: ' + target_list[x])
-
-
-		#Now will plot photometry data from Vizier
-		#wavelength micrometer = speed of light / frequency in hz
-		s['wavelength'] = (299792458/(s['sed_freq']*(1e+9)))*(1e+6)
-
-		s['wavelength'] = s['wavelength']*u.micrometer
-		#s['sed_flux'] = s['sed_flux']*u.Jy
-
-
-		#print(s["sed_flux"].to_string())
-
-
-	
-		#sed_freq sed_flux sed_eflux sed_filter
-		#GHz Jy Jy
-		#float64 float32 float32 bytes32
-		#1 Jy = 10-23 erg s-1 cm-2 Hz-1 = 10-26 Watts m-2 Hz-1 = FsubV
-		#print(vis[x])
-		#plt.plot(template_wavelength, template_flux, label = "Spectral Template for: " + vis[x][1][0] + "Star", color = 'black')
-		#plt.scatter(s['wavelength'], s['sed_flux']*100, s=5, color = 'red')
-		plt.scatter(s['wavelength'], s['sed_flux']*100, s=5, color = 'red')
-
-		#plt.ylim(0, 8)
-
-
-		plt.xlim(0.3, 1)
-
-		#print(s.to_string())
-
-		#print(s["sed_flux"].to_string())
-
-
-
-		plt.savefig('static/data/'+target_list[x]+'_sed.png', bbox_inches='tight', pad_inches=0.25)
-		plt.clf()
-
-		x += 1	
-		
 #gen('vega,sirius,gq lupi')

@@ -397,9 +397,8 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
         planet_pixels_pos = np.ones((ydim, xdim, nmethods, kldim, nplanets)) * np.nan
         npospix=np.zeros((nmethods,kldim,nplanets))
 
-    #initialize method counter for loop
+    #initialize method counter for two SNR computation methods
     methodctr = 0
-
     for method in methods:
 
         #KL mode loop
@@ -463,11 +462,11 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
 
                         #count up how many pixels OUTSIDE the mask have >5 sigma values
                         if not isplanetpix:
-                            if indiv[x][y] > 5:
+                            if indiv[x][y] > 5 and (np.isnan(indiv[x][y])==False):
                                 fivesig+=1
 
                         #count up how many pixels OUTSIDE the mask AND inside the control radius have >5 sigma values
-                        if (radius>fwhm) and (radius<ctrlrad):
+                        if (radius>fwhm) and (radius<ctrlrad) and (np.isnan(indiv[x][y])==False) :
                             
                             if not isplanetpix:
                                 if indiv[x][y] > 5:
@@ -505,8 +504,8 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
         print("Wrote %s to "%newname + os.getcwd())
 
         if planets != False:
-            fits.writeto('corepix.fits', planet_pixels_pos[:,:,0,0,:], overwrite=True)  
-            fits.writeto('maskpix.fits', planet_pixels[:,:,0,0,:], overwrite=True)   
+            fits.writeto(newname[:-5]+'_corepix.fits', planet_pixels_pos, overwrite=True)  
+            fits.writeto(newname[:-5]+'_maskpix.fits', planet_pixels, overwrite=True)   
             print(planet_pixels_pos.shape, planet_pixels.shape) 
 
         if checkmask==True:

@@ -2042,9 +2042,10 @@ def contrast_klcompare(data_str, ha_ctrsts, cont_ctrsts, KLlist, IWA, zone_bound
     plt.clf()
 
 
-def final_contrast_fig(data_str, ha_ctrsts, cont_ctrsts, IWA, zone_boundaries, outdir = 'final_ims/'):
+def final_contrast_fig(data_str, ha_ctrsts, cont_ctrsts, IWA, zone_boundaries, outdir = 'final_ims/', point=False):
     
     """
+    point = overplot a detection point with a label. Give in form [sep (in arcsec), contrast, label]
     """
 
     kldim = ha_ctrsts.shape[0]
@@ -2089,6 +2090,8 @@ def final_contrast_fig(data_str, ha_ctrsts, cont_ctrsts, IWA, zone_boundaries, o
             plt.plot((bd, bd), (0, 1), 'k--', lw=1, label='zone boundary')
         else:
             plt.plot((bd, bd), (0, 1), 'k--', lw=1)
+    if point != False:
+        plt.plot(point[0],point[1], 'c*', label=point[3])
     plt.legend()
     # write out in data directory
     plt.savefig(outdir+data_str+'_contrast_curve.jpg')

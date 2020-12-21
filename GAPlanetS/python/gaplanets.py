@@ -99,6 +99,8 @@ def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_fl
     df = populated pandas dataframes
 
     written by Kate Follette June 2019
+    modified October 2020 by KBF- gaussfitter obsolete. Moving to standard astropy models. Moffatt better than 
+    Gaussian. Debug now displays the fit and the image every 10 images in the cube
     """
 
     if wl == 'Line':

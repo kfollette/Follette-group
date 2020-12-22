@@ -46,13 +46,13 @@ def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
         # make a copy - only invoked in case of ghost=True, but can't think of a cleverer way
         imcopy = np.copy(im)
         head = fits.getheader(filelist[i])
-        #crop around star (or ghost for fitting)
-        im = im[ycen - stmpsz-1:ycen + stmpsz, xcen - stmpsz-1:xcen + stmpsz]
+        #crop around star (or ghost) for fitting
+        imcopy = imcopy[ycen - stmpsz-1:ycen + stmpsz, xcen - stmpsz-1:xcen + stmpsz]
 
         #set up fit
         y,x = np.mgrid[:width,:width]
         #Moffat PSF model
-        g_init=models.Moffat2D(np.nanmax(im), stmpsz, stmpsz, 6, 1)
+        g_init=models.Moffat2D(np.nanmax(imcopy), stmpsz, stmpsz, 6, 1)
         fit_g=fitting.LevMarLSQFitter()
 
         #if ghost == True:
@@ -60,31 +60,21 @@ def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
             #im = im[ycen - 50:ycen + 50 + 1, xcen - 50:xcen + 50 + 1]
 
         # do fit
-        p=fit_g(g_init,x,y,im)
-        # gaussfitter returns (background height, amplitude, x, y, width_x, width_y, rotation angle)
-        #if mask == True:
-            # gaussfitter doesn't like nans
-            # replace nans in image with zeros, just for the purposes of fitting (median should be robust)
-            #maskedim = np.copy(im)
-            #maskedim[np.isnan(im) == True] = 0.
-            #p=fit_g(g_init,x,y,maskedim)
-            #p = gaussfitter.moments(maskedim, circle=False, rotate=False, vheight=False, estimator=np.nanmedian)
-        #else:   
-        #p=fit_g(g_init,x,y,im)
+        p=fit_g(g_init,x,y,imcopy)
 
         # populate headers for each individual image
         if ghost == True:
-            head['GSTPEAK'] = p.amplitude
-            head['STARPEAK'] = p.amplitude * ghost_scale
+            head['GSTPEAK'] = p.amplitude.value
+            head['STARPEAK'] = p.amplitude.value * ghost_scale
         else:
-            head['STARPEAK'] = p.amplitude
+            head['STARPEAK'] = p.amplitude.value
 
         # record peak
-        peaks.append(p.amplitude)
+        peaks.append(p.amplitude.value)
 
         # print a warning if any peak values are unphysical
-        if p.amplitude < 0 or p.amplitude > 17000 or np.isnan(p.amplitude) == True:
-            print("warning: unphysical peak value of", p[0], 'for image', i + 1)
+        if (p.amplitude.value < 0) or (p.amplitude.value > 17000) or (np.isnan(p.amplitude.value)) == True:
+            print("warning: unphysical peak value of", p.amplitude.value, 'for image', i + 1)
 
         # write out file with peak info in header
         if ghost == True:
@@ -97,7 +87,7 @@ def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
             # print('fit peak is:', p[0], '. max pixel is: ', np.nanmax(im[cen-10:cen+10,cen-10:cen+10]))
             imsz = im.shape[1]
             imcen = int((imsz - 1) / 2.)
-            diff[i] = p.amplitude - np.nanmax(im[imcen - 10:imcen + 10, imcen - 10:imcen + 10])
+            diff[i] = p.amplitude.value - np.nanmax(im[imcen - 10:imcen + 10, imcen - 10:imcen + 10])
 
     # write out list of peaks one directory up so KLIP doesn't try to pull it
     if ghost == True:

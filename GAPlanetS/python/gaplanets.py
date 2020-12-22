@@ -181,11 +181,11 @@ def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_fl
 
         if electrons == True:
             # if units are electrons, raise the peak threshhold
-            if (p.amplitude < 0) or (p.amplitude > 50000):
-                print("warning: unphysical peak value of", p.amplitude, 'for image', i + 1)
+            if (p.amplitude.value < 0) or (p.amplitude.value > 50000):
+                print("warning: unphysical peak value of", p.amplitude.value, 'for image', i + 1)
         if electrons == False:
-            if (p.amplitude < 0) or (p.amplitude > 17000):
-                print("warning: unphysical peak value of", p.amplitude, 'for image', i + 1)
+            if (p.amplitude.value < 0) or (p.amplitude.value > 17000):
+                print("warning: unphysical peak value of", p.amplitude.value, 'for image', i + 1)
 
 
 #    print('median fwhm', np.median(fwhmlist))

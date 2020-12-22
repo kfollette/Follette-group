@@ -1,7 +1,7 @@
 from astropy.io import fits
 import numpy as np
 import glob
-import gaussfitter
+from astropy.modeling import models, fitting, functional_models
 
 
 def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
@@ -37,41 +37,53 @@ def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
             return
     diff = np.zeros(len(filelist))
     peaks = []
+    #size of image stamp
+    width = 31
+    stmpsz = int((width - 1) / 2)
 
     for i in np.arange(len(filelist)):
         im = fits.getdata(filelist[i])
         # make a copy - only invoked in case of ghost=True, but can't think of a cleverer way
         imcopy = np.copy(im)
         head = fits.getheader(filelist[i])
+        #crop around star (or ghost for fitting)
+        im = im[ycen - stmpsz-1:ycen + stmpsz, xcen - stmpsz-1:xcen + stmpsz]
 
-        if ghost == True:
+        #set up fit
+        y,x = np.mgrid[:width,:width]
+        #Moffat PSF model
+        g_init=models.Moffat2D(np.nanmax(im), stmpsz, stmpsz, 6, 1)
+        fit_g=fitting.LevMarLSQFitter()
+
+        #if ghost == True:
             # CROP AROUND GHOST
-            im = im[ycen - 50:ycen + 50 + 1, xcen - 50:xcen + 50 + 1]
+            #im = im[ycen - 50:ycen + 50 + 1, xcen - 50:xcen + 50 + 1]
 
-        # do fits
+        # do fit
+        p=fit_g(g_init,x,y,im)
         # gaussfitter returns (background height, amplitude, x, y, width_x, width_y, rotation angle)
-        if mask == True:
+        #if mask == True:
             # gaussfitter doesn't like nans
             # replace nans in image with zeros, just for the purposes of fitting (median should be robust)
-            maskedim = np.copy(im)
-            maskedim[np.isnan(im) == True] = 0.
-            # fits.writeto('test.fits',maskedim,overwrite=True)
-            p = gaussfitter.moments(maskedim, circle=False, rotate=False, vheight=False, estimator=np.nanmedian)
-        else:
-            p = gaussfitter.moments(im, circle=False, rotate=False, vheight=False)
+            #maskedim = np.copy(im)
+            #maskedim[np.isnan(im) == True] = 0.
+            #p=fit_g(g_init,x,y,maskedim)
+            #p = gaussfitter.moments(maskedim, circle=False, rotate=False, vheight=False, estimator=np.nanmedian)
+        #else:   
+        #p=fit_g(g_init,x,y,im)
 
         # populate headers for each individual image
         if ghost == True:
-            head['GSTPEAK'] = p[0]
-            head['STARPEAK'] = p[0] * ghost_scale
+            head['GSTPEAK'] = p.amplitude
+            head['STARPEAK'] = p.amplitude * ghost_scale
         else:
-            head['STARPEAK'] = p[0]
+            head['STARPEAK'] = p.amplitude
 
         # record peak
-        peaks.append(p[0])
+        peaks.append(p.amplitude)
 
         # print a warning if any peak values are unphysical
-        if p[0] < 0 or p[0] > 17000 or np.isnan(p[0]) == True:
+        if p.amplitude < 0 or p.amplitude > 17000 or np.isnan(p.amplitude) == True:
             print("warning: unphysical peak value of", p[0], 'for image', i + 1)
 
         # write out file with peak info in header
@@ -85,7 +97,7 @@ def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
             # print('fit peak is:', p[0], '. max pixel is: ', np.nanmax(im[cen-10:cen+10,cen-10:cen+10]))
             imsz = im.shape[1]
             imcen = int((imsz - 1) / 2.)
-            diff[i] = p[0] - np.nanmax(im[imcen - 10:imcen + 10, imcen - 10:imcen + 10])
+            diff[i] = p.amplitude - np.nanmax(im[imcen - 10:imcen + 10, imcen - 10:imcen + 10])
 
     # write out list of peaks one directory up so KLIP doesn't try to pull it
     if ghost == True:

@@ -19,7 +19,9 @@ warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
 
 
-def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annuli_stop, annuli_inc, movement_start, movement_stop, movement_inc, subsections_start, subsections_stop, subsections_inc, FWHM, smooth, ra, pa, wid, input_contrast, x_positions, y_positions, saveSNR = True, singleAnn = False, highpass = True, verbose = False, sigma = 5):
+def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annuli_stop, annuli_inc, movement_start, 
+    movement_stop, movement_inc, subsections_start, subsections_stop, subsections_inc, FWHM, smooth, ra, pa, wid, 
+    input_contrast, saveSNR = True, singleAnn = False, highpass = True, verbose = False, sigma = 5):
 
     # Make function to write out data 
 
@@ -105,7 +107,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
         print(f"IWA = {iwa}, KL Modes = {klmodes}, FWHM = {FWHM}, Smoothing Value = {smooth}")
         print()
         print("Planet Parameters")
-        print(f"Radius= {ra}, Position Angle = {pa}, Mask Width = {wid}, Input Contrast - {input_contrast}, X Positions = {x_positions}, Y Positions = {y_positions} ")
+        print(f"Radius= {ra}, Position Angle = {pa}, Mask Width = {wid}, Input Contrast - {input_contrast}") #, X Positions = {x_positions}, Y Positions = {y_positions} ")
         print()
         print("reading: " + path_to_files + "/*.fits")
 
@@ -191,7 +193,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     yDim = dataset._input.shape[1]
     owa = min(xDim,yDim)/2
 
-    nplanets = len(x_positions)
+    nplanets = len(pa)
     
     # create cube to eventually hold parameter explorer data
     PECube = np.zeros((9,int((subsections_stop-subsections_start)/subsections_inc+1), len(klmodes),
@@ -279,6 +281,12 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
                 dataset_copy = np.copy(incube)
             
+                #get position angle in radians relative to N up E left
+                pa_nup = [x*np.pi/180 for x in pa]
+
+                #translate to x and y positions
+                x_positions = -1*np.sin(pa_nup)*ra
+                y_positions = np.cos(pa_nup)*ra
             
                 # Loop through kl modes
                 cont_meas = np.zeros((len(klmodes), 1))

@@ -2,7 +2,6 @@ from astropy.io import fits
 import os
 import pandas as pd
 import numpy as np
-import gaussfitter
 import astropy.convolution as conv
 from astropy.modeling import models, fitting, functional_models
 import pyklip_headers as pykh
@@ -157,7 +156,7 @@ def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_fl
         fwhm=p.fwhm
 
         fullfit.append(p)
-        peaklist.append(p.amplitude)
+        peaklist.append(p.amplitude.value)
         fwhmlist.append(fwhm)
         if debug==True:
             if i%10 == 0:

@@ -4,6 +4,7 @@ import statistics as stat
 from astropy.io import fits
 import matplotlib.pyplot as plt
 import astropy.convolution as conv
+import pyklip.klip as klip
 import os
 import sys
 import time
@@ -301,7 +302,7 @@ def noisemap(indiv, planets, fwhm, method='stdev'):
 
 
 
-def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveOutput = True, ctrlrad=30, outputName = None, method = 'all', checkmask=False, makenoisemap=False):
+def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveOutput = True, ctrlrad=30, outputName = None, method = 'all', checkmask=False, makenoisemap=False, sigma = 5):
     """
     creates signal to noise ratio map of image.
     
@@ -348,10 +349,12 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
 
     #smooth input image by specified amount
     if smooth > 0:
-        print("smoothing")
-        gauss = conv.Gaussian2DKernel(stddev=smooth)
-        inpsm =conv.convolve(inp, gauss, preserve_nan=True)
-        inp = inpsm
+        # print("smoothing")
+        # gauss = conv.Gaussian2DKernel(stddev=smooth)
+        # inpsm =conv.convolve(inp, gauss, preserve_nan=True)
+        # inp = inpsm
+        inp = klip.nan_gaussian_filter(inp, smooth)
+
   
     #gets size of pixel value array
     try:
@@ -412,7 +415,10 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
             NoiseMap = noisemap(indiv, planets, fwhm, method=method)
             fivesig = 0
             fivesig_atmask=0
-
+            fivesig_inmask = 0
+            allplanetpix = 0
+            notplanetpix = 0
+            
             # loops through all pixels in array
             for x in range (xdim):
                 for y in range (ydim):
@@ -462,15 +468,25 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
 
                         #count up how many pixels OUTSIDE the mask have >5 sigma values
                         if not isplanetpix:
-                            if indiv[x][y] > 5 and (np.isnan(indiv[x][y])==False):
+                            notplanetpix += 1
+                            if indiv[x][y] > sigma:
                                 fivesig+=1
 
                         #count up how many pixels OUTSIDE the mask AND inside the control radius have >5 sigma values
                         if (radius>fwhm) and (radius<ctrlrad) and (np.isnan(indiv[x][y])==False) :
                             
                             if not isplanetpix:
-                                if indiv[x][y] > 5:
+                                if indiv[x][y] > sigma:
                                     fivesig_atmask += 1
+                        #count up how many pixels INSIDE the mask have >5 sigma values
+                        if (radius>fwhm):
+                            
+                            if isplanetpix:
+                                allplanetpix += 1
+                                if indiv[x][y] > sigma:
+                                    fivesig_inmask += 1
+                    
+                     
 
                 #store output for this method and # KL modes
                 Output[methodctr,s,:,:] = indiv
@@ -486,7 +502,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                         snrs[methodctr,s,p]=np.nanmax(planet_pixels[:,:,methodctr,s,p])
                         snr_sums[methodctr,s,p] = np.nansum(planet_pixels_pos[:,:,methodctr,s,p])/npospix[methodctr,s,p]
 
-                    snr_spurious[methodctr,s,:]=[fivesig, fivesig_atmask]
+                    snr_spurious[methodctr,s,:]=[fivesig, fivesig_atmask, fivesig_inmask, allplanetpix, notplanetpix]
                 #print("max SNR under mask is", snrs[methodctr,s], "for slice", s)
                 #print("sum of SNRs under mask is", snr_sums[methodctr,s], "for slice", s)
                     max_toprint = [round(n,5) for n in snrs[methodctr,s]]

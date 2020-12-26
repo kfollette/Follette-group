@@ -80,7 +80,7 @@ def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
         if ghost == True:
             fits.writeto(filelist[i], imcopy, header=head, overwrite=True)
         else:
-            fits.writeto(filelist[i], im, header=head, overwrite=True)
+            fits.writeto(filelist[i], imcopy, header=head, overwrite=True)
 
         if debug == True:
             # print(filelist[i])

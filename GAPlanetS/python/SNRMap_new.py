@@ -520,7 +520,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
         if planets != False:
             fits.writeto(newname[:-5]+'_corepix.fits', planet_pixels_pos, overwrite=True)  
             fits.writeto(newname[:-5]+'_maskpix.fits', planet_pixels, overwrite=True)   
-            print(planet_pixels_pos.shape, planet_pixels.shape) 
+            #print(planet_pixels_pos.shape, planet_pixels.shape) 
 
         if checkmask==True:
             maskedims = msks*inp

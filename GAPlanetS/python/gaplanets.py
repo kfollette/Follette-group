@@ -19,7 +19,7 @@ import matplotlib.patches as patches
 import SNRMap_new as snr
 from importlib import reload
 from datetime import datetime
-reload(snr)
+from scipy import ndimage
 
 def SliceCube(imfile, rotfile, indir='./', slicedir='sliced/'):
     """
@@ -1187,6 +1187,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_noco
     # compile specs for the injected planets
     planetspecs = (seps, thetas, mask)
     # make a SNRMap cube
+    print(fwhm, outputdir, prefix_fakes,strklip, planetspecs, klcube.shape)
     Output, snrs, snr_sums, snr_spurious, maskedims = snr.create_map(klcube, fwhm, saveOutput=True, outputName=outputdir+prefix_fakes+strklip + '_SNRMap.fits',
                                        planets=planetspecs, checkmask=True, method='all',ctrlrad=ctrlrad)
     # create a list that will store throughputs
@@ -1261,7 +1262,7 @@ def collapsekl(pedir, pename, kllist, snrmeth='absmed', writestr=False):
     stdevkl: array containing standard deviations over the specified KL modes
     """
     if writestr == False:
-        writestr = pename[:-17]
+        writestr = pename[:-20]
 
     # read in image and header
     klcube = fits.getdata(pedir + pename)
@@ -1271,16 +1272,14 @@ def collapsekl(pedir, pename, kllist, snrmeth='absmed', writestr=False):
     if snrmeth == "absmed":
         slice = 1
     if snrmeth == "stdev":
-        slice = 0
-
-    print('cube shape', klcube.shape)
-    klcube=klcube[slice::2,:,:,:,:]
-    print('cube shape', klcube.shape)
-
+        slice = 0  
     dims = klcube.shape
-
-    # set up a blank array to be filled
-    klkeep = np.zeros([4, dims[3], dims[4], len(kllist)])
+    if snrmeth != 'all':
+        print('keeping only', snrmeth, 'maps')
+        klcube=klcube[slice::2,:,:,:,:]
+        klkeep = np.zeros([4, dims[3], dims[4], len(kllist)])
+    else:
+        klkeep = np.zeros([8, dims[3], dims[4], len(kllist)])
 
     # pull KL modes of parameter explorer from the header
     allkl = list(map(int, head['KLMODES'][1:-1].split(",")))
@@ -1392,8 +1391,33 @@ def find_best(pedir, pename, kllist, snrmeth='absmed', writestr=False, weights=[
     print('metric scores for peak (snr, snr neigbors, stdev, stdev neighbors, agg) are:', metric_scores)
     return (snr_norm, nq_snr, stdev_norm, nq_stdev, agg, ann_val, movm_val, metric_scores)
 
+def filter_nan_gaussian_conserving(arr, sigma):
+    """Apply a gaussian filter to an array with nans.
 
-def find_best_new(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.5], debug=False):
+    Intensity is only shifted between not-nan pixels and is hence conserved.
+    The intensity redistribution with respect to each single point
+    is done by the weights of available pixels according
+    to a gaussian distribution.
+    All nans in arr, stay nans in gauss.
+    """
+    nan_msk = np.isnan(arr)
+
+    loss = np.zeros(arr.shape)
+    loss[nan_msk] = 1
+    loss = ndimage.gaussian_filter(
+            loss, sigma=sigma, mode='constant', cval=1)
+
+    gauss = arr.copy()
+    gauss[nan_msk] = 0
+    gauss = ndimage.gaussian_filter(
+            gauss, sigma=sigma, mode='constant', cval=0)
+    gauss[nan_msk] = np.nan
+
+    gauss += loss * arr
+
+    return gauss
+
+def find_best_new(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.5], debug=False, smt=3, snrmeth='all'):
     """
     collapses parameter explorer file and extracts the optimal parameter value
 
@@ -1401,7 +1425,7 @@ def find_best_new(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.
     pedir: directory holding parameter explorer file
     pename: name of paramexplore file
     kllist: list of KL modes you want to collapse over
-    weights: weights for parameter quality metric. [SNR, SNR neighbors, stdev, stdev neighbors]
+    weights: weights for parameter quality metric. [SNR, SNR neighbors, stdev, stdev neighbors, spurious pixels]
 
     RETURNS:
 
@@ -1464,14 +1488,6 @@ def find_best_new(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.
     snr_norm_stdevSNR = avgkl_stdevSNR[0,:,:] / np.nanmax(avgkl_stdevSNR[0,:,:])
     snr_norm_stdevSNR_umask = avgkl_stdevSNR[1,:,:] / np.nanmax(avgkl_stdevSNR[1,:,:])
 
-    #average the two SNR computation methods
-    snr_norm_avg = (snr_norm_absmedSNR + snr_norm_stdevSNR) / 2.
-    snr_norm_avg_umask = (snr_norm_absmedSNR_umask + snr_norm_stdevSNR_umask) / 2.
-
-
-    # stdevkl[avgkl<3]=np.nan
-    # stdev_norm = 1/(stdevkl/np.nanmin(stdevkl))
-    
     #normalize standard deviations across KL modes. Low values = good
     stdev_norm_absmedSNR_cube = stdevkl_absmedSNR[0:2,:,:] / avgkl_absmedSNR[0:2,:,:]
     #print(stdev_norm_absmedSNR_cube.shape)
@@ -1481,23 +1497,51 @@ def find_best_new(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.
     stdev_norm_stdevSNR = 1 - (stdev_norm_stdevSNR_cube[0,:,:]/np.nanmax(stdev_norm_stdevSNR_cube[0,:,:]))
     stdev_norm_stdevSNR_umask = 1 - (stdev_norm_stdevSNR_cube[1,:,:]/np.nanmax(stdev_norm_stdevSNR_cube[1,:,:]))
 
-    #average the two SNR computation methods
-    stdev_norm_avg = (stdev_norm_absmedSNR + stdev_norm_stdevSNR) / 2.
-    stdev_norm_avg_umask = (stdev_norm_absmedSNR_umask + stdev_norm_stdevSNR_umask) / 2.
-
     #spurious pixels metrics
-    spurpix_norm_absmedSNR = 1 - (avgkl_absmedSNR[3,:,:]/np.nanmax(avgkl_absmedSNR[3,:,:]))
-    spurpix_norm_stdevSNR = 1 - (avgkl_stdevSNR[3,:,:]/np.nanmax(avgkl_stdevSNR[3,:,:]))
+    spurpix_absmedSNR = avgkl_absmedSNR[3,:,:]
+    spurpix_stdevSNR = avgkl_stdevSNR[3,:,:]
+    #spurpix_norm_absmedSNR = 1 - (avgkl_absmedSNR[3,:,:]/np.nanmax(avgkl_absmedSNR[3,:,:]))
+    #spurpix_norm_stdevSNR = 1 - (avgkl_stdevSNR[3,:,:]/np.nanmax(avgkl_stdevSNR[3,:,:]))
+
 
     #average the two SNR computation methods
-    spurpix_norm_avg = (spurpix_norm_absmedSNR + spurpix_norm_stdevSNR) / 2.
+    if snrmeth=='all':
+        snr_norm_avg = (snr_norm_absmedSNR + snr_norm_stdevSNR) / 2.
+        snr_norm_avg_umask = (snr_norm_absmedSNR_umask + snr_norm_stdevSNR_umask) / 2.
+        stdev_norm_avg = (stdev_norm_absmedSNR + stdev_norm_stdevSNR) / 2.
+        stdev_norm_avg_umask = (stdev_norm_absmedSNR_umask + stdev_norm_stdevSNR_umask) / 2.
+        spurpix_avg = (spurpix_absmedSNR + spurpix_stdevSNR) / 2.
+    elif snrmeth=='absmed':
+        snr_norm_avg = snr_norm_absmedSNR
+        snr_norm_avg_umask = snr_norm_absmedSNR_umask
+        stdev_norm_avg = stdev_norm_absmedSNR
+        stdev_norm_avg_umask = stdev_norm_absmedSNR_umask
+        spurpix_avg = spurpix_absmedSNR
+    elif snrmeth=='stdev':
+        snr_norm_avg = snr_norm_stdevSNR
+        snr_norm_avg_umask = snr_norm_stdevSNR_umask
+        stdev_norm_avg = stdev_norm_stdevSNR
+        stdev_norm_avg_umask = stdev_norm_stdevSNR_umask
+        spurpix_avg = spurpix_stdevSNR
+    else:
+        print('please provide a valid snr computation method')
+        return
 
+    # stdevkl[avgkl<3]=np.nan
+    # stdev_norm = 1/(stdevkl/np.nanmin(stdevkl))
+    
     #computes neighbor quality by smoothing with Gaussian
-    kern = conv.Gaussian2DKernel(x_stddev=2)
-    nq_snr = conv.convolve(snr_norm_avg, kern, preserve_nan=True, nan_treatment='interpolate')
-    nq_stdev = conv.convolve(stdev_norm_avg, kern, preserve_nan = True, nan_treatment='interpolate')
-    nq_snr_umask = conv.convolve(snr_norm_avg_umask, kern, preserve_nan=True, nan_treatment='interpolate')
-    nq_stdev_umask = conv.convolve(stdev_norm_avg_umask, kern, preserve_nan = True, nan_treatment='interpolate')
+    #kern = conv.Gaussian2DKernel(x_stddev=2)
+    #nq_snr = conv.convolve(snr_norm_avg, kern, preserve_nan=True, nan_treatment='interpolate')
+    #nq_stdev = conv.convolve(stdev_norm_avg, kern, preserve_nan = True, nan_treatment='interpolate')
+    #nq_snr_umask = conv.convolve(snr_norm_avg_umask, kern, preserve_nan=True, nan_treatment='interpolate')
+    #nq_stdev_umask = conv.convolve(stdev_norm_avg_umask, kern, preserve_nan = True, nan_treatment='interpolate')
+
+    sig=smt
+    nq_snr = filter_nan_gaussian_conserving(snr_norm_avg,sig)
+    nq_stdev = filter_nan_gaussian_conserving(stdev_norm_avg,sig)
+    nq_snr_umask = filter_nan_gaussian_conserving(snr_norm_avg_umask,sig)
+    nq_stdev_umask = filter_nan_gaussian_conserving(stdev_norm_avg_umask,sig)
 
     #normalizes neighbor quality
     nq_snr /= np.nanmax(nq_snr)
@@ -1528,7 +1572,7 @@ def find_best_new(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.
         qual_cube[17,:,:]=nq_stdev
         qual_cube[18,:,:]=nq_stdev_umask
 
-        fits.writeto(pedir+pename[:-4]+'_paramqual_cube.fits', qual_cube, overwrite=True)
+        fits.writeto(pedir+pename[:-5]+'_paramqual_cube.fits', qual_cube, overwrite=True)
 
     #average under mask and peak pixel estimates
     snr_norm_combo = (snr_norm_avg + snr_norm_avg_umask) / 2.
@@ -1536,27 +1580,35 @@ def find_best_new(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.
     stdev_norm_combo = (stdev_norm_avg + stdev_norm_avg_umask) / 2.
     nq_stdev_combo = (nq_stdev + nq_stdev_umask) / 2.
 
+
     #write out the cubes being used for the final metric
     metric_cube = np.zeros([6,nstepy,nstepx])
     metric_cube[0,:,:]= snr_norm_combo
     metric_cube[1,:,:]= nq_snr_combo
     metric_cube[2,:,:]= stdev_norm_combo
     metric_cube[3,:,:]= nq_stdev_combo
+
+    #spurious pixel metric = 1 if no spurious pixels and 0 if max number for this dataset
+    if np.nanmax(spurpix_avg)>0:
+        spurpix_norm_avg = 1-spurpix_avg/np.nanmax(spurpix_avg)
+    else: #edge case - no spurious pixels in any image
+        spurpix_norm_avg= 1+spurpix_avg
+     
     metric_cube[4,:,:]= spurpix_norm_avg
 
     #calculate parameter quality metric by summing the four quantities
     agg = weights[0] * snr_norm_combo + weights[1] * nq_snr_combo + weights[2] * stdev_norm_combo + weights[3] * nq_stdev_combo + weights[4] * spurpix_norm_avg
     metric_cube[5,:,:]=agg
 
-    fits.writeto(pedir+pename[:-4]+'_paramqual_metrics.fits', metric_cube, overwrite=True)
+    fits.writeto(pedir+pename[:-5]+'_paramqual_metrics.fits', metric_cube, overwrite=True)
 
     ##find location or peak of parameter quality metric and print info
     ind = np.where(agg == np.nanmax(agg))
 
     #extract metric scores for this location
-    metric_scores = [snr_norm_combo[ind][0], nq_snr_combo[ind][0], stdev_norm_combo[ind][0], nq_stdev_combo[ind][0], spurpix_norm_avg[ind][0], agg[ind][0]]
+    metric_scores = [snr_norm_combo[ind][0], nq_snr_combo[ind][0], stdev_norm_combo[ind][0], nq_stdev_combo[ind][0], spurpix_norm_avg[ind], agg[ind][0]]
 
-    #translate to annuli and mocement values
+    #translate to annuli and movement values
     ann_val = ymin + ind[0] * ystep
     movm_val = xmin + ind[1] * xstep
 
@@ -1568,8 +1620,7 @@ def find_best_new(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.
     print('peak is at', [ind[0][0], ind[1][0]], 'corresponding to annuli', ann_val, ' and movement', movm_val)
     print('SNR value for fake planets (avg of SNR methods and planets) is', avgSNR)
     print('metric scores for peak (snr, snr neigbors, stdev, stdev neighbors, agg) are:', metric_scores)
-    return (snr_norm_combo, nq_snr_combo, stdev_norm_combo, nq_stdev_combo, spurpix_norm_avg, agg, ann_val, movm_val, metric_scores, avgSNR)
-
+    return (snr_norm_combo, nq_snr_combo, stdev_norm_combo, nq_stdev_combo, spurpix_avg, agg, ann_val, movm_val, metric_scores, avgSNR)
 
 
 def radarr(xdim,ydim):
@@ -1594,10 +1645,11 @@ def ctrlmask(xdim, ydim, rin, rout):
     new[(arr >= rin) & (arr <= rout)] = np.nan
     return(new)
 
-def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.5], lowsnr=False):
+def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.5], lowsnr=False, snrmeth=
+    'all', smt=3):
     
     snr_norm, nq_snr, stdev_norm, nq_stdev, spurpix, agg, ann_val, movm_val, metric_scores, avgSNR = \
-        find_best_new(pedir, pename, kllist, writestr=writestr, weights=weights)
+        find_best_new(pedir, pename, kllist, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)
 
     if writestr == False:
         writestr = pename[:-17]
@@ -1650,27 +1702,33 @@ def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im2, cax=cax, orientation='vertical', label="SNR Neighbor Quality")
 
-    im3 = ax3.imshow(stdev_norm, origin='lower',
-                     cmap='magma', vmin=0, vmax=1)
+    im3 = ax3.imshow(spurpix, origin='lower', cmap='magma', vmin=0, vmax=np.nanmax(spurpix))
     ax3.set_xlabel("movement parameter")
-    ax3.set_ylabel("annuli parameter")
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im3, cax=cax, orientation='vertical', label="Standard Deviation Metric")
-
-    im4 = ax4.imshow(nq_stdev, origin='lower',
-                     cmap='magma', vmin=0, vmax=1)
+    plt.colorbar(im3, cax=cax, orientation='vertical', label="Spurious Pixels")
+    
+    im4 = ax4.imshow(1-spurpix/np.nanmax(spurpix), origin='lower', cmap='magma', vmin=0, vmax=1)
     ax4.set_xlabel("movement parameter")
-    ax4.set_ylabel("annuli parameter")
     divider = make_axes_locatable(ax4)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im4, cax=cax, orientation='vertical', label="Stdev Neighbor Quality")
-
-    im5 = ax5.imshow(spurpix, origin='lower', cmap='magma', vmin=0, vmax=1)
+    plt.colorbar(im4, cax=cax, orientation='vertical', label="Spurious Pixel Metric")
+    
+    im5 = ax5.imshow(stdev_norm, origin='lower',
+                     cmap='magma', vmin=0, vmax=1)
     ax5.set_xlabel("movement parameter")
+    ax5.set_ylabel("annuli parameter")
     divider = make_axes_locatable(ax5)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im5, cax=cax, orientation='vertical', label="Spurious Pixel Metric")
+    plt.colorbar(im5, cax=cax, orientation='vertical', label="Standard Deviation Metric")
+
+    #im4 = ax4.imshow(nq_stdev, origin='lower',
+     #                cmap='magma', vmin=0, vmax=1)
+    #ax4.set_xlabel("movement parameter")
+    #ax4.set_ylabel("annuli parameter")
+    #divider = make_axes_locatable(ax4)
+    #cax = divider.append_axes('right', size='5%', pad=0.05)
+    #plt.colorbar(im4, cax=cax, orientation='vertical', label="Stdev Neighbor Quality")
 
     # plot metric
     im6 = ax6.imshow(agg, origin='lower', vmin=1, vmax=np.nanmax(agg))
@@ -1687,7 +1745,9 @@ def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5
     ax6.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
 
     plt.savefig(pedir+writestr+'_paramqual.png')
-    return(ann_val, movm_val)
+    
+    return(ann_val, movm_val, agg)
+
 
 def get_pe_df(dfname):
     # define dataframe if doesn't already exist

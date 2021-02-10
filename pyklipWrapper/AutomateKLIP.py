@@ -359,7 +359,7 @@ for a in range(annuli_start, annuli_stop+1, annuli_inc):
                 print("Starting KLIP")
                 #run klip for given parameters
                 parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix=outputFileName, 
-                    annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, 
+                    annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=False, 
                     mode="ADI", highpass = highpass, time_collapse='median')
 
                 #collapse in time dimension

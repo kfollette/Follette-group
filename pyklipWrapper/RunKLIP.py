@@ -174,7 +174,7 @@ print("Starting KLIP")
 
 #run klip for given parameters
 parallelized.klip_dataset(dataset, outputdir=(pathToFiles + "_klip/"), fileprefix= ('mean_' + str(outputFileName)), annuli=annuli,
-                          subsections=subsections, movement=movement, numbasis=klmodes, calibrate_flux=True, mode="ADI",
+                          subsections=subsections, movement=movement, numbasis=klmodes, calibrate_flux=False, mode="ADI",
                           highpass = highpass, time_collapse='median')
            
 #cube to hold median combinations of klipped images

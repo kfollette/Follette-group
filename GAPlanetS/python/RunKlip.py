@@ -24,7 +24,8 @@ dataset = MAGAO.MAGAOData(filelist)
 
 outputFileName = str(name)
 
-parallelized.klip_dataset(dataset, outputdir="", fileprefix=outputFileName, annuli=annuli2, subsections=1, movement=movement2, numbasis=[1,2,3,4,5,10,20,50,100], calibrate_flux=True, mode="ADI")
+parallelized.klip_dataset(dataset, outputdir="", fileprefix=outputFileName, annuli=annuli2, 
+	subsections=1, movement=movement2, numbasis=[1,2,3,4,5,10,20,50,100], calibrate_flux=False, mode="ADI")
 
 print("Shape of dataset.output is " + str(dataset.output.shape))
 print("Shape of dataset.output[1] is " + str(dataset.output[1].shape))

@@ -268,7 +268,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                         print("Starting KLIP")
                     #run klip for given parameters
                     parallelized.klip_dataset(dataset, outputdir=(path_to_files + "_klip/"), fileprefix=f"{outfile_name}_a{numAnn}_m{m}", 
-                        annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=True, 
+                        annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=False, 
                         mode="ADI", highpass = highpass, time_collapse='median', verbose = verbose)
 
                     

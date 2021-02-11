@@ -46,13 +46,23 @@ def collapse_planets(pename, pedir='./', writestr=False, snrthresh=False):
 	dims = pecube.shape
 
 
-	#if snrthresh set, find values where peak pixel SNRs are below threshhold and replace with nans
+	#if snrthresh set, find values where peak pixel SNRs (slices 1/2) are below threshhold and replace with nans
 	if (snrthresh != False):
+		#stdev maps
 		ind = np.where(pecube[0,:,:,:,:,:]<snrthresh)
 		lowsnr_mask=np.ones(dims[1:])
 		lowsnr_mask[ind]=np.nan
-		for sl in np.arange(4):
+		#apply to peak (sl 0) and avg under mask (sl 2)
+		for sl in [0,2]:
 			pecube[sl,:,:,:,:]*=lowsnr_mask
+		
+		#absmed maps
+		ind_absmed = np.where(pecube[1,:,:,:,:,:]<snrthresh)
+		lowsnr_mask_absmed=np.ones(dims[1:])
+		lowsnr_mask_absmed[ind_absmed]=np.nan
+		#apply to peak (sl 1) and avg under mask (sl 3)
+		for sl in [1,3]:
+			pecube[sl,:,:,:,:]*=lowsnr_mask_absmed
 
 	#normalize each planet by dividing by its maximum SNR across all movement and annuli
 	#does NOT average over KL modes or metric

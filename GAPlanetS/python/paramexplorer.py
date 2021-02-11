@@ -79,8 +79,8 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
             prihdr['SNRFWHM']=str(FWHM)
     
         if(allParams):
-            prihdr["SLICE1"]="average planet peak value under mask in standard deviation noise map"
-            prihdr["SLICE2"] = "average planet peak value under mask in median absolute value noise map"
+            prihdr["SLICE1"]="planet peak value under mask in standard deviation noise map"
+            prihdr["SLICE2"] = "planet peak value under mask in median absolute value noise map"
             prihdr["SLICE3"] = "average value of positive pixels under mask in standard deviation noise map"
             prihdr["SLICE4"] = "average value of positive pixels under mask in median absolute value noise map"
             prihdr["SLICE5"] = "total number of pixels >5sigma outside of mask in standard deviation noise map"

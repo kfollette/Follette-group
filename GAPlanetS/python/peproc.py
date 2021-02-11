@@ -51,7 +51,7 @@ def collapse_planets(pename, pedir='./', writestr=False, snrthresh=False):
 		ind = np.where(pecube[0,:,:,:,:,:]<snrthresh)
 		lowsnr_mask=np.ones(dims[1:])
 		lowsnr_mask[ind]=np.nan
-		for sl in np.arange(3):
+		for sl in np.arange(4):
 			pecube[sl,:,:,:,:]*=lowsnr_mask
 
 	#normalize each planet by dividing by its maximum SNR across all movement and annuli

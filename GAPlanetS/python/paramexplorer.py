@@ -18,84 +18,10 @@ from tqdm import tqdm
 warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
 
-# Make function to write out data 
-def writeData(im, prihdr, allParams = False, snrmap = False, pre = ''):
-    #function writes out fits files with important info captured in fits headers
-    
-    if (allParams):
-    #for parameter explorer cube output - capture full range of parameter values
-        annuli_fname = annuli
-        annuli_head = annuli
-        movement_fname = movement
-        movement_head = movement
-        subsections_fname = subsections
-        subsections_head = subsections
-       
-        #if program iterates over several parameter values, formats these for fits headers and file names
-        if (isinstance(annuli, tuple)):
-            annuli_fname = str(annuli[0]) + '-' + str(annuli[1]) + 'x' + str(annuli[2])
-            annuli_head = str(annuli[0]) + 'to' + str(annuli[1]) + 'by' + str(annuli[2])  
-        if (isinstance(movement, tuple)):
-            movement_fname = str(movement[0]) + '-' + str(movement[1]) + 'x' + str(movement[2])
-            movement_head = str(movement[0]) + 'to' + str(movement[1]) + 'by' + str(movement[2])
-        if (isinstance(subsections, tuple)):
-            subsections_head = str(subsections[0]) + 'to' + str(subsections[1]) + 'by' + str(subsections[2])
-            subsections_fname = str(subsections[0]) + '-' + str(subsections[1]) + '-' + str(subsections[2])
-    else:
-        #for individual images and SNR maps, capture the single parameter values used
-        annuli_head = a
-        movement_head = m
-        subsections_head = s
-        annuli_fname = a
-        movement_fname = m
-        subsections_fname = s
-
-    #shortens file path to bottom 4 directories so it will fit in fits header
-    try:
-        path_to_files_short = '/'.join(path_to_files.split(os.path.sep)[-4:])
-    except:
-        path_to_files_short = path_to_files
-            
-    #adds info to fits headers
-    prihdr['ANNULI']=str(annuli_head)
-    prihdr['MOVEMENT']=str(movement_head)
-    prihdr['SUBSCTNS']=str(subsections_head)
-    prihdr['IWA'] = str(iwa)
-    prihdr['KLMODES']=str(klmodes)
-    prihdr['FILEPATH']=str(path_to_files_short)
- 
-    if(snrmap):
-        rad, pa, wid = mask 
-        prihdr['MASK_RAD']=str(rad)
-        prihdr['MASK_PA']=str(pa)
-        prihdr['MASK_WID']=str(wid)
-        prihdr['SNRSMTH']=str(smooth)
-        prihdr['SNRFWHM']=str(FWHM)
-
-    if(allParams):
-        prihdr["SLICE1"]="planet peak value under mask in standard deviation noise map"
-        prihdr["SLICE2"] = "planet peak value under mask in median absolute value noise map"
-        prihdr["SLICE3"] = "average value of positive pixels under mask in standard deviation noise map"
-        prihdr["SLICE4"] = "average value of positive pixels under mask in median absolute value noise map"
-        prihdr["SLICE5"] = "total number of pixels >5sigma outside of mask in standard deviation noise map"
-        prihdr["SLICE6"] = "total number of pixels >5sigma outside of mask in median absolute value noise map"
-        prihdr["SLICE7"] = "total number of pixels >5sigma outside of mask and at similar radius in standard deviation noise map"
-        prihdr["SLICE8"] = "total number of pixels >5sigma outside of mask and at similar radius in median absolute value noise map"
-
-
-
-    #writes out files
-    fits.writeto(str(path_to_files) + "_klip/" + str(pre)  + outfile_name + "_a" + str(annuli_fname) + "m" + str(
-        movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + suff + '-klmodes-all.fits', im, prihdr, overwrite=True)
-
-    return
-
-
 def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annuli_stop, annuli_inc, movement_start, 
     movement_stop, movement_inc, FWHM, ra, pa, wid, subsections_start=False, subsections_stop=False, subsections_inc=False,  
-    smooth=False, input_contrast=False, time_collapse='median',
-    saveSNR = True, singleAnn = False, highpass = True, verbose = False, snrsmt = False):
-
+    smooth=False, input_contrast=False, time_collapse='median', highpass = True, 
+    saveSNR = True, singleAnn = False, boundary=False, verbose = False, snrsmt = False):
 
     if subsections_start == False:
         if (subsections_stop != False) or (subsections_inc != False):
@@ -107,7 +33,6 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
     if smooth == False:
         smooth=0.0
-
     
     if verbose is True:
         print(f"File Path = {path_to_files}")   
@@ -128,7 +53,6 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     if not os.path.exists(path_to_files + "_klip"):
         os.makedirs(path_to_files + "_klip")
     
-   
     # create tuples for easier eventual string formatting when saving files
     annuli = (annuli_start, annuli_stop, annuli_inc)
     movement = (movement_start, movement_stop, movement_inc)
@@ -175,9 +99,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     
     start_process_time = time.process_time()
     print("Start process time is", time.process_time())
-    
-
-    
+       
     # grab generic header from a generic single image
     hdr = fits.getheader(path_to_files + '/sliced_1.fits')
 
@@ -186,12 +108,10 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     try:
         del hdr['GSTPEAK']
     except:
-        print('not a saturated dataset')
+        print('NOT a saturated dataset')
     del hdr['STARPEAK']
     
-    
     # reads in files
-
     filelist = glob.glob(path_to_files + '/*.fits')
 
     # Get star peaks
@@ -208,6 +128,72 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     yDim = dataset._input.shape[1]
     owa = min(xDim,yDim)/2
     
+    # Make function to write out data 
+    def writeData(im, prihdr, annuli, movement, subsections, snrmap = False, pre = ''):
+        #function writes out fits files with important info captured in fits headers
+        
+        #if program iterates over several parameter values, formats these for fits headers and file names
+        if (isinstance(annuli, tuple)):
+            annuli_fname = str(annuli[0]) + '-' + str(annuli[1]) + 'x' + str(annuli[2])
+            annuli_head = str(annuli[0]) + 'to' + str(annuli[1]) + 'by' + str(annuli[2])  
+        else: 
+            annuli_fname = annuli
+            annuli_head = annuli
+
+        if (isinstance(movement, tuple)):
+            movement_fname = str(movement[0]) + '-' + str(movement[1]) + 'x' + str(movement[2])
+            movement_head = str(movement[0]) + 'to' + str(movement[1]) + 'by' + str(movement[2])
+        else: 
+            movement_head = movement
+            movement_fname = movement
+
+        if (isinstance(subsections, tuple)):
+            subsections_head = str(subsections[0]) + 'to' + str(subsections[1]) + 'by' + str(subsections[2])
+            subsections_fname = str(subsections[0]) + '-' + str(subsections[1]) + '-' + str(subsections[2])
+        else:
+            subsections_head = subsections
+            subsections_fname = subsections
+
+
+        #shortens file path to bottom 4 directories so it will fit in fits header
+        try:
+            path_to_files_short = '/'.join(path_to_files.split(os.path.sep)[-4:])
+        except:
+            path_to_files_short = path_to_files
+                
+        #adds info to fits headers
+        prihdr['ANNULI']=str(annuli_head)
+        prihdr['MOVEMENT']=str(movement_head)
+        prihdr['SUBSCTNS']=str(subsections_head)
+        prihdr['IWA'] = str(iwa)
+        prihdr['KLMODES']=str(klmodes)
+        prihdr['FILEPATH']=str(path_to_files_short)
+     
+        if(snrmap):
+            rad, pa, wid = mask 
+            prihdr['MASK_RAD']=str(rad)
+            prihdr['MASK_PA']=str(pa)
+            prihdr['MASK_WID']=str(wid)
+            prihdr['SNRSMTH']=str(smooth)
+            prihdr['SNRFWHM']=str(FWHM)
+
+        if isinstance(annuli, tuple):
+            prihdr["SLICE1"]="planet peak value under mask in standard deviation noise map"
+            prihdr["SLICE2"] = "planet peak value under mask in median absolute value noise map"
+            prihdr["SLICE3"] = "average value of positive pixels under mask in standard deviation noise map"
+            prihdr["SLICE4"] = "average value of positive pixels under mask in median absolute value noise map"
+            prihdr["SLICE5"] = "total number of pixels >5sigma outside of mask in standard deviation noise map"
+            prihdr["SLICE6"] = "total number of pixels >5sigma outside of mask in median absolute value noise map"
+            prihdr["SLICE7"] = "total number of pixels >5sigma outside of mask and at similar radius in standard deviation noise map"
+            prihdr["SLICE8"] = "total number of pixels >5sigma outside of mask and at similar radius in median absolute value noise map"
+
+        #writes out files
+        fits.writeto(str(path_to_files) + "_klip/" + str(pre)  + outfile_name + "_a" + str(annuli_fname) + "m" + str(
+            movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + suff + '-klmodes-all.fits', im, prihdr, overwrite=True)
+
+        return
+
+
     # create cube to eventually hold parameter explorer data
     PECube = np.zeros((8,int((subsections_stop-subsections_start)/subsections_inc+1), len(klmodes),
                         int((annuli_stop-annuli_start)/annuli_inc+1),
@@ -241,9 +227,16 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
             dataset.IWA = lowBound
             dataset.OWA = upBound
     
-        #check to see if any planets fall very close to a zone boundary 
-        #if (len( [b for b in all_bounds for r in ra if(b <= r+FWHM/2 and b >= r-FWHM/2)] ) == 0):
-    
+        #if boundary keyword is set, check to see if any planets are too close to annuli boundaries
+        if boundary != False:
+            #is planet within +/- number set as boundary pixels
+            if not (len( [b for b in all_bounds for r in ra if(b <= r+boundary and b >= r-boundary)] ) == 0):
+                print([b for b in all_bounds for r in ra if(b <= r+boundary and b >= r-boundary)])
+                print("A planet is near annulus boundary; skipping KLIP for annuli = " + str(a))
+                #assign a unique value as a flag for these cases in the parameter explorer map
+                PECube[:,:,:,acount,:] = -1000
+                #break out of annuli loop before KLIPing
+                continue
 
         # used for indexing: keeps track of number of movement values that have been tested
         mcount = 0
@@ -266,7 +259,6 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
         
                     # create cube to hold snr maps 
                     #snrMapCube = np.zeros((2,len(klmodes),yDim,xDim))
-    
                 runKLIP = True
     
                 
@@ -351,63 +343,33 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     
                 # makes SNR map
                 snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(incube, FWHM, smooth=snrsmt, planets=mask, saveOutput=True, sigma = 5, checkmask=False)
-                    
-                    # compute contrast here!!!
 
-
-
-                    #print(snrmaps.shape,peaksnr.shape,snrsums.shape,snrspurious.shape,PECube.shape)
-    
-                    #klmode index
-                    #kcount = 0
-                    # iterates over kl modes
-                    #for k in klmodes:
-                        #for methodctr in np.arange(2):
-                            #loops over planets specified and returns their SNRs
-                         #   planetSNRs = [snr.getPlanet_peak(snrmaps[methodctr,kcount,:,:], ra[x], pa[x], int(FWHM / 2) + 1) for x in range(len(ra))]
-                            #print("planet SNRs are", planetSNRs, 'for', methods[methodctr])
-                          #  planetSNR = np.nanmedian(planetSNRs)
-                           # print(planetSNR)
-                            #print("average planet SNR is", planetSNR, 'for', methods[methodctr])
-    
-                            #adds peak values from getPlanet_peak to PE cube first two slices of PE cube
-                           # PECube[methodctr,scount,kcount,acount,mcount] = planetSNR
-                        #kcount+=1
-                        # adds sums under mask from snr.create_map to PE cube
                 PECube[0:2, scount, :, acount, mcount] = np.nanmedian(peaksnr, axis=2)
                 PECube[2:4, scount, :, acount, mcount] = np.nanmedian(snrsums, axis=2)
                 PECube[4:6, scount, :, acount, mcount] = snrspurious[:,:,0]
                 PECube[6:8, scount, :, acount, mcount] = snrspurious[:,:,1]
                 #PECube[8, scount, :, acount, mcount] = cont_meas[:,0]
 
-                
-                
-    
                 if(runKLIP) and np.nanmedian(peaksnr)>3:
-                    writeData(incube, hdr)
+                    writeData(incube, hdr, a, m, s)
                 if verbose is True:
                     print("Median peak SNR > 3. Writing median image combinations to " + path_to_files + "_klip/")
                     
                 if saveSNR is True:
-                    writeData(snrmaps, hdr, snrmap = True, pre = 'snrmap_')
+                    writeData(snrmaps, hdr, a, m, s, snrmap = True, pre = 'snrmap_')
                     if verbose is True:
                         print("Writing SNR maps to " + path_to_files + "_klip/")
     
                 scount+=1
             mcount+=1
-    
-        #else: 
-         #   print("Planet near annulus boundary; skipping KLIP for annuli = " + str(a))
-         #   print()
-            #assign a unique value as a flag for these cases in the parameter explorer map
-         #   PECube[:,:,:,acount,:] = -1000
                     
         acount+=1
     
     if verbose is True:        
         print("Writing parameter explorer file to " + path_to_files + "_klip/")
+
     #write parameter explorer cube to disk
-    writeData(PECube, hdr, allParams = True, snrmap = True, pre = 'paramexplore_')
+    writeData(PECube, hdr, annuli, movement, subsections, snrmap = True, pre = 'paramexplore_')
     
     
     

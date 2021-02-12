@@ -128,7 +128,10 @@ def collapsekl(pename, kllist, pedir='./',  snrmeth='stdev', writestr=False):
 	if snrmeth == "stdev":
 		slice = 0  
 	dims = klcube.shape
+
+	#if only 1 metric
 	if snrmeth != 'all':
+		#for single method cubes, slices are SNR peak, avg SNR, total >thresh pixels, >thresh pixels inside CR
 		print('keeping only', snrmeth, 'maps')
 		klcube=klcube[slice::2,:,:,:,:]
 		klkeep = np.zeros([4, dims[3], dims[4], len(kllist)])
@@ -238,6 +241,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		print("extracting ", snrmeth, "slices for KL mode", kllist[0])
 
 	if snrmeth in ["absmed", "all"]:
+		#output cubes from collapsekl have dimensions metric (n=4 for single method, n=8 for 'all'), ann, movm
 		avgkl_absmedSNR, stdevkl_absmedSNR = collapsekl(pename, kllist, pedir=pedir, snrmeth='absmed', writestr=writestr)
 		
 		#finds locations of peaks
@@ -259,11 +263,15 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		snr_norm_absmedSNR_umask = avgkl_absmedSNR[1,:,:] / np.nanmax(avgkl_absmedSNR[1,:,:])
 
 		#normalize standard deviations across KL modes. Low values = good
+		#slice 0 = peak, slice 1 = average SNR under mask, Going with slice 1 for now
+		# divide by SNR so is Stdev in SNR as fraction of SNR itself
 		stdev_norm_absmedSNR_cube = stdevkl_absmedSNR[0:2,:,:] / avgkl_absmedSNR[0:2,:,:]
+		#first slice is peak
 		stdev_norm_absmedSNR = 1 - (stdev_norm_absmedSNR_cube[0,:,:]/np.nanmax(stdev_norm_absmedSNR_cube[0,:,:]))
+		#second slice is under mask
 		stdev_norm_absmedSNR_umask = 1 - (stdev_norm_absmedSNR_cube[1,:,:]/np.nanmax(stdev_norm_absmedSNR_cube[1,:,:]))
 
-		#spurious pixels metrics
+		#spurious pixels metrics - pulling slice 3 (in between IWA and CR only)
 		spurpix_absmedSNR = avgkl_absmedSNR[3,:,:]
 
 	if snrmeth in ["stdev", "all"]:
@@ -287,7 +295,6 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		stdev_norm_stdevSNR_cube = stdevkl_stdevSNR[0:2,:,:] / avgkl_stdevSNR[0:2,:,:]
 		stdev_norm_stdevSNR = 1 - (stdev_norm_stdevSNR_cube[0,:,:]/np.nanmax(stdev_norm_stdevSNR_cube[0,:,:]))
 		stdev_norm_stdevSNR_umask = 1 - (stdev_norm_stdevSNR_cube[1,:,:]/np.nanmax(stdev_norm_stdevSNR_cube[1,:,:]))
-
 
 		spurpix_stdevSNR = avgkl_stdevSNR[3,:,:]
 	

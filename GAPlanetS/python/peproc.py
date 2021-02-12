@@ -640,8 +640,15 @@ def make_klip_snrmaps(d, pedir='./', outdir='klipims/', smooth=0.5, snrmeth='std
 			writeprefix = prefix.replace('Cont','SDI')
 			
 		#name and make SNR Map
-		outname = outdir+writeprefix+strklip + '_sm'+str(smooth)+'_'+mode+'SNRMap.fits'
-		Output = snr.create_map(klipim, fwhm, smooth=smooth, saveOutput=True, outputName=outname,checkmask=False, method=snrmeth)
+		outname = outdir+writeprefix+strklip + '_sm'+str(smooth)+'_'+mode+'SNRMap_'+snrmeth+'.fits'
+		print(outname)
+
+		#check whether file already exists
+		if os.path.exists(outname):
+			print("This file already exists. I am NOT re-running SNRMap, but just reading the existing image in. Check and make sure you weren't intending to change the name")
+			Output = fits.getdata(outname)
+		else:	
+			Output = snr.create_map(klipim, fwhm, smooth=smooth, saveOutput=True, outputName=outname,checkmask=False, method=snrmeth)
 		
 		#store maps
 		if mode=='Line':
@@ -653,7 +660,7 @@ def make_klip_snrmaps(d, pedir='./', outdir='klipims/', smooth=0.5, snrmeth='std
 			
 	return(d)
 
-def compare_pes(d, pedir='./', nrows=False, ncols=False, save=None, title=None):
+def compare_pes(d, pedir='./', outdir='klipims/', nrows=False, ncols=False, save=None, title=None):
 	
 	"""
 	Generates an image with a grid of collapsed PE aggregate metric score maps for all PEs in a dictionary.
@@ -674,12 +681,9 @@ def compare_pes(d, pedir='./', nrows=False, ncols=False, save=None, title=None):
 	namelist = ["pe{0}pfx".format(i+1) for i in np.arange(npes)]
 
 	#if grid rows and columns not specified, set 4 columns and enough rows to fit
-	if nrows !=False:
-		nrows = ceil(npes/4)
-		if ncols != False:
-			print("please specify both rows and columns")
-		else:
-			ncols = 4
+	if nrows == False:
+		ncols=4
+		nrows = int(np.ceil(npes/ncols))
 
 	#size figure according to how many rows and columns there are
 	figsz=(nrows*5, ncols*4)
@@ -717,11 +721,11 @@ def compare_pes(d, pedir='./', nrows=False, ncols=False, save=None, title=None):
 	
 	plt.tight_layout()
 	if save != None:
-		plt.savefig(save)
+		plt.savefig(outdir+save)
 	return()
 
 
-def compare_ims(d, pedir='./', nrows=2, ncols=3, save=None, title=None, boxsz=50):
+def compare_ims(d, pedir='./', kllist=[5,10,20,50], outdir='klipims/', mode='Line', nrows=False, ncols=False, save=None, title=None, boxsz=50):
 	"""
 	Generates an image with a grid of collapsed PE aggregate metric score maps for all PEs in a dictionary.
 
@@ -742,56 +746,56 @@ def compare_ims(d, pedir='./', nrows=2, ncols=3, save=None, title=None, boxsz=50
 	if mode=='Line':
 		snmaplist = ["pe{0}hasnrmap".format(i+1) for i in np.arange(npes)]
 	if mode=='Cont':
-		contsnmaplist = ["pe{0}contsnrmap".format(i+1) for i in np.arange(npes)]
+		snmaplist = ["pe{0}contsnrmap".format(i+1) for i in np.arange(npes)]
 	
 	namelist = ["pe{0}pfx".format(i+1) for i in np.arange(npes)]
 
 	#if grid rows and columns not specified, set 4 columns and enough rows to fit
-	if nrows !=False:
-		nrows = ceil(npes/4)
-		if ncols != False:
-			print("please specify both rows and columns")
-		else:
-			ncols = 4
-
+	if nrows == False:
+		ncols=4
+		nrows = int(np.ceil(npes/ncols))
 
 	#loop over KL modes
+	for k in kllist:
 
+		#size figure according to how many rows and columns there are
+		figsz=(nrows*5, ncols*4)
+		#set up plot
+		f, ax = plt.subplots(ncols, nrows, figsize=figsz)
+		ax = ax.ravel()
 
-	#size figure according to how many rows and columns there are
-	figsz=(nrows*5, ncols*4)
-	#set up plot
-	f, ax = plt.subplots(ncols, nrows, figsize=figsz)
-	ax = ax.ravel()
+		#add master title for the grid
+		if title != None:
+			f.suptitle(title + ' - KL ' + str(k), size=20)
 
-	#add master title for the grid
-	if title != None:
-		f.suptitle(title, size=20)
+		#loop over all of the images   
+		for i in np.arange(len(snmaplist)):
 
-	#loop over all of the images   
-	for i in np.arange(len(snmaplist)):
+			klind = [i for i in range(len(kllist)) if kllist[i] == k]
+			print(k, 'kl modes is index', klind, d["kllist"])
 
-		#figure out where the image center is
-		dims = d[snmaplist[i]][0,0,:,:].shape
-		cen = int((dims[0]-1)/2.)
+			#figure out where the image center is
+			dims = d[snmaplist[i]][0,0,:,:].shape
+			cen = int((dims[0]-1)/2.)
 
-		#pull the region around the image center for plotting
-		im = ax[i].imshow(d[snmaplist[i]][0,klslice,cen-boxsz:cen+boxsz,cen-boxsz:cen+boxsz], cmap='magma',
-						  origin='lower', vmin=-2, vmax=5)#, vmax=np.nanmax(d[snmaplist[i]][0,klslice,:,:])*0.7)
-		ax[i].set_ylabel("")
-		ax[i].set_xlabel("")
+			#pull the region around the image center for plotting
+			print(d[snmaplist[i]].shape, snmaplist[i])
+			im = ax[i].imshow(d[snmaplist[i]][0,klind[0],cen-boxsz:cen+boxsz,cen-boxsz:cen+boxsz], cmap='magma',
+							  origin='lower', vmin=-2, vmax=5)
+			ax[i].set_ylabel("")
+			ax[i].set_xlabel("")
 
-		#add colorbar
-		divider = make_axes_locatable(ax[i])
-		cax = divider.append_axes('right', size='5%', pad=0.05)
-		plt.colorbar(im, cax=cax, orientation='vertical', label="SNR")
-		
-		#label subplot with dataset title
-		ax[i].set_title(d[namelist[i]])
+			#add colorbar
+			divider = make_axes_locatable(ax[i])
+			cax = divider.append_axes('right', size='5%', pad=0.05)
+			plt.colorbar(im, cax=cax, orientation='vertical', label="SNR")
+			
+			#label subplot with dataset title
+			ax[i].set_title(d[namelist[i]])
 
-	plt.tight_layout()
-	if save != None:
-		plt.savefig(save)
+		plt.tight_layout()
+		if save != None:
+			plt.savefig(outdir+save+'_kl'+str(k))
 	return()
 
 

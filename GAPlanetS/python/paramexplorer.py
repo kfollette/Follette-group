@@ -18,9 +18,9 @@ from tqdm import tqdm
 warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
 
-def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annuli_stop, annuli_inc, movement_start, 
-    movement_stop, movement_inc, FWHM, ra, pa, wid, subsections_start=False, subsections_stop=False, subsections_inc=False,  
-    smooth=False, input_contrast=False, time_collapse='median', highpass = True, 
+def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annuli_stop, movement_start, 
+    movement_stop, FWHM, ra, pa, wid, annuli_inc=1, movement_inc=1, subsections_start=False, subsections_stop=False, subsections_inc=False,  
+    smooth=False, input_contrast=False, time_collapse='median', highpass = True, owa=False,
     saveSNR = True, singleAnn = False, boundary=False, verbose = False, snrsmt = False):
 
     if subsections_start == False:
@@ -124,10 +124,14 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
     # set IWA and OWA
     dataset.IWA = iwa
-    xDim = dataset._input.shape[2]
-    yDim = dataset._input.shape[1]
-    owa = min(xDim,yDim)/2
-    
+
+    if owa == False:
+        xDim = dataset._input.shape[2]
+        yDim = dataset._input.shape[1]
+        dataset.OWA = min(xDim,yDim)/2
+    else:
+        dataset.OWA = owa
+
     # Make function to write out data 
     def writeData(im, prihdr, annuli, movement, subsections, snrmap = False, pre = ''):
         #function writes out fits files with important info captured in fits headers
@@ -342,7 +346,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                         
     
                 # makes SNR map
-                snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(incube, FWHM, smooth=snrsmt, planets=mask, saveOutput=True, sigma = 5, checkmask=False)
+                snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(fname, FWHM, smooth=snrsmt, planets=mask, saveOutput=True, sigma = 5, checkmask=False)
 
                 PECube[0:2, scount, :, acount, mcount] = np.nanmedian(peaksnr, axis=2)
                 PECube[2:4, scount, :, acount, mcount] = np.nanmedian(snrsums, axis=2)

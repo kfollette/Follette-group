@@ -23,6 +23,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     smooth=False, input_contrast=False, time_collapse='median', highpass = True, owa=False,
     saveSNR = True, singleAnn = False, boundary=False, verbose = False, snrsmt = False):
 
+    #default is 1 subsection
     if subsections_start == False:
         if (subsections_stop != False) or (subsections_inc != False):
             print("must set subsections_start, subsections_stop, and subsections_inc together")
@@ -31,6 +32,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
         subsections_stop = 1
         subsections_inc = 1
 
+    #pre-klip smooth off = smoothing value of 0
     if smooth == False:
         smooth=0.0
     
@@ -80,6 +82,9 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
     # object to hold mask parameters for snr map 
     mask = (ra, pa, wid)
+
+    nplanets = len(ra)
+    print(nplanets, "planets with separations ", ra, "and PAs ", pa)
     
     # Add suffix to filenames depending on user-specified values
     suff = ''    
@@ -201,7 +206,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     # create cube to eventually hold parameter explorer data
     PECube = np.zeros((8,int((subsections_stop-subsections_start)/subsections_inc+1), len(klmodes),
                         int((annuli_stop-annuli_start)/annuli_inc+1),
-                        int((movement_stop-movement_start)/movement_inc+1)))
+                        int((movement_stop-movement_start)/movement_inc+1), int(nplanets)))
     
     # BEGIN LOOPS OVER ANNULI, MOVEMENT AND SUBSECTION PARAMETERS
     
@@ -238,7 +243,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                 print([b for b in all_bounds for r in ra if(b <= r+boundary and b >= r-boundary)])
                 print("A planet is near annulus boundary; skipping KLIP for annuli = " + str(a))
                 #assign a unique value as a flag for these cases in the parameter explorer map
-                PECube[:,:,:,acount,:] = -1000
+                PECube[:,:,:,acount,:] = np.nan
                 #break out of annuli loop before KLIPing
                 continue
 
@@ -348,10 +353,10 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                 # makes SNR map
                 snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(fname, FWHM, smooth=snrsmt, planets=mask, saveOutput=True, sigma = 5, checkmask=False)
 
-                PECube[0:2, scount, :, acount, mcount] = np.nanmedian(peaksnr, axis=2)
-                PECube[2:4, scount, :, acount, mcount] = np.nanmedian(snrsums, axis=2)
-                PECube[4:6, scount, :, acount, mcount] = snrspurious[:,:,0]
-                PECube[6:8, scount, :, acount, mcount] = snrspurious[:,:,1]
+                PECube[0:2, scount, :, acount, mcount,:] = peaksnr
+                PECube[2:4, scount, :, acount, mcount,:] = snrsums
+                PECube[4:6, scount, :, acount, mcount,:] = snrspurious[:,:,0,None]
+                PECube[6:8, scount, :, acount, mcount,:] = snrspurious[:,:,1,None]
                 #PECube[8, scount, :, acount, mcount] = cont_meas[:,0]
 
                 if(runKLIP) and np.nanmedian(peaksnr)>3:
@@ -374,9 +379,6 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
     #write parameter explorer cube to disk
     writeData(PECube, hdr, annuli, movement, subsections, snrmap = True, pre = 'paramexplore_')
-    
-    
-    
 
     print("KLIP automation complete")    
     print("End clock time is", time.time())
@@ -384,4 +386,4 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     print("Total clock runtime: ", time.time()- start_time)
     print("Total process runtime:", time.process_time()-start_process_time)
 
-    return snrspurious[:,:,0], snrspurious[:,:,2], snrspurious[:,:,3], snrspurious[:,:,4], maskedims
+    return(PECube)

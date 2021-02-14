@@ -127,6 +127,12 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
     dataset = MagAO.MagAOData(filelist)
 
+    palist = sorted(dataset._PAs)
+    palist_clean = [pa if (pa < 360) else pa-360 for pa in palist]
+    palist_clean_sorted = sorted(palist_clean)
+    totrot = palist_clean_sorted[-1]-palist_clean_sorted[0]
+    print("total rotation for this dataset is", "%5.1f" % (totrot), "degrees")
+
     # set IWA and OWA
     dataset.IWA = iwa
 
@@ -204,9 +210,9 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
 
     # create cube to eventually hold parameter explorer data
-    PECube = np.zeros((8,int((subsections_stop-subsections_start)/subsections_inc+1), len(klmodes),
+    PECube = np.zeros((8,int((subsections_stop-subsections_start)/subsections_inc+1), len(klmodes), int(nplanets),
                         int((annuli_stop-annuli_start)/annuli_inc+1),
-                        int((movement_stop-movement_start)/movement_inc+1), int(nplanets)))
+                        int((movement_stop-movement_start)/movement_inc+1)))
     
     # BEGIN LOOPS OVER ANNULI, MOVEMENT AND SUBSECTION PARAMETERS
     
@@ -220,6 +226,11 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
         # creates list of zone radii
         all_bounds = [dr*rad+iwa for rad in range(a+1)]
+
+        planet_annuli = [a for a in all_bounds if (a<ra[-1]+dr) and (a>ra[0])]
+        nplanet_anns = len(planet_annuli)
+        ann_cen_rad = [ a - dr/2 for a in planet_annuli ]
+        print("planets span ", nplanet_anns, "annular zones for annuli = ", a)
 
         # print('annuli bounds are', all_bounds)
         numAnn = a
@@ -243,135 +254,145 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                 print([b for b in all_bounds for r in ra if(b <= r+boundary and b >= r-boundary)])
                 print("A planet is near annulus boundary; skipping KLIP for annuli = " + str(a))
                 #assign a unique value as a flag for these cases in the parameter explorer map
-                PECube[:,:,:,acount,:] = np.nan
+                PECube[:,:,:,:,acount,:] = np.nan
                 #break out of annuli loop before KLIPing
+                acount=1
                 continue
 
         # used for indexing: keeps track of number of movement values that have been tested
         mcount = 0
     
         for m in tqdm(np.arange(movement_start, movement_stop+1, movement_inc)):
-    
-            scount = 0
-    
-            for s in range(subsections_start, subsections_stop+1, subsections_inc):
 
-                klipstr = "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) 
-                fname  = str(path_to_files) + "_klip/" + outfile_name + klipstr+ suff + '-klmodes-all.fits'
+            #figure out whether there is enough range 
 
-                if verbose is True:  
-                    if(singleAnn):
-                        print("Parameters: movement = %s; subections = %d" %(m,s))
-                        print("Running for %d annuli, equivalent to single annulus of width %s pixels" %(annuli_start+acount, dr))
-                    else:
-                        print("Parameters: annuli = %d; movement = %s; subections = %d" %(a, m,s))
+            if np.arctan(m/ann_cen_rad[0])*180/np.pi>totrot:
+                print("movement", m, "=" "%5.1f" % (np.arctan(m/ann_cen_rad[0])*180/np.pi), 
+                    "deg. for inner planet annulus. Only ", "%5.1f" % (totrot), 
+                    "available. skipping this movement/annuli combo") 
+                mcount+=1
+                continue
+
+            else:
+                scount = 0
         
-                    # create cube to hold snr maps 
-                    #snrMapCube = np.zeros((2,len(klmodes),yDim,xDim))
-                runKLIP = True
-    
-                
-                if os.path.isfile(fname):
-                    incube = fits.getdata(fname)
-                    head = fits.getheader(fname)
-                    klmodes2 = head['KLMODES'][1:-1]
-                    klmodes2 = list(map(int, klmodes2.split(",")))
-    
-                    if (len([k for k in klmodes if not k in klmodes2]) == 0):
-                        print("Found KLIP processed images for same parameters saved to disk. Reading in data.")
-                        #don't re-run KLIP
-                        runKLIP = False
-    
-                if (runKLIP):
-                    if verbose is True:
-                        print("Starting KLIP")
-                    #run klip for given parameters
-                    parallelized.klip_dataset(dataset, outputdir=(path_to_files + "_klip/"), fileprefix=outfile_name+klipstr+suff, 
-                        annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=False, 
-                        mode="ADI", highpass = highpass, time_collapse='median', verbose = verbose)
+                for s in range(subsections_start, subsections_stop+1, subsections_inc):
 
-                    #read in the final image and header
-                    incube = fits.getdata(fname)
-                    head = fits.getheader(fname)
+                    klipstr = "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) 
+                    fname  = str(path_to_files) + "_klip/" + outfile_name + klipstr+ suff + '-klmodes-all.fits'
 
-                    #add KLMODES keyword to header
-                    head["KLMODES"]=str(klmodes)
-                    fits.writeto(fname, incube, head, overwrite=True)
-
-                # dataset_copy = np.copy(incube)
+                    if verbose is True:  
+                        if(singleAnn):
+                            print("Parameters: movement = %s; subections = %d" %(m,s))
+                            print("Running for %d annuli, equivalent to single annulus of width %s pixels" %(annuli_start+acount, dr))
+                        else:
+                            print("Parameters: annuli = %d; movement = %s; subections = %d" %(a, m,s))
             
-                # #get position angle in radians relative to N up E left
-                # pa_nup = [x*np.pi/180 for x in pa]
+                        # create cube to hold snr maps 
+                        #snrMapCube = np.zeros((2,len(klmodes),yDim,xDim))
+                    runKLIP = True
+                    
+                    if os.path.isfile(fname):
+                        incube = fits.getdata(fname)
+                        head = fits.getheader(fname)
+                        klmodes2 = head['KLMODES'][1:-1]
+                        klmodes2 = list(map(int, klmodes2.split(",")))
+        
+                        if (len([k for k in klmodes if not k in klmodes2]) == 0):
+                            print("Found KLIP processed images for same parameters saved to disk. Reading in data.")
+                            #don't re-run KLIP
+                            runKLIP = False
+        
+                    if (runKLIP):
+                        if verbose is True:
+                            print("Starting KLIP")
+                        #run klip for given parameters
+                        parallelized.klip_dataset(dataset, outputdir=(path_to_files + "_klip/"), fileprefix=outfile_name+klipstr+suff, 
+                            annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=False, 
+                            mode="ADI", highpass = highpass, time_collapse='median', verbose = verbose)
 
-                # #translate to x and y positions
-                # x_positions = -1*np.sin(pa_nup)*ra
-                # y_positions = np.cos(pa_nup)*ra
-            
-                # # Loop through kl modes
-                # cont_meas = np.zeros((len(klmodes), 1))
-                # for k in range(len(klmodes)):
+                        #read in the final image and header
+                        incube = fits.getdata(fname)
+                        head = fits.getheader(fname)
+
+                        #add KLMODES keyword to header
+                        head["KLMODES"]=str(klmodes)
+                        fits.writeto(fname, incube, head, overwrite=True)
+
+                    # dataset_copy = np.copy(incube)
                 
-                #     dataset_contunits = dataset_copy[k]/np.median(starpeak)
-                        
-                #     # Retrieve flux of injected planet
-                #     planet_fluxes = []
-                #     for sep, p in zip(ra, pa):
-                #         fake_flux = fakes.retrieve_planet_flux(dataset_contunits, dataset.centers[0], dataset.output_wcs[0], sep, p, searchrad=7)
-                #         planet_fluxes.append(fake_flux)
+                    # #get position angle in radians relative to N up E left
+                    # pa_nup = [x*np.pi/180 for x in pa]
 
+                    # #translate to x and y positions
+                    # x_positions = -1*np.sin(pa_nup)*ra
+                    # y_positions = np.cos(pa_nup)*ra
                 
-                #     # Calculate the throughput
-                #     tpt = np.array(planet_fluxes)/np.array(input_contrast)
+                    # # Loop through kl modes
+                    # cont_meas = np.zeros((len(klmodes), 1))
+                    # for k in range(len(klmodes)):
                     
+                    #     dataset_contunits = dataset_copy[k]/np.median(starpeak)
+                            
+                    #     # Retrieve flux of injected planet
+                    #     planet_fluxes = []
+                    #     for sep, p in zip(ra, pa):
+                    #         fake_flux = fakes.retrieve_planet_flux(dataset_contunits, dataset.centers[0], dataset.output_wcs[0], sep, p, searchrad=7)
+                    #         planet_fluxes.append(fake_flux)
 
-                #     # Create an array with the indices are that of KL mode frame with index 2
-                #     ydat, xdat = np.indices(dataset_contunits.shape)
-
-                #     # Mask the planets
-                #     for x, y in zip(x_positions, y_positions):
-
-                #         # Create an array with the indices are that of KL mode frame with index 2
-                #         distance_from_star = np.sqrt((xdat - x) ** 2 + (ydat - y) ** 2)
-
-                #         # Mask
-                #         dataset_contunits[np.where(distance_from_star <= 2 * FWHM)] = np.nan
-
-                #         masked_cube = dataset_contunits
-
-                #     # Measure the raw contrast
-                #     contrast_seps, contrast = klip.meas_contrast(dat=masked_cube, iwa=iwa, owa=dataset.OWA, resolution=(7), center=dataset.centers[0], low_pass_filter=True)
-
-                #     # Find the contrast to be used 
-                #     use_contrast = np.interp(np.median(ra), contrast_seps, contrast)
                     
-
-                #     # Calibrate the contrast
-                #     cal_contrast = use_contrast/np.median(tpt)
-                #     cont_meas[k] = -cal_contrast
+                    #     # Calculate the throughput
+                    #     tpt = np.array(planet_fluxes)/np.array(input_contrast)
                         
-    
-                # makes SNR map
-                snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(fname, FWHM, smooth=snrsmt, planets=mask, saveOutput=True, sigma = 5, checkmask=False)
 
-                PECube[0:2, scount, :, acount, mcount,:] = peaksnr
-                PECube[2:4, scount, :, acount, mcount,:] = snrsums
-                PECube[4:6, scount, :, acount, mcount,:] = snrspurious[:,:,0,None]
-                PECube[6:8, scount, :, acount, mcount,:] = snrspurious[:,:,1,None]
-                #PECube[8, scount, :, acount, mcount] = cont_meas[:,0]
+                    #     # Create an array with the indices are that of KL mode frame with index 2
+                    #     ydat, xdat = np.indices(dataset_contunits.shape)
 
-                if(runKLIP) and np.nanmedian(peaksnr)>3:
-                    writeData(incube, hdr, a, m, s)
-                if verbose is True:
-                    print("Median peak SNR > 3. Writing median image combinations to " + path_to_files + "_klip/")
-                    
-                if saveSNR is True:
-                    writeData(snrmaps, hdr, a, m, s, snrmap = True, pre = 'snrmap_')
+                    #     # Mask the planets
+                    #     for x, y in zip(x_positions, y_positions):
+
+                    #         # Create an array with the indices are that of KL mode frame with index 2
+                    #         distance_from_star = np.sqrt((xdat - x) ** 2 + (ydat - y) ** 2)
+
+                    #         # Mask
+                    #         dataset_contunits[np.where(distance_from_star <= 2 * FWHM)] = np.nan
+
+                    #         masked_cube = dataset_contunits
+
+                    #     # Measure the raw contrast
+                    #     contrast_seps, contrast = klip.meas_contrast(dat=masked_cube, iwa=iwa, owa=dataset.OWA, resolution=(7), center=dataset.centers[0], low_pass_filter=True)
+
+                    #     # Find the contrast to be used 
+                    #     use_contrast = np.interp(np.median(ra), contrast_seps, contrast)
+                        
+
+                    #     # Calibrate the contrast
+                    #     cal_contrast = use_contrast/np.median(tpt)
+                    #     cont_meas[k] = -cal_contrast
+                            
+        
+                    # makes SNR map
+                    snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(fname, FWHM, smooth=snrsmt, planets=mask, saveOutput=False, sigma = 5, checkmask=False)
+
+                    PECube[0:2, scount, :, :, acount, mcount] = peaksnr
+                    PECube[2:4, scount, :, :, acount, mcount] = snrsums
+                    PECube[4:6, scount, :, :, acount, mcount] = snrspurious[:,:,None,0]
+                    PECube[6:8, scount, :, :, acount, mcount] = snrspurious[:,:,None,1]
+                    #PECube[8, scount, :, acount, mcount] = cont_meas[:,0]
+
+                    if(runKLIP) and np.nanmedian(peaksnr)>3:
+                        writeData(incube, hdr, a, m, s)
                     if verbose is True:
-                        print("Writing SNR maps to " + path_to_files + "_klip/")
-    
-                scount+=1
-            mcount+=1
-                    
+                        print("Median peak SNR > 3. Writing median image combinations to " + path_to_files + "_klip/")
+                        
+                    if saveSNR is True:
+                        writeData(snrmaps, hdr, a, m, s, snrmap = True, pre = 'snrmap_')
+                        if verbose is True:
+                            print("Writing SNR maps to " + path_to_files + "_klip/")
+        
+                    print(acount, mcount, scount)
+                    scount+=1
+                mcount+=1                
         acount+=1
     
     if verbose is True:        

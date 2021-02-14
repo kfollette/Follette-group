@@ -497,15 +497,15 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
     #saves output to disk if saveOutput designated True
     if (saveOutput == True):
 
-        fits.writeto(filename[:-5]+'_'+origmethod+'.fits', Output, head, overwrite=True)
-        print("Wrote", filename[:-5]+'_'+origmethod+'.fits')
+        fits.writeto(filename[:-5]+'_'+origmethod+'_snrmap.fits', Output, head, overwrite=True)
+        print("Wrote", filename[:-5]+'_'+origmethod+'_snrmap.fits')
 
         if checkmask==True:
             fits.writeto(filename[:-5]+'_corepix.fits', planet_pixels_pos, overwrite=True)  
             fits.writeto(filename[:-5]+'_maskpix.fits', planet_pixels, overwrite=True)   
             #print(planet_pixels_pos.shape, planet_pixels.shape) 
             maskedims = msks*inp
-            fits.writeto(filename[:-5]+'_'+origmethod+'_masked.fits', maskedims, head, overwrite=True)
+            fits.writeto(filename[:-5]+'_'+origmethod+'_snrmap_masked.fits', maskedims, head, overwrite=True)
 
         if makenoisemap==True:
             fits.writeto(filename[:-5]+'_'+origmethod+'_noisemap.fits', noises, head, overwrite=True)

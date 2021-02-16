@@ -270,6 +270,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                 print("movement", m, "=" "%5.1f" % (np.arctan(m/ann_cen_rad[0])*180/np.pi), 
                     "deg. for inner planet annulus. Only ", "%5.1f" % (totrot), 
                     "available. skipping this movement/annuli combo") 
+                PECube[:,:,:,:,acount,mcount] = np.nan
                 mcount+=1
                 continue
 

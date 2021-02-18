@@ -483,7 +483,10 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 	xstr = '_'+wtstr+'_'+snrmeth+'_'+klliststr+xname
 
 	#find all the parameter explorer files in the specified directory
-	flist = glob.glob(pedir+'paramexplore*klmodes-all.fits')
+	rundir = os.getcwd()
+	os.chdir(pedir)
+	flist = glob.glob('paramexplore*klmodes-all.fits')
+	os.chdir(rundir)
 
 	#sort alphabetically so the same objects are together
 	flist = sorted(flist)
@@ -511,7 +514,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 	for i in np.arange(npes):
 		# creates a dictionary with parameters needed to run KLIp for all images in a dataset
 		#store PE file
-		d["pe{0}".format(i+1)] = fits.getdata(flist[i])
+		d["pe{0}".format(i+1)] = fits.getdata(pedir+flist[i])
 
 		#store PE name
 		pename = flist[i]
@@ -540,7 +543,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 		writename = 'proc/'+d["pe{0}pfx".format(i+1)]+xstr
 
 		## runs planet collapse on each PE in the dictionary
-		pecube, pcolname = collapse_planets(pename, pedir=pedir, snrthresh=snrthresh)
+		pecube, pcolname = collapse_planets(pename, pedir=pedir, snrthresh=snrthresh, oldpe=oldpe)
 
 		#runs PE collapse on planet collapsed cube with specified weights and snrmeth
 		#stores optimal annuli and movement values and the aggregate parameter quality map for each PE

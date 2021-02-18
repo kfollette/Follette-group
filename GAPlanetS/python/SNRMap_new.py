@@ -285,7 +285,7 @@ def noisemap(indiv, planets, fwhm, method='stdev'):
 
 
 
-def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveOutput = True, ctrlrad=30, method = 'all', checkmask=False, makenoisemap=False, sigma = 5):
+def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveOutput = True, outputName=False, ctrlrad=30, method = 'all', checkmask=False, makenoisemap=False, sigma = 5):
     """
     creates signal to noise ratio map of image.
     
@@ -322,6 +322,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
     if filename[-5:] == '.fits':
         print("found fits file", filename)
         inp, head = read_file(filename)
+        outname = filename[:-5]+'_'+origmethod+'_snrmap'
         
     #if data type is not a string, reads in python object holding data
     else:
@@ -329,6 +330,11 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
         if head == None:
             head = fits.Header()
             head['NKLMODES'] = str(inp.shape[0])
+            if outputName==False:
+                print("Must specify outputName if passing in an existing array")
+                return
+            else:
+                outname=outputName
 
     #smooth input image by specified amount
     if smooth > 0:
@@ -497,18 +503,18 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
     #saves output to disk if saveOutput designated True
     if (saveOutput == True):
 
-        fits.writeto(filename[:-5]+'_'+origmethod+'_snrmap.fits', Output, head, overwrite=True)
-        print("Wrote", filename[:-5]+'_'+origmethod+'_snrmap.fits')
+        fits.writeto(outname+'.fits', Output, head, overwrite=True)
+        print("Wrote", outname)
 
         if checkmask==True:
-            fits.writeto(filename[:-5]+'_corepix.fits', planet_pixels_pos, overwrite=True)  
-            fits.writeto(filename[:-5]+'_maskpix.fits', planet_pixels, overwrite=True)   
+            fits.writeto(outname+'_corepix.fits', planet_pixels_pos, overwrite=True)  
+            fits.writeto(outname+'_maskpix.fits', planet_pixels, overwrite=True)   
             #print(planet_pixels_pos.shape, planet_pixels.shape) 
             maskedims = msks*inp
-            fits.writeto(filename[:-5]+'_'+origmethod+'_snrmap_masked.fits', maskedims, head, overwrite=True)
+            fits.writeto(outname+'_masked.fits', maskedims, head, overwrite=True)
 
         if makenoisemap==True:
-            fits.writeto(filename[:-5]+'_'+origmethod+'_noisemap.fits', noises, head, overwrite=True)
+            fits.writeto(outname+'_noisemap.fits', noises, head, overwrite=True)
 
     #returns final SNR map
     if planets != False:

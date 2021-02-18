@@ -705,10 +705,10 @@ def compare_pes(d, pedir='./', outdir='klipims/', nrows=False, ncols=False, save
 		nrows = int(np.ceil(npes/ncols))
 
 	#size figure according to how many rows and columns there are
-	figsz=(nrows*5, ncols*4)
+	figsz=(ncols*4, nrows*5)
 
 	#set up plot
-	f, ax = plt.subplots(ncols, nrows, figsize=figsz)
+	f, ax = plt.subplots(nrows, ncols, figsize=figsz)
 	ax = ax.ravel()
 
 	#add master title for the grid
@@ -778,9 +778,9 @@ def compare_ims(d, pedir='./', kllist=[5,10,20,50], outdir='klipims/', mode='Lin
 	for k in kllist:
 
 		#size figure according to how many rows and columns there are
-		figsz=(nrows*5, ncols*4)
+		figsz=(ncols*4, nrows*5)
 		#set up plot
-		f, ax = plt.subplots(ncols, nrows, figsize=figsz)
+		f, ax = plt.subplots(nrows, ncols, figsize=figsz)
 		ax = ax.ravel()
 
 		#add master title for the grid

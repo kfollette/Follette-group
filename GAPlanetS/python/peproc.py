@@ -17,7 +17,7 @@ import os
 import pickle
 
 
-def collapse_planets(pename, pedir='./', writestr=False, snrthresh=False):
+def collapse_planets(pename, pedir='./', writestr=False, snrthresh=False, oldpe=False):
 	"""
 	Averages over the planet dimension of a parameter explorer file
 
@@ -88,10 +88,18 @@ def collapse_planets(pename, pedir='./', writestr=False, snrthresh=False):
    
 	#collapse in planet dimension 
 	#mean preserves nans so all planets have to be recovered
-	pecube=np.mean(pecube,axis=5)
+	#quick hack for old PEs where planet dimension was 6th
+	if oldpe==True:
+		pecube=np.mean(pecube,axis=5)
+	else:
+		pecube=np.mean(pecube,axis=3)
+
+	#create directory to save in if doesn't yet exist
+	if not os.path.exists(pedir+'proc/'):
+		os.makedirs(pedir+'proc/')
 	
-	writename = pedir+'proc/'+writestr+'_planetcollapse.fits'
-	fits.writeto(writename, pecube, pehead, overwrite=True)
+	writename = 'proc/'+writestr+'_planetcollapse.fits'
+	fits.writeto(pedir+writename, pecube, pehead, overwrite=True)
 			
 	return (pecube, writename)
 
@@ -439,7 +447,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='Line', 
 				snrmeth='stdev', snrthresh=False, outdir='klipims/', xname='', 
 				datadir='/Users/kfollette/Dropbox (Amherst College)/Follette-Lab/GAPlanetS_Data/GAPlanetS_Database/',
-				hpval=True, collmode='median'):
+				hpval=True, collmode='median', oldpe=False):
 	"""
 	Collapses ALL parameter explorer files in a given directory according to the specified combination of KL modes,
 	metric weights, and SNR computation method and runs the corresponding KLIP reductions for that set of parameters
@@ -459,6 +467,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 	datadir: 	path to the group's dropbox on your machine (note you can selective sync only relevant dq_cuts subdirectories)
 	hpval:		value of the highpass keyword for KLIP. can be True/False or value. 
 	collmode:	value for time_collapse keyword for KLIP. Options are 'median', 'mean', 'weighted-mean'
+	oldpe:		set to True for older parameter explorers where planet dimension is axis=5 rather than axis=3
 
 	RETURNS:
 	d:			a dictionary with all relevant parameter explorer info, KLIP parameters, and KLIPed images

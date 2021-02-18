@@ -15,6 +15,7 @@ import pyklip.parallelized as parallelized
 import SNRMap_new as snr
 import os
 import pickle
+import textwrap
 
 
 def collapse_planets(pename, pedir='./', writestr=False, snrthresh=False, oldpe=False):
@@ -527,18 +528,30 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 
 		#separate out path, cut, and prefix
 		#special case to match naming convention when more than one dataset in night
+		#find the index in the list where the default naming string (_ax-yxz...)for the parameter explorer begins
+		last=[i for i in split if i[0]=='a'][-1]
+		lastind = split.index(last)
+		print(last, lastind)
+		dsetname = ''
+		pfx = ''
+		for ind in np.arange(1,lastind):
+			dsetname+= ' '+str(split[ind])
+			pfx+='_'+str(split[ind])
+		print(dsetname)
+
 		if 'long' in split or 'short' in split:
-			dsetname = split[1]+' '+split[2]+'_'+split[3]+' '+split[4]+' '+split[5]
 			d['pe{0}fpath'.format(i+1)]=datadir+split[1]+'/'+split[2]+'_'+split[3]+'/'
 			d["pe{0}cut".format(i+1)]=split[5]
-			d["pe{0}pfx".format(i+1)]= split[1]+'_'+split[2]+'_'+split[3]+'_'+split[4]+'_'+split[5]
+			#d["pe{0}pfx".format(i+1)]= split[1]+'_'+split[2]+'_'+split[3]+'_'+split[4]+'_'+split[5]
 		else:
-			dsetname = split[1]+' '+split[2]+' '+split[3]+' '+split[4]
 			d["pe{0}cut".format(i+1)]=split[4]
 			d['pe{0}fpath'.format(i+1)]=datadir+split[1]+'/'+split[2]+'/'
-			d["pe{0}pfx".format(i+1)]= split[1]+'_'+split[2]+'_'+split[3]+'_'+split[4]
+			#d["pe{0}pfx".format(i+1)]= split[1]+'_'+split[2]+'_'+split[3]+'_'+split[4]
 		
 		#store dataset name for plot titles later
+		#remove first underscore
+		pfx=pfx[1:]
+		d["pe{0}pfx".format(i+1)]=pfx
 		d["pe{0}dset".format(i+1)] = dsetname
 		writename = 'proc/'+d["pe{0}pfx".format(i+1)]+xstr
 
@@ -639,7 +652,7 @@ def make_klip_snrmaps(d, pedir='./', outdir='klipims/', smooth=0.5, snrmeth='std
 		prefix=d["pe{0}pfx".format(i+1)]
 		
 		#pull fwhm - needed for Mawet correction
-		head=fits.getheader(d["pe{0}name".format(i+1)])
+		head=fits.getheader(pedir+d["pe{0}name".format(i+1)])
 		fwhm = float(head["SNRFWHM"])
 		d["pe{0}fwhm".format(i+1)]=fwhm
 		
@@ -660,14 +673,13 @@ def make_klip_snrmaps(d, pedir='./', outdir='klipims/', smooth=0.5, snrmeth='std
 			
 		#name and make SNR Map
 		outname = outdir+writeprefix+strklip + '_sm'+str(smooth)+'_'+mode+'SNRMap_'+snrmeth+'.fits'
-		print(outname)
 
 		#check whether file already exists
 		if os.path.exists(outname):
 			print("This file already exists. I am NOT re-running SNRMap, but just reading the existing image in. Check and make sure you weren't intending to change the name")
 			Output = fits.getdata(outname)
 		else:	
-			Output = snr.create_map(klipim, fwhm, smooth=smooth, saveOutput=True, outputName=outname,checkmask=False, method=snrmeth)
+			Output = snr.create_map(klipim, fwhm, smooth=smooth, saveOutput=True, outputName=outname[:-5], checkmask=False, method=snrmeth)
 		
 		#store maps
 		if mode=='Line':
@@ -697,7 +709,7 @@ def compare_pes(d, pedir='./', outdir='klipims/', nrows=False, ncols=False, save
 	imlist = ["pe{0}agg".format(i+1) for i in np.arange(npes)]
 	annlist = ["pe{0}ann".format(i+1) for i in np.arange(npes)]
 	movmlist = ["pe{0}movm".format(i+1) for i in np.arange(npes)]
-	namelist = ["pe{0}pfx".format(i+1) for i in np.arange(npes)]
+	namelist = ["pe{0}dset".format(i+1) for i in np.arange(npes)]
 
 	#if grid rows and columns not specified, set 4 columns and enough rows to fit
 	if nrows == False:
@@ -736,7 +748,7 @@ def compare_pes(d, pedir='./', outdir='klipims/', nrows=False, ncols=False, save
 		ax[i].text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
 
 		#label subplot with dataset title
-		ax[i].set_title(d[namelist[i]])
+		ax[i].set_title("\n".join(textwrap.wrap(d[namelist[i]], 30)))
 	
 	plt.tight_layout()
 	if save != None:
@@ -756,7 +768,7 @@ def compare_ims(d, pedir='./', kllist=[5,10,20,50], outdir='klipims/', mode='Lin
 
 	"""
 
-	flist = glob.glob('paramexplore*klmodes-all.fits')
+	flist = glob.glob(pedir+'paramexplore*klmodes-all.fits')
 	npes=len(flist)
 
 	#same as compare_pes, but generates grid of snrmaps
@@ -767,7 +779,7 @@ def compare_ims(d, pedir='./', kllist=[5,10,20,50], outdir='klipims/', mode='Lin
 	if mode=='Cont':
 		snmaplist = ["pe{0}contsnrmap".format(i+1) for i in np.arange(npes)]
 	
-	namelist = ["pe{0}pfx".format(i+1) for i in np.arange(npes)]
+	namelist = ["pe{0}dset".format(i+1) for i in np.arange(npes)]
 
 	#if grid rows and columns not specified, set 4 columns and enough rows to fit
 	if nrows == False:
@@ -791,14 +803,13 @@ def compare_ims(d, pedir='./', kllist=[5,10,20,50], outdir='klipims/', mode='Lin
 		for i in np.arange(len(snmaplist)):
 
 			klind = [i for i in range(len(kllist)) if kllist[i] == k]
-			print(k, 'kl modes is index', klind, d["kllist"])
+			print(k, 'kl modes is index', klind)
 
 			#figure out where the image center is
 			dims = d[snmaplist[i]][0,0,:,:].shape
 			cen = int((dims[0]-1)/2.)
 
 			#pull the region around the image center for plotting
-			print(d[snmaplist[i]].shape, snmaplist[i])
 			im = ax[i].imshow(d[snmaplist[i]][0,klind[0],cen-boxsz:cen+boxsz,cen-boxsz:cen+boxsz], cmap='magma',
 							  origin='lower', vmin=-2, vmax=5)
 			ax[i].set_ylabel("")
@@ -810,7 +821,7 @@ def compare_ims(d, pedir='./', kllist=[5,10,20,50], outdir='klipims/', mode='Lin
 			plt.colorbar(im, cax=cax, orientation='vertical', label="SNR")
 			
 			#label subplot with dataset title
-			ax[i].set_title(d[namelist[i]])
+			ax[i].set_title("\n".join(textwrap.wrap(d[namelist[i]], 30)))
 
 		plt.tight_layout()
 		if save != None:

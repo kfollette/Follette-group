@@ -322,7 +322,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
     if filename[-5:] == '.fits':
         print("found fits file", filename)
         inp, head = read_file(filename)
-        outname = filename[:-5]+'_'+origmethod+'_snrmap'
+        outname = filename[:-5]+'_'+method+'_snrmap'
         
     #if data type is not a string, reads in python object holding data
     else:

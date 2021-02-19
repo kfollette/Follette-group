@@ -2,7 +2,7 @@ import boto3
 import sys
 
 s3 = boto3.resource('s3')
-bucket = s3.Bucket('ac-follettelab')
+bucket = s3.Bucket('amherst-follette-lab')
 dirname = sys.argv[1]
 
 objects_to_delete = []

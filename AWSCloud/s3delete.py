@@ -9,7 +9,7 @@ dirname = sys.argv[1]
 if dirname=='all':
 	go = input('Are you sure you would like to delete everything in the s3? (y/n)')
 	if go=='y' or go=='Y':
-		bucket.object_versions.delete()
+		bucket.objects.all().delete()
 	else:
 		print('ok. doing nothing.')
 

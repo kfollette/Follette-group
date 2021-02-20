@@ -6,7 +6,7 @@ s3 = boto3.resource('s3')
 bucket = s3.Bucket('amherst-follette-lab')
 dirname = sys.argv[1]
 
-if dirname=='all'
+if dirname=='all':
 	go = input('Are you sure you would like to delete everything in the s3? (y/n)')
 	if go=='y' or go=='Y':
 		bucket.object_versions.delete()

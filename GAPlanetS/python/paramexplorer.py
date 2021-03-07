@@ -319,7 +319,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                             mode="ADI", highpass = highpass, time_collapse=time_collapse, verbose = verbose)
 
                         #read in the final image and header
-                        print(, outfile_name+klipstr+suff, fname)
+                        print(outfile_name+klipstr+suff, fname)
                         incube = fits.getdata(fname)
                         head = fits.getheader(fname)
 

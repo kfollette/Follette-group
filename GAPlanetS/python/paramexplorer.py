@@ -315,10 +315,11 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                             print("Starting KLIP")
                         #run klip for given parameters
                         parallelized.klip_dataset(dataset, outputdir=(path_to_files + "_klip/"), fileprefix=outfile_name+klipstr+suff, 
-                            annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=False, 
+                            annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=calibrate_flux, 
                             mode="ADI", highpass = highpass, time_collapse=time_collapse, verbose = verbose)
 
                         #read in the final image and header
+                        print(, outfile_name+klipstr+suff, fname)
                         incube = fits.getdata(fname)
                         head = fits.getheader(fname)
 

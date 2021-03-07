@@ -448,7 +448,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='Line', 
 				snrmeth='stdev', snrthresh=False, outdir='klipims/', xname='', 
 				datadir='/Users/kfollette/Dropbox (Amherst College)/Follette-Lab/GAPlanetS_Data/GAPlanetS_Database/',
-				hpval=True, collmode='median', oldpe=False):
+				hpval=True, collmode='median', owa=None, oldpe=False, calflux=False):
 	"""
 	Collapses ALL parameter explorer files in a given directory according to the specified combination of KL modes,
 	metric weights, and SNR computation method and runs the corresponding KLIP reductions for that set of parameters
@@ -499,17 +499,26 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 	#store some global values for this dictionary
 	d["dict_name"]=xname
 	d["kllist"]=kllist
-	d["highpass_val"]=hpval
-	d["collapse_mode"]=collmode
 	d["weights"]=wts
 	d["snrmeth"]=snrmeth
 	d["snr_threshhold"]=snrthresh
 	d["mode"]=mode
 	d["datadir"]=datadir
+	d["pestring"]=xstr
 
 	#create directory to save in if doesn't yet exist
 	if not os.path.exists(outdir):
 		os.makedirs(outdir)
+
+	#if highpass, collapse_mode, owa are not lists, repeat the entered value
+	if not isinstance(hpval, list):
+		hpval = np.repeat(hpval, npes)
+	if not isinstance(collmode, list):
+		collmode = np.repeat(collmode, npes)
+	if not isinstance(owa, list):
+		owa=np.repeat(owa, npes)
+	if not isinstance(calflux, list):
+		calflux=np.repeat(calflux,npes)
 
 	#loop over number of PEs found
 	for i in np.arange(npes):
@@ -526,18 +535,22 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 		s = re.findall(r'iwa(.*?)_', flist[i])
 		d['pe{0}iwa'.format(i+1)]=int(s[0])
 
+		#record values for other KLIP parameters
+		d["pe{0}hpval".format(i+1)]=hpval[i]
+		d["pe{0}colmode".format(i+1)]=collmode[i]
+		d["pe{0}owa".format(i+1)]=owa[i]
+		d["pe{0}calflux".format(i+1)]=calflux[i]
+
 		#separate out path, cut, and prefix
 		#special case to match naming convention when more than one dataset in night
 		#find the index in the list where the default naming string (_ax-yxz...)for the parameter explorer begins
-		last=[i for i in split if i[0]=='a'][-1]
+		last=[val for val in split if val[0]=='a'][-1]
 		lastind = split.index(last)
-		print(last, lastind)
 		dsetname = ''
 		pfx = ''
 		for ind in np.arange(1,lastind):
 			dsetname+= ' '+str(split[ind])
 			pfx+='_'+str(split[ind])
-		print(dsetname)
 
 		if 'long' in split or 'short' in split:
 			d['pe{0}fpath'.format(i+1)]=datadir+split[1]+'/'+split[2]+'_'+split[3]+'/'
@@ -583,7 +596,8 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 			modes=['single']
 		
 		for j in np.arange(len(modes)):
-			print(haindir, contindir)
+			print(i,j)
+			#print(haindir, contindir)
 			if mode=='SDI':
 				runmode=modes[j]
 			if runmode=='Cont':
@@ -602,10 +616,13 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 			else:
 				dataset = MagAO.MagAOData(filelist) 
 				dataset.IWA=iwa
+				dataset.OWA=float(owa[i])
+				print(hpval[i], calflux[i],collmode[i],owa[i])
 				parallelized.klip_dataset(dataset, outputdir=outdir, fileprefix=prefix+strklip, 
 										  algo='klip', annuli=ann_val, subsections=1, movement=movm_val,
-										  numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=hpval, 
-										  save_aligned=False, time_collapse=collmode)
+										  numbasis=kllist, calibrate_flux=calflux[i], mode="ADI", highpass=float(hpval[i]), 
+										  save_aligned=False, time_collapse=collmode[i])
+				#fits.writeto('test'+str(i)+'.fits', dataset.output, overwrite=True)
 
 			#pull output image 
 			klim = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outdir, pre=prefix+strklip))
@@ -752,7 +769,7 @@ def compare_pes(d, pedir='./', outdir='klipims/', nrows=False, ncols=False, save
 	
 	plt.tight_layout()
 	if save != None:
-		plt.savefig(outdir+save)
+		plt.savefig(outdir+save+d["pestring"])
 	return()
 
 
@@ -825,7 +842,7 @@ def compare_ims(d, pedir='./', kllist=[5,10,20,50], outdir='klipims/', mode='Lin
 
 		plt.tight_layout()
 		if save != None:
-			plt.savefig(outdir+save+'_kl'+str(k))
+			plt.savefig(outdir+save+'_kl'+str(k)+d["pestring"])
 	return()
 
 

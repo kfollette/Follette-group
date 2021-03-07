@@ -21,7 +21,8 @@ warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annuli_stop, movement_start, 
     movement_stop, FWHM, ra, pa, wid, annuli_inc=1, movement_inc=1, subsections_start=False, subsections_stop=False, subsections_inc=False,  
     smooth=False, input_contrast=False, time_collapse='median', highpass = True, owa=False,
-    saveSNR = True, singleAnn = False, boundary=False, verbose = False, snrsmt = False):
+    saveSNR = True, singleAnn = False, boundary=False, verbose = False, snrsmt = False,
+    calibrate_flux=False):
 
     #default is 1 subsection
     if subsections_start == False:

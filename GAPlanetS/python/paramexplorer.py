@@ -183,6 +183,11 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
         prihdr['IWA'] = str(iwa)
         prihdr['KLMODES']=str(klmodes)
         prihdr['FILEPATH']=str(path_to_files_short)
+        prihdr['OWA']=str(dataset.OWA)
+        prihdr['TIMECOLL']=str(time_collapse)
+        prihdr['CALIBFLUX']=str(calibrate_flux)
+        prihdr["HIGHPASS"]=str(highpass)
+
      
         if(snrmap):
             rad, pa, wid = mask 

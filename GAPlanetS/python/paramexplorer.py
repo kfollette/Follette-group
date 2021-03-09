@@ -210,7 +210,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
         #writes out files
         fits.writeto(str(path_to_files) + "_klip/" + str(pre)  + outfile_name + "_a" + str(annuli_fname) + "m" + str(
-            movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + suff + '-klmodes-all.fits', im, prihdr, overwrite=True)
+            movement_fname) + "s" + str(subsections_fname) + "iwa" + str(iwa) + suff + '-KLmodes-all.fits', im, prihdr, overwrite=True)
 
         return
 
@@ -286,7 +286,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                 for s in range(subsections_start, subsections_stop+1, subsections_inc):
 
                     klipstr = "_a" + str(a) + "m" + str(m) + "s" + str(s) + "iwa" + str(iwa) 
-                    fname  = str(path_to_files) + "_klip/" + outfile_name + klipstr+ suff + '-klmodes-all.fits'
+                    fname  = str(path_to_files) + "_klip/" + outfile_name + klipstr+ suff + '-KLmodes-all.fits'
 
                     if verbose is True:  
                         if(singleAnn):
@@ -300,6 +300,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                     runKLIP = True
                     
                     if os.path.isfile(fname):
+                        print(outfile_name+klipstr+suff, fname)
                         incube = fits.getdata(fname)
                         head = fits.getheader(fname)
                         klmodes2 = head['KLMODES'][1:-1]
@@ -320,10 +321,12 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
                         #read in the final image and header
                         print(outfile_name+klipstr+suff, fname)
+                        #read in file that was created so can add to header
                         incube = fits.getdata(fname)
                         head = fits.getheader(fname)
 
                         #add KLMODES keyword to header
+                        #this also has the effect of giving the file a single header instead of pyklip's double
                         head["KLMODES"]=str(klmodes)
                         fits.writeto(fname, incube, head, overwrite=True)
 

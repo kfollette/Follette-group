@@ -989,10 +989,12 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
     ctrl_rad = get_control_rad()
     ctrl_rad*=platescale
 
-    if outer*platescale<1:
-        outer_asec = outer*platescale
-    else:
-        outer_asec=1
+    outer_asec = outer*platescale
+    #what is index of last contrast within specified zone
+    last_idx=-1
+    for dist in contrast_seps:
+        if dist<outer:
+            last_idx+=1
 
     klctr=0
     for kl in KLlist:
@@ -1008,7 +1010,7 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
                 linesty = '--'
             plt.plot(contrast_seps * platescale, contrasts[i,klctr, :],
                      label=str(cut) + ' cut', linestyle=linesty, color=cm.plasma(j))
-        floor = np.log10(np.nanmin(contrasts)) - 0.2
+        floor = np.log10(np.nanmin(contrasts[0:last_idx])) - 0.2
         plt.yscale("log")
         plt.title(data_str[:-1] + outstr+' KL '+str(kl))
         plt.xlim(0, outer_asec)

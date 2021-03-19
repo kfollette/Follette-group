@@ -1010,7 +1010,7 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
                 linesty = '--'
             plt.plot(contrast_seps * platescale, contrasts[i,klctr, :],
                      label=str(cut) + ' cut', linestyle=linesty, color=cm.plasma(j))
-        floor = np.log10(np.nanmin(contrasts[0:last_idx])) - 0.2
+        floor = np.log10(np.nanmin(contrasts[:,:,0:last_idx])) - 0.2
         plt.yscale("log")
         plt.title(data_str[:-1] + outstr+' KL '+str(kl))
         plt.xlim(0, outer_asec)

@@ -720,7 +720,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
 
     #raw contrast is independent of fake injection so simpler name string
     rawc_prefix = make_prefix(data_str, wl, cut)
-    rawc_prefix += '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA)+ '_KL'+str(KLlist[0]) 
+    rawc_prefix += '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA)
 
     #set OWA
     klim = klcube[0, :, :]
@@ -837,7 +837,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
                         else:
                             plt.plot((bd, bd), (0, 1), '--', color='grey')
                 plt.legend()
-                plt.title(dataset_prefix + " KL"+str(KL)+" Corrected Contrast")
+                plt.title(rawc_prefix + " KL"+str(KL)+" Corrected Contrast")
                 plt.savefig(outputdir + dataset_prefix + "_KL"+str(KL)+ '_contrastcurve.jpg')
                 plt.show()
                 plt.clf()  # clear figure

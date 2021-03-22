@@ -97,15 +97,17 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
     if type(highpass)!=bool:
         suff+= '_hp'+str(highpass)
+
+    if verbose is True:
     
-    print("Reading: " + path_to_files + "/*.fits")
-    
-    start_time = time.time()
-    print("Start clock time is", time.time())
-    
-    start_process_time = time.process_time()
-    print("Start process time is", time.process_time())
-       
+        print("Reading: " + path_to_files + "/*.fits")
+        
+        start_time = time.time()
+        print("Start clock time is", time.time())
+        
+        start_process_time = time.process_time()
+        print("Start process time is", time.process_time())
+        
     # grab generic header from a generic single image
     hdr = fits.getheader(path_to_files + '/sliced_1.fits')
 
@@ -334,12 +336,11 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                     if input_contrast is not False:
                         dataset_copy = np.copy(incube)
                     
-                        #get position angle in radians relative to N up E left
-                        pa_nup = [x*np.pi/180 for x in pa]
 
-                        #translate to x and y positions
-                        x_positions = -1*np.sin(pa_nup)*ra
-                        y_positions = np.cos(pa_nup)*ra
+                        # Find planet x and y positions from pa and sep
+
+                        x_positions = [r*np.cos((np.radians(p+90)))+ dataset.centers[0] for r, p in zip(ra, pa)]
+                        y_positions = [r*np.sin((np.radians(p+90)))+ dataset.centers[0] for r, p in zip(ra, pa)]
                     
                         # Loop through kl modes
                         cont_meas = np.zeros((len(klmodes), 1))
@@ -360,6 +361,8 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
                             # Create an array with the indices are that of KL mode frame with index 2
                             ydat, xdat = np.indices(dataset_contunits.shape)
+
+                           
 
                             # Mask the planets
                             for x, y in zip(x_positions, y_positions):

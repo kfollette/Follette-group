@@ -330,56 +330,56 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                         head["KLMODES"]=str(klmodes)
                         fits.writeto(fname, incube, head, overwrite=True)
 
-                    # dataset_copy = np.copy(incube)
+                    dataset_copy = np.copy(incube)
                 
-                    # #get position angle in radians relative to N up E left
-                    # pa_nup = [x*np.pi/180 for x in pa]
+                    #get position angle in radians relative to N up E left
+                    pa_nup = [x*np.pi/180 for x in pa]
 
-                    # #translate to x and y positions
-                    # x_positions = -1*np.sin(pa_nup)*ra
-                    # y_positions = np.cos(pa_nup)*ra
+                    #translate to x and y positions
+                    x_positions = -1*np.sin(pa_nup)*ra
+                    y_positions = np.cos(pa_nup)*ra
                 
-                    # # Loop through kl modes
-                    # cont_meas = np.zeros((len(klmodes), 1))
-                    # for k in range(len(klmodes)):
+                    # Loop through kl modes
+                    cont_meas = np.zeros((len(klmodes), 1))
+                    for k in range(len(klmodes)):
                     
-                    #     dataset_contunits = dataset_copy[k]/np.median(starpeak)
+                        dataset_contunits = dataset_copy[k]/np.median(starpeak)
                             
-                    #     # Retrieve flux of injected planet
-                    #     planet_fluxes = []
-                    #     for sep, p in zip(ra, pa):
-                    #         fake_flux = fakes.retrieve_planet_flux(dataset_contunits, dataset.centers[0], dataset.output_wcs[0], sep, p, searchrad=7)
-                    #         planet_fluxes.append(fake_flux)
+                        # Retrieve flux of injected planet
+                        planet_fluxes = []
+                        for sep, p in zip(ra, pa):
+                            fake_flux = fakes.retrieve_planet_flux(dataset_contunits, dataset.centers[0], dataset.output_wcs[0], sep, p, searchrad=7)
+                            planet_fluxes.append(fake_flux)
 
                     
-                    #     # Calculate the throughput
-                    #     tpt = np.array(planet_fluxes)/np.array(input_contrast)
+                        # Calculate the throughput
+                        tpt = np.array(planet_fluxes)/np.array(input_contrast)
                         
 
-                    #     # Create an array with the indices are that of KL mode frame with index 2
-                    #     ydat, xdat = np.indices(dataset_contunits.shape)
+                        # Create an array with the indices are that of KL mode frame with index 2
+                        ydat, xdat = np.indices(dataset_contunits.shape)
 
-                    #     # Mask the planets
-                    #     for x, y in zip(x_positions, y_positions):
+                        # Mask the planets
+                        for x, y in zip(x_positions, y_positions):
 
-                    #         # Create an array with the indices are that of KL mode frame with index 2
-                    #         distance_from_star = np.sqrt((xdat - x) ** 2 + (ydat - y) ** 2)
+                            # Create an array with the indices are that of KL mode frame with index 2
+                            distance_from_star = np.sqrt((xdat - x) ** 2 + (ydat - y) ** 2)
 
-                    #         # Mask
-                    #         dataset_contunits[np.where(distance_from_star <= 2 * FWHM)] = np.nan
+                            # Mask
+                            dataset_contunits[np.where(distance_from_star <= 2 * FWHM)] = np.nan
 
-                    #         masked_cube = dataset_contunits
+                            masked_cube = dataset_contunits
 
-                    #     # Measure the raw contrast
-                    #     contrast_seps, contrast = klip.meas_contrast(dat=masked_cube, iwa=iwa, owa=dataset.OWA, resolution=(7), center=dataset.centers[0], low_pass_filter=True)
+                        # Measure the raw contrast
+                        contrast_seps, contrast = klip.meas_contrast(dat=masked_cube, iwa=iwa, owa=dataset.OWA, resolution=(7), center=dataset.centers[0], low_pass_filter=True)
 
-                    #     # Find the contrast to be used 
-                    #     use_contrast = np.interp(np.median(ra), contrast_seps, contrast)
+                        # Find the contrast to be used 
+                        use_contrast = np.interp(np.median(ra), contrast_seps, contrast)
                         
 
-                    #     # Calibrate the contrast
-                    #     cal_contrast = use_contrast/np.median(tpt)
-                    #     cont_meas[k] = -cal_contrast
+                        # Calibrate the contrast
+                        cal_contrast = use_contrast/np.median(tpt)
+                        cont_meas[k] = -cal_contrast
                             
         
                     # makes SNR map
@@ -412,10 +412,11 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     #write parameter explorer cube to disk
     writeData(PECube, hdr, annuli, movement, subsections, snrmap = True, pre = 'paramexplore_')
 
-    print("KLIP automation complete")    
-    print("End clock time is", time.time())
-    print("End process time is", time.process_time())
-    print("Total clock runtime: ", time.time()- start_time)
-    print("Total process runtime:", time.process_time()-start_process_time)
+    if verbose is True: 
+        print("KLIP automation complete")    
+        print("End clock time is", time.time())
+        print("End process time is", time.process_time())
+        print("Total clock runtime: ", time.time()- start_time)
+        print("Total process runtime:", time.process_time()-start_process_time)
 
     return(PECube)

@@ -334,7 +334,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                 print("Must specify outputName if passing in an existing array")
                 return
             else:
-                outname=outputName
+                outname=outputName[:-5]
 
     #smooth input image by specified amount
     if smooth > 0:

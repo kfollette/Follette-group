@@ -107,7 +107,7 @@ def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_fl
         #read in
         df = get_cuts_df(cuts_dfname)
         #check whether has values for 90pct cut (last)
-        if df[df["pctcut"]==90]["nims"]>0:
+        if df[df["pctcut"]==90]["nims"].values[0] > 0:
             if rerun==False:
                 print("dq cuts have already been run. not rerunning")
                 return

@@ -1236,17 +1236,18 @@ def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_noco
         print("average peak SNR across KL modes for planet", str(pl+1), 'is', np.nanmean(snrs[0,:,pl]), 'and median is', np.nanmedian(snrs[0,:,pl]))
 
     #print("snrs (avg under mask) for median SNR map is", snr_sums)
-    for pl in np.arange(n_planets):
-        print("average average under mask SNR across KL modes for planet", str(pl+1), 'is', np.nanmean(snr_sums[0,:,pl]), 'and median is', np.nanmedian(snr_sums[0,:,pl]))
+    if debug==True:
+        for pl in np.arange(n_planets):
+            print("average average under mask SNR across KL modes for planet", str(pl+1), 'is', np.nanmean(snr_sums[0,:,pl]), 'and median is', np.nanmedian(snr_sums[0,:,pl]))
 
-    print("median SNR map results")
-    #print("snrs (max pixel) for stdev SNR map are", snrs[0,:,:])
-    for pl in np.arange(n_planets):
-        print("average peak SNR across KL modes for planet", str(pl+1), 'is', np.nanmean(snrs[1,:,pl]), 'and median is', np.nanmedian(snrs[1,:,pl]))
+        print("median SNR map results")
+        #print("snrs (max pixel) for stdev SNR map are", snrs[0,:,:])
+        for pl in np.arange(n_planets):
+            print("average peak SNR across KL modes for planet", str(pl+1), 'is', np.nanmean(snrs[1,:,pl]), 'and median is', np.nanmedian(snrs[1,:,pl]))
 
-    #print("snrs (avg under mask) for stdev SNR map is", snr_sums)
-    for pl in np.arange(n_planets):
-        print("average average under mask SNR across KL modes for planet", str(pl+1), 'is', np.nanmean(snr_sums[1,:,pl]), 'and median is', np.nanmedian(snr_sums[1,:,pl]))
+        #print("snrs (avg under mask) for stdev SNR map is", snr_sums)
+        for pl in np.arange(n_planets):
+            print("average average under mask SNR across KL modes for planet", str(pl+1), 'is', np.nanmean(snr_sums[1,:,pl]), 'and median is', np.nanmedian(snr_sums[1,:,pl]))
 
     return (dataset.input, dataset.prihdrs, prefix_fakes)
 

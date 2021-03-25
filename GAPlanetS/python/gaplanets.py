@@ -959,7 +959,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
         # loop counter
         i += 1
 
-    return (contrast_seps, contrasts, zone_boundaries, IWA, df, OWA, KLlist, outstr)
+    return (contrast_seps, contrasts, zone_boundaries, IWA, df, KLlist, outstr)
 
 
 def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLlist, outstr, outputdir = 'dq_cuts/contrastcurves/', outer=50, IWA=0,

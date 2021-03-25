@@ -755,7 +755,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
             ctrl_rad = get_control_rad()
             ctrl_rad = ctrl_rad * platescale
 
-            if savefig == True:
+            if savefig == True and debug==True:
 
                 plt.figure(figsize=(5,3), dpi=750)
                 imsz = klim.shape[1]
@@ -918,6 +918,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
             thrpt_out = fits.getdata(outputdir + namestr + '_throughputs.fits')
             head = fits.getheader(outputdir + namestr + '_throughputs.fits')
             zone_boundaries = list(map(int, head['ZONEBDRY'].split(",")))
+            display(file=outputdir+namestr+"_throughput.jpg")
 
         else:
             print('computing throughputs for', cut, 'pct cut')
@@ -933,6 +934,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
         if os.path.exists(outputdir + prefix +  klipstr + '_contrast.fits'):
             print ('found existing contrast curve', outputdir + prefix +  klipstr + '_contrast.fits')
             ctrsts = fits.getdata(outputdir + prefix +  klipstr + '_contrast.fits')
+            display(file=outputdir+namestr+"_contrastcurve.jpg")
 
         else:
             print('computing contrasts for', cut, 'pct cut')

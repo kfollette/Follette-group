@@ -1099,7 +1099,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_noco
     #if doesn't exist yet, make it
     if not os.path.exists('dq_cuts/' + wl + '_' + str(cut) + 'pctcut_sliced'):
         print("this wavelength and cut has not yet been generated. making now.")
-        peak_cut(data_str, wl, imstring=imstring, pctcuts=[cut], ghost=ghost)
+        peak_cut(data_str, wl, imstring=imstring, pctcuts=[cut], ghost=ghost, rerun=True)
     
     # if contrast curve directory doesn't already exist, create it
     if os.path.exists(outputdir) == False:

@@ -1666,7 +1666,7 @@ def contrast_klcompare(data_str, ha_ctrsts, cont_ctrsts, KLlist, IWA, zone_bound
     zone_boundaries_arcsec = [x*platescale for x in zone_boundaries]
 
     #make figure
-    plt.figure(figsize=(7, 4), dpi=750)
+    plt.figure(figsize=(5,3), dpi=750)
     for klctr in np.arange(len(KLlist)):
         j = klctr / len(KLlist)
         ha_contrast_seps = ha_ctrsts[klctr,0,:]
@@ -1698,7 +1698,7 @@ def contrast_klcompare(data_str, ha_ctrsts, cont_ctrsts, KLlist, IWA, zone_bound
     plt.show()
     plt.clf()
 
-    plt.figure(figsize=(7, 4), dpi=750)
+    plt.figure(figsize=(5,3), dpi=750)
     for klctr in np.arange(len(KLlist)):
         j = klctr / len(KLlist)
         cont_contrast_seps = cont_ctrsts[klctr,0,:]
@@ -1755,7 +1755,7 @@ def final_contrast_fig(data_str, ha_ctrsts, cont_ctrsts, IWA, zone_boundaries, o
     zone_boundaries_arcsec = [x*platescale for x in zone_boundaries]
 
     #make figure
-    plt.figure(figsize=(7, 4), dpi=750)
+    plt.figure(figsize=(5,3), dpi=750)
     plt.plot(ha_contrast_seps * platescale, ha_corrected_curve, label="H-alpha", color='blue')
     plt.fill_between(ha_contrast_seps * platescale, min_ctrst_ha, max_ctrst_ha, color='blue', alpha=0.5)
     plt.plot(cont_contrast_seps * platescale, cont_corrected_curve, label='Continuum', color='red')

@@ -931,9 +931,9 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
                                                                     KLlist=KLlist, IWA=IWA, cuts_dfname=cuts_dfname, 
                                                                     debug=debug, iterations=iterations)
 
-        if os.path.exists(outputdir + prefix +  klipstr + '_contrast.fits'):
-            print ('found existing contrast curve', outputdir + prefix +  klipstr + '_contrast.fits')
-            ctrsts = fits.getdata(outputdir + prefix +  klipstr + '_contrast.fits')
+        if os.path.exists(outputdir + namestr + '_contrast.fits'):
+            print ('found existing contrast curve', outputdir + namestr + '_contrast.fits')
+            ctrsts = fits.getdata(outputdir + namestr + '_contrast.fits')
             display(file=outputdir+namestr+"_contrastcurve.jpg")
 
         else:

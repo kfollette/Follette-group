@@ -73,7 +73,7 @@ def get_cuts_df(dfname):
             df[name] = []
     return(df)
 
-def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_flat_reg_nocosmics',
+def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_flat_reg_nocosmics', rerun=False,
              debug=False, ghost=False, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], electrons=False):
     """
     PURPOSE
@@ -101,6 +101,16 @@ def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_fl
     modified October 2020 by KBF- gaussfitter obsolete. Moving to standard astropy models. Moffatt better than 
     Gaussian. Debug now displays the fit and the image every 10 images in the cube
     """
+
+    #check whether has already been run
+    if os.path.exists(cuts_dfname):
+        #read in
+        df = get_cuts_df(cuts_dfname)
+        #check whether has values for 90pct cut (last)
+        if df[df["pctcut"]==90]["nims"]>0:
+            if rerun==False:
+                print("dq cuts have already been run. not rerunning")
+                return
 
     if wl == 'Line':
         rotstring = 'rotoff_noLinecosmics'

@@ -1046,7 +1046,7 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
     return
 
 
-def clean_cuts(wl, subdir, keeplist, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90]):
+def clean_cuts(wl, keeplist, subdir='./dq_cuts/', pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90]):
     """
     Deletes superfluous intermediate files for image quality cuts that are not going to be used for analysis
     wl: 'Line' or 'Cont' or other file prefix
@@ -1066,6 +1066,16 @@ def clean_cuts(wl, subdir, keeplist, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 
             shutil.rmtree(subdir+wl+'_'+str(pct)+'pctcut_sliced')
 
     return
+
+def clean_fakes(keepstr, fakesdir):
+    """
+    """
+    full_list = glob.glob(fakesdir+'/*')
+    keep_list = [keep for keep in full_list if keepstr in keep]
+    rm_list = [junk for junk in full_list if junk not in keep_list]
+    print(full_list, keep_list, rm_list)
+    return
+
 
 
 def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_nocosmics_', outputdir='fakes/', numann=3, movm=5, KLlist=[1,2,3,4,5,10,20,50,100],

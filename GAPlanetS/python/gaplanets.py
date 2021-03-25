@@ -765,12 +765,13 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
             ctrl_rad = get_control_rad()
             ctrl_rad = ctrl_rad * platescale
 
+            imsz = klim.shape[1]
+            annspacing = (imsz / 2. - IWA) / numann
+            zone_boundaries = np.arange(1, numann) * annspacing + IWA
+
             if savefig == True and debug==True:
 
                 plt.figure(figsize=(7,4), dpi=750)
-                imsz = klim.shape[1]
-                annspacing = (imsz / 2. - IWA) / numann
-                zone_boundaries = np.arange(1, numann) * annspacing + IWA
                 plt.plot(contrast_seps * platescale, contrast)
                 plt.plot(contrast_seps * platescale, contrast, 'bo')
                 plt.yscale("log")

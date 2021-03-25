@@ -565,7 +565,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
         if (savefig == True):
             #plot the individual points
-            plt.figure(figsize=(7, 4), dpi=750)
+            plt.figure(figsize=(5,3), dpi=750)
             for iter in np.arange(iterations):
                 plt.plot(thrpt_seps, thrpts[klctr,iter,:], cx[iter], label="set"+str(iter+1))
             # plot the throughput averages (should all be <1 and should increase outward until they hit a zone boundary)
@@ -757,7 +757,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
 
             if savefig == True:
 
-                plt.figure(figsize=(7, 4), dpi=750)
+                plt.figure(figsize=(5,3), dpi=750)
                 imsz = klim.shape[1]
                 annspacing = (imsz / 2. - IWA) / numann
                 zone_boundaries = np.arange(1, numann) * annspacing + IWA
@@ -815,7 +815,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
                 plt.clf()
 
             if savefig == True:
-                plt.figure(figsize=(7, 4), dpi=750)
+                plt.figure(figsize=(5,3), dpi=750)
                 cx = ['r-','g-','y-','c-','m-','r:','g:','y:','c:','m:']
                 #plot the individual points
                 for iter in np.arange(iterations):
@@ -1000,7 +1000,7 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
     for kl in KLlist:
 
         # plt.style.use('seaborn-colorblind')
-        plt.figure(figsize=(7, 4), dpi=750)
+        plt.figure(figsize=(5,3), dpi=750)
         for i in np.arange(len(pctcuts)):
             cut = pctcuts[i]
             j = i / len(pctcuts)

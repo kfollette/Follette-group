@@ -1247,7 +1247,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_noco
         for pl in np.arange(n_planets):
             print("average average under mask SNR across KL modes for planet", str(pl+1), 'is', np.nanmean(snr_sums[1,:,pl]), 'and median is', np.nanmedian(snr_sums[1,:,pl]))
 
-    return (dataset.input, dataset.prihdrs, prefix_fakes)
+    return (dataset.input, dataset.prihdrs, prefix_fakes, snrs)
 
 
 def radarr(xdim,ydim):

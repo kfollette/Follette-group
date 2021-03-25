@@ -565,7 +565,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
         if (savefig == True):
             #plot the individual points
-            plt.figure(figsize=(5,3), dpi=750)
+            plt.figure(figsize=(7,4), dpi=750)
             for iter in np.arange(iterations):
                 plt.plot(thrpt_seps, thrpts[klctr,iter,:], cx[iter], label="set"+str(iter+1))
             # plot the throughput averages (should all be <1 and should increase outward until they hit a zone boundary)
@@ -757,7 +757,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
 
             if savefig == True and debug==True:
 
-                plt.figure(figsize=(5,3), dpi=750)
+                plt.figure(figsize=(7,4), dpi=750)
                 imsz = klim.shape[1]
                 annspacing = (imsz / 2. - IWA) / numann
                 zone_boundaries = np.arange(1, numann) * annspacing + IWA
@@ -815,7 +815,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
                 plt.clf()
 
             if savefig == True:
-                plt.figure(figsize=(5,3), dpi=750)
+                plt.figure(figsize=(7,4), dpi=750)
                 cx = ['r-','g-','y-','c-','m-','r:','g:','y:','c:','m:']
                 #plot the individual points
                 for iter in np.arange(iterations):
@@ -1000,7 +1000,7 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
     for kl in KLlist:
 
         # plt.style.use('seaborn-colorblind')
-        plt.figure(figsize=(5,3), dpi=750)
+        plt.figure(figsize=(7,4), dpi=750)
         for i in np.arange(len(pctcuts)):
             cut = pctcuts[i]
             j = i / len(pctcuts)
@@ -1058,7 +1058,7 @@ def clean_cuts(wl, subdir, keeplist, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 
 
 
 def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_nocosmics_', outputdir='fakes/', numann=3, movm=5, KLlist=[1,2,3,4,5,10,20,50,100],
-                 contrasts=[1e-2,1e-2,1e-2], seps=[10, 10, 10], thetas=[0, 120, 240], debug=True,
+                 contrasts=[1e-2,1e-2,1e-2], seps=[10, 10, 10], thetas=[0, 120, 240], debug=False,
                  ghost=False, mask=[3, 15], slicefakes=True,ctrlrad=30):
     """
     PURPOSE
@@ -1665,7 +1665,7 @@ def contrast_klcompare(data_str, ha_ctrsts, cont_ctrsts, KLlist, IWA, zone_bound
     zone_boundaries_arcsec = [x*platescale for x in zone_boundaries]
 
     #make figure
-    plt.figure(figsize=(5,3), dpi=750)
+    plt.figure(figsize=(7,4), dpi=750)
     for klctr in np.arange(len(KLlist)):
         j = klctr / len(KLlist)
         ha_contrast_seps = ha_ctrsts[klctr,0,:]
@@ -1697,7 +1697,7 @@ def contrast_klcompare(data_str, ha_ctrsts, cont_ctrsts, KLlist, IWA, zone_bound
     plt.show()
     plt.clf()
 
-    plt.figure(figsize=(5,3), dpi=750)
+    plt.figure(figsize=(7,4), dpi=750)
     for klctr in np.arange(len(KLlist)):
         j = klctr / len(KLlist)
         cont_contrast_seps = cont_ctrsts[klctr,0,:]
@@ -1754,7 +1754,7 @@ def final_contrast_fig(data_str, ha_ctrsts, cont_ctrsts, IWA, zone_boundaries, o
     zone_boundaries_arcsec = [x*platescale for x in zone_boundaries]
 
     #make figure
-    plt.figure(figsize=(5,3), dpi=750)
+    plt.figure(figsize=(7,4), dpi=750)
     plt.plot(ha_contrast_seps * platescale, ha_corrected_curve, label="H-alpha", color='blue')
     plt.fill_between(ha_contrast_seps * platescale, min_ctrst_ha, max_ctrst_ha, color='blue', alpha=0.5)
     plt.plot(cont_contrast_seps * platescale, cont_corrected_curve, label='Continuum', color='red')

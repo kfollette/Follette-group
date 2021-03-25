@@ -1028,7 +1028,7 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
                     plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
                 else:
                     plt.plot((bd, bd), (0, 1), '--', color='grey')
-        plt.legend(loc='upper right', fontsize='small')
+        plt.legend(loc='upper right', fontsize='x-small')
         # write out in data directory
         plt.savefig(outputdir + data_str[:-1] + outstr + '_KL'+str(kl)+'_contrastsbycut.jpg')
         plt.show()

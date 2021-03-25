@@ -85,7 +85,8 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     mask = (ra, pa, wid)
 
     nplanets = len(ra)
-    print(nplanets, "planets with separations ", ra, "and PAs ", pa)
+    if verbose is True:
+        print(nplanets, "planets with separations ", ra, "and PAs ", pa)
     
     # Add suffix to filenames depending on user-specified values
     suff = ''    
@@ -134,15 +135,18 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     palist_clean = [pa if (pa < 360) else pa-360 for pa in palist]
     palist_clean_sorted = sorted(palist_clean)
     totrot = palist_clean_sorted[-1]-palist_clean_sorted[0]
-    print("total rotation for this dataset is", "%5.1f" % (totrot), "degrees")
+
+    if verbose is True:
+        print(f"total rotation for this dataset is {totrot} degrees")
 
     # set IWA and OWA
     dataset.IWA = iwa
 
-    if owa == False:
+    if owa is False:
         xDim = dataset._input.shape[2]
         yDim = dataset._input.shape[1]
         dataset.OWA = min(xDim,yDim)/2
+        owa = dataset.OWA
     else:
         dataset.OWA = owa
 
@@ -219,7 +223,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
 
     # create cube to eventually hold parameter explorer data
-    PECube = np.zeros((8,int((subsections_stop-subsections_start)/subsections_inc+1), len(klmodes), int(nplanets),
+    PECube = np.zeros((9,int((subsections_stop-subsections_start)/subsections_inc+1), len(klmodes), int(nplanets),
                         int((annuli_stop-annuli_start)/annuli_inc+1),
                         int((movement_stop-movement_start)/movement_inc+1)))
     
@@ -239,7 +243,9 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
         planet_annuli = [a for a in all_bounds if (a<ra[-1]+dr) and (a>ra[0])]
         nplanet_anns = len(planet_annuli)
         ann_cen_rad = [ a - dr/2 for a in planet_annuli ]
-        print("planets span ", nplanet_anns, "annular zones for annuli = ", a)
+
+        if verbose is True:
+            print("planets span ", nplanet_anns, "annular zones for annuli = ", a)
 
         # print('annuli bounds are', all_bounds)
         numAnn = a
@@ -276,9 +282,10 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
             #figure out whether there is enough range 
 
             if np.arctan(m/ann_cen_rad[0])*180/np.pi>totrot:
-                print("movement", m, "=" "%5.1f" % (np.arctan(m/ann_cen_rad[0])*180/np.pi), 
-                    "deg. for inner planet annulus. Only ", "%5.1f" % (totrot), 
-                    "available. skipping this movement/annuli combo") 
+                if verbose is True:
+                    print("movement", m, "=" "%5.1f" % (np.arctan(m/ann_cen_rad[0])*180/np.pi), 
+                        "deg. for inner planet annulus. Only ", "%5.1f" % (totrot), 
+                        "available. skipping this movement/annuli combo") 
                 PECube[:,:,:,:,acount,mcount] = np.nan
                 mcount+=1
                 continue
@@ -336,11 +343,9 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                     if input_contrast is not False:
                         dataset_copy = np.copy(incube)
                     
-
                         # Find planet x and y positions from pa and sep
-
-                        x_positions = [r*np.cos((np.radians(p+90)))+ dataset.centers[0] for r, p in zip(ra, pa)]
-                        y_positions = [r*np.sin((np.radians(p+90)))+ dataset.centers[0] for r, p in zip(ra, pa)]
+                        x_positions = [r*np.cos((np.radians(p+90)))+ dataset.centers[0][0] for r, p in zip(ra, pa)]
+                        y_positions = [r*np.sin((np.radians(p+90)))+ dataset.centers[0][0] for r, p in zip(ra, pa)]
                     
                         # Loop through kl modes
                         cont_meas = np.zeros((len(klmodes), 1))
@@ -372,7 +377,6 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
                                 # Mask
                                 dataset_contunits[np.where(distance_from_star <= 2 * FWHM)] = np.nan
-
                                 masked_cube = dataset_contunits
 
                             # Measure the raw contrast
@@ -394,7 +398,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                     PECube[2:4, scount, :, :, acount, mcount] = snrsums
                     PECube[4:6, scount, :, :, acount, mcount] = snrspurious[:,:,None,0]
                     PECube[6:8, scount, :, :, acount, mcount] = snrspurious[:,:,None,1]
-                    PECube[8, scount, :, acount, mcount] = cont_meas[:,0]
+                    PECube[8, scount, :, :, acount, mcount] = cont_meas
 
                     if(runKLIP) and np.nanmedian(peaksnr)>3:
                         writeData(incube, hdr, a, m, s)
@@ -406,7 +410,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                         if verbose is True:
                             print("Writing SNR maps to " + path_to_files + "_klip/")
         
-                    print(acount, mcount, scount)
+                
                     scount+=1
                 mcount+=1                
         acount+=1

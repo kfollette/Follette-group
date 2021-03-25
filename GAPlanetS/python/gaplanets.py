@@ -1141,6 +1141,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_noco
     for i in np.arange(len(filelist)):
         head = fits.getheader(filelist[i])
         starpeak.append(head["STARPEAK"])
+    head = fits.getheader(filelist[0])
     fwhm=head["MEDFWHM"]
 
     # import the dataset. Wait to highpass filter until the KLIP call in the next cell

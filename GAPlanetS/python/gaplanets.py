@@ -918,7 +918,6 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
             thrpt_out = fits.getdata(outputdir + namestr + '_throughputs.fits')
             head = fits.getheader(outputdir + namestr + '_throughputs.fits')
             zone_boundaries = list(map(int, head['ZONEBDRY'].split(",")))
-            display(file=outputdir+namestr+"_throughput.jpg")
 
         else:
             print('computing throughputs for', cut, 'pct cut')
@@ -931,10 +930,9 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
                                                                     KLlist=KLlist, IWA=IWA, cuts_dfname=cuts_dfname, 
                                                                     debug=debug, iterations=iterations)
 
-        if os.path.exists(outputdir + namestr + '_contrast.fits'):
-            print ('found existing contrast curve', outputdir + namestr + '_contrast.fits')
-            ctrsts = fits.getdata(outputdir + namestr + '_contrast.fits')
-            display(file=outputdir+namestr+"_contrastcurve.jpg")
+        if os.path.exists(outputdir + namestr + '_contrasts.fits'):
+            print ('found existing contrast curve', outputdir + namestr + '_contrasts.fits')
+            ctrsts = fits.getdata(outputdir + namestr + '_contrasts.fits')
 
         else:
             print('computing contrasts for', cut, 'pct cut')

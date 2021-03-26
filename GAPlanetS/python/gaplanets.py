@@ -1194,7 +1194,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_noco
     # KLIP dataset with fake planets. Highpass filter here.
     parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix_fakes+strklip, algo='klip', annuli=numann,
                               subsections=1, movement=movm, numbasis=KLlist, calibrate_flux=False, mode="ADI",
-                              highpass=True, save_aligned=False, time_collapse='median')
+                              highpass=True, save_aligned=False, time_collapse='median', verbose = False)
 
     # read in the KLIP cube that was just created
     klcube = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix_fakes+strklip))

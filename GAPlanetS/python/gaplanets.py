@@ -1078,7 +1078,7 @@ def clean_fakes(keepstr, fakesdir):
 
 
 
-def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_nocosmics_', outputdir='fakes/', numann=3, movm=5, KLlist=[1,2,3,4,5,10,20,50,100],
+def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_nocosmics_', outputdir='fakes/', numann=6, movm=1, KLlist=[1,2,3,4,5,10,20,50,100],
                  contrasts=[1e-2,1e-2,1e-2], seps=[10, 10, 10], thetas=[0, 120, 240], debug=False,
                  ghost=False, mask=[3, 15], slicefakes=True,ctrlrad=30):
     """

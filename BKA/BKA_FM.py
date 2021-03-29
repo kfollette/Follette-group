@@ -1,6 +1,6 @@
 # original implementation written by Alex Watson circa 2017
 # expanded by William Balmer
-# last edited 9/10/2020
+# last edited 9/18/2020
 # based on pyklip documentation found here:
 # https://pyklip.readthedocs.io/en/latest/bka.html
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':  # This is a very important precaution for Windows
             Ghost.ghostIsolation(cubepath, 380, 220, 10, 10, 10)
             ghostpath = 'ghost.fits'
         # ask for path to sliced data
-        filepaths = input('Input the filepaths to your data: ')
+        filepaths = input('Input the filepaths to your sliced data: ')
         filelist = glob.glob(filepaths)
         dataset = MagAO.MagAOData(filelist)
         output = input('Input your output path: ')

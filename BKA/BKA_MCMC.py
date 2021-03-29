@@ -7,7 +7,6 @@ import numpy as np
 import sys
 
 
-
 outputdir = sys.argv[1]
 prefix = sys.argv[2]
 sep = float(sys.argv[3])
@@ -117,4 +116,3 @@ plt.savefig(outputdir+"/BKA_corner.png")
 
 fig = fma.best_fit_and_residuals()
 plt.savefig(outputdir+"/BKA_residuals.png")
-

@@ -406,7 +406,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                             
         
                     # makes SNR map
-                    snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(fname, FWHM, smooth=snrsmt, planets=mask, saveOutput=False, sigma = 5, checkmask=False)
+                    snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(fname, FWHM, smooth=snrsmt, planets=mask, saveOutput=False, sigma = 5, checkmask=False, verbose = verbose)
 
                     PECube[0:2, scount, :, :, acount, mcount] = peaksnr
                     PECube[2:4, scount, :, :, acount, mcount] = snrsums

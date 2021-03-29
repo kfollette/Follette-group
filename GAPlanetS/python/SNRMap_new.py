@@ -29,7 +29,6 @@ def read_file(filename):
     """
     Data = fits.getdata(filename)
     Head = fits.getheader(filename)
-    print("Read " + filename  + " in to memory")
     return Data, Head
 
 
@@ -285,7 +284,7 @@ def noisemap(indiv, planets, fwhm, method='stdev'):
 
 
 
-def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveOutput = True, outputName=False, ctrlrad=30, method = 'all', checkmask=False, makenoisemap=False, sigma = 5):
+def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveOutput = True, outputName=False, ctrlrad=30, method = 'all', checkmask=False, makenoisemap=False, sigma = 5, verbose = False):
     """
     creates signal to noise ratio map of image.
     
@@ -320,7 +319,8 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
     #checks data type of 'filename'
     # if 'filename' is a string, assumes it is a filepath and reads in file
     if filename[-5:] == '.fits':
-        print("found fits file", filename)
+        if verbose is True:
+            print("found fits file", filename)
         inp, head = read_file(filename)
         outname = filename[:-5]+'_'+method+'_snrmap'
         

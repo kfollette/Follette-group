@@ -1025,7 +1025,7 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
         plt.yscale("log")
         plt.title(data_str[:-1] + outstr+' KL '+str(kl))
         plt.xlim(0, outer_asec)
-        plt.ylim(10 ** floor, 1e-1)
+        plt.ylim(10 ** floor, 1)
         plt.xlabel("distance in arcseconds")
         plt.ylabel("contrast")
         if IWA > 0:

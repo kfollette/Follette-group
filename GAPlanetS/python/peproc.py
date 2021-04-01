@@ -634,6 +634,108 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 				d["pe{0}haklipim".format(i+1)]=klim
 	return(d)
 
+def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.5], snrmeth='all', smt=3):
+    
+    snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask, nq_stdev_umask, spurpix_avg, agg, ann_val, movm_val, metric_scores = \
+        find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)
+
+    if writestr == False:
+        writestr = pename[:-17]
+
+    namelist = pename.split('_')
+    params = [s for s in namelist if s[0] == 'a']
+    params = params[0]
+    params = re.split('a|-|x|m|s|iwa', params)
+    ymin = int(params[1])
+    ymax = int(params[2])
+    ystep = int(params[3])
+    xmin = int(float(params[4]))
+    xmax = int(float(params[5]))
+    xstep = int(float(params[6]))
+    nstepx = (xmax - xmin) / xstep
+    nstepy = (ymax - ymin) / ystep
+
+    # set up tick labels according to parameter ranges
+    fig_xdim = nstepx*0.5
+    fig_ydim = nstepy
+
+    fig = plt.figure(tight_layout=True, figsize=(fig_ydim,fig_xdim))
+    gs = fig.add_gridspec(2, 4)
+    ax1 = fig.add_subplot(gs[0,0])
+    ax2 = fig.add_subplot(gs[0,1])
+    ax3 = fig.add_subplot(gs[1,0])
+    ax4 = fig.add_subplot(gs[1,1])
+    ax5 = fig.add_subplot(gs[0,2])
+    ax6 = fig.add_subplot(gs[1,2])
+    #ax5 = fig.add_subplot(gs[:,2:])
+
+    plt.setp((ax1, ax2, ax3, ax4, ax5, ax6), xticks=np.arange(nstepx + 1), xticklabels=np.arange(xmin, xmax + 1),
+             yticks=np.arange(nstepy + 1), yticklabels=np.arange(ymin, ymax + 1))
+
+    #plt.setp((ax1, ax2, ax3, ax4, ax5), xticks=np.arange(nstepx + 1), yticks=np.arange(nstepy + 1), xticklabels=[], yticklabels=[])
+
+    im1 = ax1.imshow(snr_norm_avg, origin='lower', cmap='magma', vmin=0, vmax=1)
+
+    ax1.set_xlabel("movement parameter")
+    ax1.set_ylabel("annuli parameter")
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im1, cax=cax, orientation='vertical', label="Average SNR Metric")
+
+    im2 = ax2.imshow(nq_snr, origin='lower',
+                     cmap='magma', vmin=0, vmax=1)
+    ax2.set_xlabel("movement parameter")
+    ax2.set_ylabel("annuli parameter")
+    divider = make_axes_locatable(ax2)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im2, cax=cax, orientation='vertical', label="SNR Neighbor Quality")
+
+    im3 = ax3.imshow(spurpix_avg, origin='lower', cmap='magma', vmin=0, vmax=np.nanmax(spurpix_avg))
+    ax3.set_xlabel("movement parameter")
+    divider = make_axes_locatable(ax3)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im3, cax=cax, orientation='vertical', label="Spurious Pixels")
+    
+    im4 = ax4.imshow(1-spurpix_avg/np.nanmax(spurpix_avg), origin='lower', cmap='magma', vmin=0, vmax=1)
+    ax4.set_xlabel("movement parameter")
+    divider = make_axes_locatable(ax4)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im4, cax=cax, orientation='vertical', label="Spurious Pixel Metric")
+    
+    im5 = ax5.imshow(stdev_norm_avg_umask, origin='lower',
+                     cmap='magma', vmin=0, vmax=1)
+    ax5.set_xlabel("movement parameter")
+    ax5.set_ylabel("annuli parameter")
+    divider = make_axes_locatable(ax5)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im5, cax=cax, orientation='vertical', label="Standard Deviation Metric")
+
+    #im4 = ax4.imshow(nq_stdev, origin='lower',
+     #                cmap='magma', vmin=0, vmax=1)
+    #ax4.set_xlabel("movement parameter")
+    #ax4.set_ylabel("annuli parameter")
+    #divider = make_axes_locatable(ax4)
+    #cax = divider.append_axes('right', size='5%', pad=0.05)
+    #plt.colorbar(im4, cax=cax, orientation='vertical', label="Stdev Neighbor Quality")
+
+    # plot metric
+    im6 = ax6.imshow(agg, origin='lower', vmin=0, vmax=np.sum(weights))
+    ax6.set_ylabel("annuli parameter")
+    ax6.set_xlabel("movement parameter")
+    divider = make_axes_locatable(ax6)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im6, cax=cax, orientation='vertical', label="Parameter Quality Metric")
+
+    ind = np.where(agg == np.nanmax(agg))
+    label_text = 'a' + str(ann_val) + 'm' + str(movm_val)
+    rect = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
+    ax6.add_patch(rect)
+    ax6.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
+
+    plt.savefig(pedir+writestr+'_paramqual.png')
+    
+    return(ann_val, movm_val, agg)
+
 def make_klip_snrmaps(d, pedir='./', outdir='klipims/', smooth=0.5, snrmeth='stdev', mode='Line', scale=1):
 	"""
 	Generate SNR maps with specified parameters for all KLIP images in a directory

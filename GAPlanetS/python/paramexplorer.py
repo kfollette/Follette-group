@@ -3,6 +3,7 @@ import inspect
 import os
 import pyklip.instruments.MagAO as MagAO
 import pyklip.parallelized as parallelized
+import astropy.wcs as wcs
 import numpy as np
 import sys
 import pyklip.klip as klip
@@ -11,7 +12,9 @@ import SNRMap_new as snr
 import time
 import warnings
 import pyklip.fakes as fakes
+import multiprocessing as mp
 import pdb
+import pyklip.instruments.utils.wcsgen as wcsgen
 from astropy.utils.exceptions import AstropyWarning
 from tqdm import tqdm
 
@@ -65,7 +68,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     if(annuli_start == annuli_stop):
         annuli_inc = 1
         annuli = annuli_start
-   
+
     # if parameter is not set to change, makes sure increment is 1 and changes touple to single int
     if(movement_start == movement_stop):
         movement_inc = 1
@@ -195,7 +198,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
         prihdr['CALIBFLUX']=str(calibrate_flux)
         prihdr["HIGHPASS"]=str(highpass)
 
-     
+    
         if(snrmap):
             rad, pa, wid = mask 
             prihdr['MASK_RAD']=str(rad)
@@ -242,6 +245,8 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
         planet_annuli = [a for a in all_bounds if (a<ra[-1]+dr) and (a>ra[0])]
         nplanet_anns = len(planet_annuli)
+
+     
         ann_cen_rad = [ a - dr/2 for a in planet_annuli ]
 
         if verbose is True:
@@ -312,12 +317,13 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                     if os.path.isfile(fname):
                         print(outfile_name+klipstr+suff, fname)
                         incube = fits.getdata(fname)
-                        head = fits.getheader(fname)
+                        head = fits.getheader(fname, 1)
                         klmodes2 = head['KLMODES'][1:-1]
                         klmodes2 = list(map(int, klmodes2.split(",")))
         
                         if (len([k for k in klmodes if not k in klmodes2]) == 0):
-                            print("Found KLIP processed images for same parameters saved to disk. Reading in data.")
+                            if verbose is True:
+                                print("Found KLIP processed images for same parameters saved to disk. Reading in data.")
                             #don't re-run KLIP
                             runKLIP = False
         
@@ -352,11 +358,19 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                         for k in range(len(klmodes)):
                         
                             dataset_contunits = dataset_copy[k]/np.median(starpeak)
-                                
+                            
+                            
+                            
+                            if runKLIP is False:
+                                w = wcsgen.generate_wcs(parangs = 0, center = dataset.centers[0])
+                            else:
+                                w = dataset.output_wcs[0]
+                            
+
                             # Retrieve flux of injected planet
                             planet_fluxes = []
                             for sep, p in zip(ra, pa):
-                                fake_flux = fakes.retrieve_planet_flux(dataset_contunits, dataset.centers[0], dataset.output_wcs[0], sep, p, searchrad=7)
+                                fake_flux = fakes.retrieve_planet_flux(dataset_contunits, dataset.centers[0], w, sep, p, searchrad=7)
                                 planet_fluxes.append(fake_flux)
 
                         
@@ -367,7 +381,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                             # Create an array with the indices are that of KL mode frame with index 2
                             ydat, xdat = np.indices(dataset_contunits.shape)
 
-                           
+                        
 
                             # Mask the planets
                             for x, y in zip(x_positions, y_positions):
@@ -392,7 +406,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                             
         
                     # makes SNR map
-                    snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(fname, FWHM, smooth=snrsmt, planets=mask, saveOutput=False, sigma = 5, checkmask=False)
+                    snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(fname, FWHM, smooth=snrsmt, planets=mask, saveOutput=False, sigma = 5, checkmask=False, verbose = verbose)
 
                     PECube[0:2, scount, :, :, acount, mcount] = peaksnr
                     PECube[2:4, scount, :, :, acount, mcount] = snrsums
@@ -429,3 +443,6 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
         print("Total process runtime:", time.process_time()-start_process_time)
 
     return(PECube)
+
+
+   

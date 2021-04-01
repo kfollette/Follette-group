@@ -1025,12 +1025,12 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
         plt.yscale("log")
         plt.title(data_str[:-1] + outstr+' KL '+str(kl))
         plt.xlim(0, outer_asec)
-        plt.ylim(10 ** floor, 1e-1)
+        plt.ylim(10 ** floor, contrasts[i,klctr, :].max() + 0.5)
         plt.xlabel("distance in arcseconds")
         plt.ylabel("contrast")
         if IWA > 0:
-            plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
-        plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
+            plt.plot((IWA * platescale, IWA * platescale), (1e-5, contrasts[i,klctr, :].max() + 0.5), 'k-', label='IWA')
+        plt.plot((ctrl_rad, ctrl_rad),(0,contrasts[i,klctr, :].max() + 0.5),'m--', label="control radius")
         for bd in np.multiply(zone_boundaries,platescale):
             if bd < outer_asec:
                 if bd == zone_boundaries[0]*platescale:

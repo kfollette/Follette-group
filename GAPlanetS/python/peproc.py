@@ -143,9 +143,9 @@ def collapsekl(pename, kllist, pedir='./',  snrmeth='stdev', writestr=False):
 		#for single method cubes, slices are SNR peak, avg SNR, total >thresh pixels, >thresh pixels inside CR
 		print('keeping only', snrmeth, 'maps')
 		klcube=klcube[slice::2,:,:,:,:]
-		klkeep = np.zeros([4, dims[3], dims[4], len(kllist)])
+		klkeep = np.zeros([5, dims[3], dims[4], len(kllist)])
 	else:
-		klkeep = np.zeros([8, dims[3], dims[4], len(kllist)])
+		klkeep = np.zeros([9, dims[3], dims[4], len(kllist)])
 		
 	# pull KL modes of parameter explorer from the header
 	allkl = list(map(int, head['KLMODES'][1:-1].split(",")))

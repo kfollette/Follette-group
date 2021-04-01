@@ -128,7 +128,7 @@ def collapsekl(pename, kllist, pedir='./',  snrmeth='stdev', writestr=False):
 		writestr = pename[:-20]
 
 	# read in image and header
-	klcube = fits.getdata(pedir + pename)
+	klcube_raw = fits.getdata(pedir + pename)
 	head = fits.getheader(pedir + pename)
 
 	#pull only the SNR map slice with the matching snrmeth value
@@ -136,13 +136,24 @@ def collapsekl(pename, kllist, pedir='./',  snrmeth='stdev', writestr=False):
 		slice = 1
 	if snrmeth == "stdev":
 		slice = 0  
-	dims = klcube.shape
+	dims = klcube_raw.shape
 
 	#if only 1 metric
 	if snrmeth != 'all':
 		#for single method cubes, slices are SNR peak, avg SNR, total >thresh pixels, >thresh pixels inside CR
 		print('keeping only', snrmeth, 'maps')
-		klcube=klcube[slice::2,:,:,:,:]
+		klcube_trimmed=klcube_raw[slice::2,:,:,:,:]
+
+		#if snrmeth = absmed, grab contrast slice too
+		if slice==1:
+			dmns = np.array(klcub_trimmed.shape)
+			dmns[0]+=1
+			klcube_plusone = np.zeros(dmns)
+			klcube_plusone[0:-1,:,:,:,:]=klcube_trimmed
+			#fill last one with contrast cube dimension, which is not dependent on snr method
+			klcube_plusone[-1,:,:,:,:]=klcube_raw[-1,:,:,:,:]
+			klcube_trimmed = klcube_plusone
+
 		klkeep = np.zeros([5, dims[3], dims[4], len(kllist)])
 	else:
 		klkeep = np.zeros([9, dims[3], dims[4], len(kllist)])
@@ -158,7 +169,7 @@ def collapsekl(pename, kllist, pedir='./',  snrmeth='stdev', writestr=False):
 		if kl in kllist:
 			keepind.append(i)
 			print('keeping kl', kl, "with index", i)
-			klkeep[:, :, :, j] = klcube[:, 0, i, :, :]
+			klkeep[:, :, :, j] = klcube_trimmed[:, 0, i, :, :]
 			j += 1
 		i += 1
 
@@ -249,8 +260,10 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	else: 
 		print("extracting ", snrmeth, "slices for KL mode", kllist[0])
 
+	#absmed map values
 	if snrmeth in ["absmed", "all"]:
-		#output cubes from collapsekl have dimensions metric (n=4 for single method, n=8 for 'all'), ann, movm
+
+		#output cubes from collapsekl have dimensions metric (n=5 for single method, n=9 for 'all'), ann, movm
 		avgkl_absmedSNR, stdevkl_absmedSNR = collapsekl(pename, kllist, pedir=pedir, snrmeth='absmed', writestr=writestr)
 		
 		#finds locations of peaks

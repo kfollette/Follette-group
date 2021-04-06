@@ -18,7 +18,7 @@ import pickle
 import textwrap
 
 
-def collapse_planets(pename, pedir='./', writestr=False, snrthresh=False, oldpe=False):
+def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthresh=False, oldpe=False):
 	"""
 	Averages over the planet dimension of a parameter explorer file
 
@@ -100,11 +100,11 @@ def collapse_planets(pename, pedir='./', writestr=False, snrthresh=False, oldpe=
 		os.makedirs(outdir)
 	
 	writename = outdir+writestr+'_planetcollapse.fits'
-	fits.writeto(pedir+writename, pecube, pehead, overwrite=True)
+	fits.writeto(writename, pecube, pehead, overwrite=True)
 			
 	return (pecube, writename)
 
-def collapsekl(pename, kllist, pedir='./',  snrmeth='stdev', writestr=False):
+def collapsekl(pename, kllist, pedir='./', outdir='proc/', snrmeth='stdev', writestr=False):
 	"""
 	Reads in a parameter explorer file and collapses it in the KLmode dimension (axis 3)
 
@@ -185,8 +185,8 @@ def collapsekl(pename, kllist, pedir='./',  snrmeth='stdev', writestr=False):
 	head["KLMODES"] = str(kllist)
 
 	# write arrays
-	fits.writeto(pedir+writestr + '_avgkl.fits', avgkl, head, overwrite=True)
-	fits.writeto(pedir+writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
+	fits.writeto(outdir+writestr + '_avgkl.fits', avgkl, head, overwrite=True)
+	fits.writeto(outdir+writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
 	return (avgkl, stdevkl)
 
 
@@ -216,7 +216,7 @@ def filter_nan_gaussian_conserving(arr, sigma):
 
 	return gauss
 
-def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1,1,1,1], debug=False, smt=3, snrmeth='all'):
+def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1,1,1,1], outdir='proc/', debug=False, smt=3, snrmeth='all'):
 	"""
 	collapses parameter explorer file and extracts the optimal parameter value
 
@@ -264,7 +264,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	if snrmeth in ["absmed", "all"]:
 
 		#output cubes from collapsekl have dimensions metric (n=5 for single method, n=9 for 'all'), ann, movm
-		avgkl_absmedSNR, stdevkl_absmedSNR = collapsekl(pename, kllist, pedir=pedir, snrmeth='absmed', writestr=writestr)
+		avgkl_absmedSNR, stdevkl_absmedSNR = collapsekl(pename, kllist, pedir=pedir, outdir=outdir, snrmeth='absmed', writestr=writestr)
 
 		#finds locations of peaks
 		maxind_absmedSNR = np.where(avgkl_absmedSNR[0,:,:] == np.nanmax(avgkl_absmedSNR[0,:,:]))
@@ -304,7 +304,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 	#stdev map values
 	if snrmeth in ["stdev", "all"]:
-		avgkl_stdevSNR, stdevkl_stdevSNR = collapsekl(pename, kllist,pedir=pedir, snrmeth='stdev', writestr=writestr)
+		avgkl_stdevSNR, stdevkl_stdevSNR = collapsekl(pename, kllist,pedir=pedir, outdir=outdir, snrmeth='stdev', writestr=writestr)
 		
 		maxind_stdevSNR = np.where(avgkl_stdevSNR[0,:,:] == np.nanmax(avgkl_stdevSNR[0,:,:]))
 		maxind_stdevSNR_umask = np.where(avgkl_stdevSNR[1,:,:] == np.nanmax(avgkl_stdevSNR[1,:,:]))
@@ -409,7 +409,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		qual_cube[8,:,:]=nq_stdev_umask
 		qual_cube[9,:,:]=contrast
 
-		fits.writeto(pedir+pename[:-5]+'_paramqual_cube.fits', qual_cube, overwrite=True)
+		fits.writeto(outdir+pename[:-5]+'_paramqual_cube.fits', qual_cube, overwrite=True)
 
 	#average under mask and peak pixel estimates
 	#snr_norm_combo = (snr_norm_avg + snr_norm_avg_umask) / 2.
@@ -453,7 +453,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 	metric_cube[8,:,:]=agg
 
-	fits.writeto(pedir+pename[:-5]+'_paramqual_metrics.fits', metric_cube, overwrite=True)
+	fits.writeto(outdir+pename[:-5]+'_paramqual_metrics.fits', metric_cube, overwrite=True)
 
 	##find location or peak of parameter quality metric and print info
 	ind = np.where(agg == np.nanmax(agg))
@@ -480,7 +480,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 
 def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode='Line', 
-				snrmeth='stdev', snrthresh=False, outdir='klipims/', xname='', 
+				snrmeth='stdev', snrthresh=False, outdir='proc/', xname='', 
 				datadir='../',header=True, 
 				hpval=None, collmode=None, owa=None, oldpe=False, calflux=False):
 	"""
@@ -613,11 +613,11 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 		writename = outdir+d["pe{0}pfx".format(i+1)]+xstr
 
 		## runs planet collapse on each PE in the dictionary
-		pecube, pcolname = collapse_planets(pename, pedir=pedir, snrthresh=snrthresh, oldpe=oldpe)
+		pecube, pcolname = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe)
 
 		#runs PE collapse on planet collapsed cube with specified weights and snrmeth
 		#stores optimal annuli and movement values and the aggregate parameter quality map for each PE
-		j1, j2, j3, j4, j5, j6, j7, agg, ann_val, movm_val, j8 = find_best_new(pcolname, kllist, pedir=pedir, writestr=writename, weights=wts, snrmeth=snrmeth, smt=3)
+		j1, j2, j3, j4, j5, j6, j7, agg, ann_val, movm_val, j8 = find_best_new(pcolname, kllist, pedir=outdir, outdir=outdir, writestr=writename, weights=wts, snrmeth=snrmeth, smt=3)
 		d["pe{0}ann".format(i+1)]=ann_val
 		d["pe{0}movm".format(i+1)]=movm_val
 		d["pe{0}agg".format(i+1)]=agg
@@ -779,7 +779,7 @@ def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1
     
     return(ann_val, movm_val, agg)
 
-def make_klip_snrmaps(d, pedir='./', outdir='klipims/', smooth=0.5, snrmeth='stdev', mode='Line', scale=1):
+def make_klip_snrmaps(d, pedir='./', outdir='proc/', smooth=0.5, snrmeth='stdev', mode='Line', scale=1):
 	"""
 	Generate SNR maps with specified parameters for all KLIP images in a directory
 

@@ -96,10 +96,10 @@ def collapse_planets(pename, pedir='./', writestr=False, snrthresh=False, oldpe=
 		pecube=np.mean(pecube,axis=3)
 
 	#create directory to save in if doesn't yet exist
-	if not os.path.exists(pedir+'proc/'):
-		os.makedirs(pedir+'proc/')
+	if not os.path.exists(outdir):
+		os.makedirs(outdir)
 	
-	writename = 'proc/'+writestr+'_planetcollapse.fits'
+	writename = outdir+writestr+'_planetcollapse.fits'
 	fits.writeto(pedir+writename, pecube, pehead, overwrite=True)
 			
 	return (pecube, writename)
@@ -610,7 +610,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 		pfx=pfx[1:]
 		d["pe{0}pfx".format(i+1)]=pfx
 		d["pe{0}dset".format(i+1)] = dsetname
-		writename = 'proc/'+d["pe{0}pfx".format(i+1)]+xstr
+		writename = outdir+d["pe{0}pfx".format(i+1)]+xstr
 
 		## runs planet collapse on each PE in the dictionary
 		pecube, pcolname = collapse_planets(pename, pedir=pedir, snrthresh=snrthresh, oldpe=oldpe)

@@ -465,9 +465,9 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 
 def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='Line', 
-				snrmeth='stdev', snrthresh=False, outdir='klipims/', xname='', header='True', 
-				datadir='../GAPlanetS_Database/',
-				hpval=True, collmode='median', owa=None, oldpe=False, calflux=False):
+				snrmeth='stdev', snrthresh=False, outdir='klipims/', xname='', 
+				datadir='../',header=True, 
+				hpval=None, collmode=None, owa=None, oldpe=False, calflux=False):
 	"""
 	Collapses ALL parameter explorer files in a given directory according to the specified combination of KL modes,
 	metric weights, and SNR computation method and runs the corresponding KLIP reductions for that set of parameters

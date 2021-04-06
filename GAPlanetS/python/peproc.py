@@ -545,6 +545,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 		# creates a dictionary with parameters needed to run KLIp for all images in a dataset
 		#store PE file
 		d["pe{0}".format(i+1)] = fits.getdata(pedir+flist[i])
+		print('collapsing PE #', i+1, 'of', npes, ': ', flist[i])
 
 		#store PE name
 		pename = flist[i]
@@ -624,7 +625,6 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 			modes=['single']
 		
 		for j in np.arange(len(modes)):
-			print(i,j)
 			#print(haindir, contindir)
 			if mode=='SDI':
 				runmode=modes[j]
@@ -645,11 +645,11 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 				dataset = MagAO.MagAOData(filelist) 
 				dataset.IWA=iwa
 				dataset.OWA=float(owa[i])
-				print(hpval[i], calflux[i],collmode[i],owa[i])
+				print('running KLIP. highpass = ', hpval[i], ', calflux = ' calflux[i], ', time collapse = ', collmode[i], ', OWA = ', owa[i])
 				parallelized.klip_dataset(dataset, outputdir=outdir, fileprefix=prefix+strklip, 
-										  algo='klip', annuli=ann_val, subsections=1, movement=movm_val,
-										  numbasis=kllist, calibrate_flux=calflux[i], mode="ADI", highpass=float(hpval[i]), 
-										  save_aligned=False, time_collapse=collmode[i])
+                        algo='klip', annuli=ann_val, subsections=1, movement=movm_val,
+                        numbasis=kllist, calibrate_flux=calflux[i], mode="ADI", highpass=float(hpval[i]), 
+                        save_aligned=False, time_collapse=collmode[i])
 				#fits.writeto('test'+str(i)+'.fits', dataset.output, overwrite=True)
 
 			#pull output image 

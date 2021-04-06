@@ -555,18 +555,19 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 		s = re.findall(r'iwa(.*?)_', flist[i])
 		d['pe{0}iwa'.format(i+1)]=int(s[0])
 
-		#record values for other KLIP parameters
+		#if header keyword set, pull other KLIP values from header
 		if header == True:
 			head = fits.getheader(pedir+flist[i])
-			d["pe{0}hpval".format(i+1)]=head["HIGHPASS"]
-			d["pe{0}colmode".format(i+1)]=head["TIMECOLL"]
-			d["pe{0}owa".format(i+1)]=head["OWA"]
-			d["pe{0}calflux".format(i+1)]=head["CALIBFLUX"]
-		else:
-			d["pe{0}hpval".format(i+1)]=hpval[i]
-			d["pe{0}colmode".format(i+1)]=collmode[i]
-			d["pe{0}owa".format(i+1)]=owa[i]
-			d["pe{0}calflux".format(i+1)]=calflux[i]
+			hpval[i] = head["HIGHPASS"]
+			collmode[i] = head["TIMECOLL"]
+			owa[i] = head["OWA"]
+			calflux[i] = head["CALIBFLUX"]
+		
+		#record in dictionary
+		d["pe{0}hpval".format(i+1)]=hpval[i]
+		d["pe{0}colmode".format(i+1)]=collmode[i]
+		d["pe{0}owa".format(i+1)]=owa[i]
+		d["pe{0}calflux".format(i+1)]=calflux[i]
 
 		#separate out path, cut, and prefix
 		#special case to match naming convention when more than one dataset in night

@@ -610,7 +610,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 		pfx=pfx[1:]
 		d["pe{0}pfx".format(i+1)]=pfx
 		d["pe{0}dset".format(i+1)] = dsetname
-		writename = outdir+d["pe{0}pfx".format(i+1)]+xstr
+		writename = d["pe{0}pfx".format(i+1)]+xstr
 
 		## runs planet collapse on each PE in the dictionary
 		pecube, pcolname = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe)

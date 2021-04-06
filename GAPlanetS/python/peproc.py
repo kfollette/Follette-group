@@ -99,8 +99,8 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 	if not os.path.exists(outdir):
 		os.makedirs(outdir)
 	
-	writename = outdir+writestr+'_planetcollapse.fits'
-	fits.writeto(writename, pecube, pehead, overwrite=True)
+	writename = writestr+'_planetcollapse.fits'
+	fits.writeto(outdir+writename, pecube, pehead, overwrite=True)
 			
 	return (pecube, writename)
 
@@ -304,7 +304,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 	#stdev map values
 	if snrmeth in ["stdev", "all"]:
-		avgkl_stdevSNR, stdevkl_stdevSNR = collapsekl(pename, kllist,pedir=pedir, outdir=outdir, snrmeth='stdev', writestr=writestr)
+		avgkl_stdevSNR, stdevkl_stdevSNR = collapsekl(pename, kllist, pedir=pedir, outdir=outdir, snrmeth='stdev', writestr=writestr)
 		
 		maxind_stdevSNR = np.where(avgkl_stdevSNR[0,:,:] == np.nanmax(avgkl_stdevSNR[0,:,:]))
 		maxind_stdevSNR_umask = np.where(avgkl_stdevSNR[1,:,:] == np.nanmax(avgkl_stdevSNR[1,:,:]))
@@ -617,6 +617,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 
 		#runs PE collapse on planet collapsed cube with specified weights and snrmeth
 		#stores optimal annuli and movement values and the aggregate parameter quality map for each PE
+		#pedir is outdir here since that's where it was saved by collapse_planets
 		j1, j2, j3, j4, j5, j6, j7, agg, ann_val, movm_val, j8 = find_best_new(pcolname, kllist, pedir=outdir, outdir=outdir, writestr=writename, weights=wts, snrmeth=snrmeth, smt=3)
 		d["pe{0}ann".format(i+1)]=ann_val
 		d["pe{0}movm".format(i+1)]=movm_val

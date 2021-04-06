@@ -465,8 +465,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 
 def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='Line', 
-				snrmeth='stdev', snrthresh=False, outdir='klipims/', xname='', 
-				datadir='/Users/kfollette/Dropbox (Amherst College)/Follette-Lab/GAPlanetS_Data/GAPlanetS_Database/',
+				snrmeth='stdev', snrthresh=False, outdir='klipims/', xname='', header='True', 
+				datadir='../GAPlanetS_Database/',
 				hpval=True, collmode='median', owa=None, oldpe=False, calflux=False):
 	"""
 	Collapses ALL parameter explorer files in a given directory according to the specified combination of KL modes,
@@ -488,6 +488,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 	hpval:		value of the highpass keyword for KLIP. can be True/False or value. 
 	collmode:	value for time_collapse keyword for KLIP. Options are 'median', 'mean', 'weighted-mean'
 	oldpe:		set to True for older parameter explorers where planet dimension is axis=5 rather than axis=3
+	header: 	if True, will ignore specified values for owa, collmode, hpval, and calflux and get them from PE header
 
 	RETURNS:
 	d:			a dictionary with all relevant parameter explorer info, KLIP parameters, and KLIPed images
@@ -555,10 +556,17 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 		d['pe{0}iwa'.format(i+1)]=int(s[0])
 
 		#record values for other KLIP parameters
-		d["pe{0}hpval".format(i+1)]=hpval[i]
-		d["pe{0}colmode".format(i+1)]=collmode[i]
-		d["pe{0}owa".format(i+1)]=owa[i]
-		d["pe{0}calflux".format(i+1)]=calflux[i]
+		if header == True:
+			head = fits.getheader(pedir+flist[i])
+			d["pe{0}hpval".format(i+1)]=head["HIGHPASS"]
+			d["pe{0}colmode".format(i+1)]=head["TIMECOLL"]
+			d["pe{0}owa".format(i+1)]=head["OWA"]
+			d["pe{0}calflux".format(i+1)]=head["CALIBFLUX"]
+		else:
+			d["pe{0}hpval".format(i+1)]=hpval[i]
+			d["pe{0}colmode".format(i+1)]=collmode[i]
+			d["pe{0}owa".format(i+1)]=owa[i]
+			d["pe{0}calflux".format(i+1)]=calflux[i]
 
 		#separate out path, cut, and prefix
 		#special case to match naming convention when more than one dataset in night

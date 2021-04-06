@@ -83,8 +83,8 @@ def collapse_planets(pename, pedir='./', writestr=False, snrthresh=False, oldpe=
 	msk = np.ones(dims[1:])
 	msk[nanmask]=np.nan
 
-	#for all of the spurious pixel metrics, multiply by this mask
-	for k in np.arange(4,8):
+	#for spurious pixel and contrast metrics, multiply by this mask
+	for k in np.arange(4,9):
 		pecube[k,:,:,:,:,:]*=msk
    
 	#collapse in planet dimension 
@@ -146,7 +146,7 @@ def collapsekl(pename, kllist, pedir='./',  snrmeth='stdev', writestr=False):
 
 		#if snrmeth = absmed, grab contrast slice too
 		if slice==1:
-			dmns = np.array(klcub_trimmed.shape)
+			dmns = np.array(klcube_trimmed.shape)
 			dmns[0]+=1
 			klcube_plusone = np.zeros(dmns)
 			klcube_plusone[0:-1,:,:,:,:]=klcube_trimmed
@@ -216,7 +216,7 @@ def filter_nan_gaussian_conserving(arr, sigma):
 
 	return gauss
 
-def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1,1,1], debug=False, smt=3, snrmeth='all'):
+def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1,1,1,1], debug=False, smt=3, snrmeth='all'):
 	"""
 	collapses parameter explorer file and extracts the optimal parameter value
 
@@ -265,7 +265,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 		#output cubes from collapsekl have dimensions metric (n=5 for single method, n=9 for 'all'), ann, movm
 		avgkl_absmedSNR, stdevkl_absmedSNR = collapsekl(pename, kllist, pedir=pedir, snrmeth='absmed', writestr=writestr)
-		
+
 		#finds locations of peaks
 		maxind_absmedSNR = np.where(avgkl_absmedSNR[0,:,:] == np.nanmax(avgkl_absmedSNR[0,:,:]))
 		maxind_absmedSNR_umask = np.where(avgkl_absmedSNR[1,:,:] == np.nanmax(avgkl_absmedSNR[1,:,:]))
@@ -295,7 +295,9 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 		#spurious pixels metrics - pulling slice 3 (in between IWA and CR only)
 		spurpix_absmedSNR = avgkl_absmedSNR[3,:,:]
+		contrast = np.abs(avgkl_absmedSNR[4,:,:])/np.abs(np.nanmin(avgkl_absmedSNR[4,:,:]))
 
+	#stdev map values
 	if snrmeth in ["stdev", "all"]:
 		avgkl_stdevSNR, stdevkl_stdevSNR = collapsekl(pename, kllist,pedir=pedir, snrmeth='stdev', writestr=writestr)
 		
@@ -319,6 +321,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		stdev_norm_stdevSNR_umask = 1 - (stdev_norm_stdevSNR_cube[1,:,:]/np.nanmax(stdev_norm_stdevSNR_cube[1,:,:]))
 
 		spurpix_stdevSNR = avgkl_stdevSNR[3,:,:]
+		#contrast dimension is log units. larget negative  number better.
+		contrast = np.abs(avgkl_stdevSNR[4,:,:])/np.abs(np.nanmin(avgkl_stdevSNR[4,:,:]))
 	
 	#spurpix_norm_absmedSNR = 1 - (avgkl_absmedSNR[3,:,:]/np.nanmax(avgkl_absmedSNR[3,:,:]))
 	#spurpix_norm_stdevSNR = 1 - (avgkl_stdevSNR[3,:,:]/np.nanmax(avgkl_stdevSNR[3,:,:]))
@@ -349,13 +353,14 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	# stdevkl[avgkl<3]=np.nan
 	# stdev_norm = 1/(stdevkl/np.nanmin(stdevkl))
 	
-	#computes neighbor quality by smoothing with Gaussian
+
 	#kern = conv.Gaussian2DKernel(x_stddev=2)
 	#nq_snr = conv.convolve(snr_norm_avg, kern, preserve_nan=True, nan_treatment='interpolate')
 	#nq_stdev = conv.convolve(stdev_norm_avg, kern, preserve_nan = True, nan_treatment='interpolate')
 	#nq_snr_umask = conv.convolve(snr_norm_avg_umask, kern, preserve_nan=True, nan_treatment='interpolate')
 	#nq_stdev_umask = conv.convolve(stdev_norm_avg_umask, kern, preserve_nan = True, nan_treatment='interpolate')
 
+	#computes neighbor quality by smoothing with Gaussian
 	sig=smt
 	nq_snr = filter_nan_gaussian_conserving(snr_norm_avg,sig)
 	nq_stdev = filter_nan_gaussian_conserving(stdev_norm_avg,sig)
@@ -370,7 +375,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 	if debug==True:
 		#make a cube of all these metrics for sanity checking
-		qual_cube = np.zeros([9,nstepy,nstepx])
+		qual_cube = np.zeros([10,nstepy,nstepx])
 		#qual_cube[0,:,:]=snr_norm_absmedSNR
 		#qual_cube[1,:,:]=snr_norm_stdevSNR
 		qual_cube[0,:,:]=snr_norm_avg
@@ -385,11 +390,12 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		qual_cube[3,:,:]=stdev_norm_avg_umask
 		#qual_cube[12,:,:]=spurpix_norm_absmedSNR
 		#qual_cube[13,:,:]=spurpix_norm_stdevSNR
-		qual_cube[4,:,:]=spurpix_norm_avg
+		qual_cube[4,:,:]=spurpix_avg
 		qual_cube[5,:,:]=nq_snr
 		qual_cube[6,:,:]=nq_snr_umask
 		qual_cube[7,:,:]=nq_stdev
 		qual_cube[8,:,:]=nq_stdev_umask
+		qual_cube[9,:,:]=contrast
 
 		fits.writeto(pedir+pename[:-5]+'_paramqual_cube.fits', qual_cube, overwrite=True)
 

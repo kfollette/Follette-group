@@ -506,7 +506,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 	#find all the parameter explorer files in the specified directory
 	rundir = os.getcwd()
 	os.chdir(pedir)
-	flist = glob.glob('paramexplore*klmodes-all.fits')
+	flist = glob.glob('paramexplore*KLmodes-all.fits')
 	os.chdir(rundir)
 
 	#sort alphabetically so the same objects are together
@@ -786,7 +786,7 @@ def make_klip_snrmaps(d, pedir='./', outdir='klipims/', smooth=0.5, snrmeth='std
 	d["smooth"]=smooth
 
 	#figure out how many pes we have
-	flist = glob.glob(pedir+'paramexplore*klmodes-all.fits')
+	flist = glob.glob(pedir+'paramexplore*KLmodes-all.fits')
 	flist = sorted(flist)
 	npes=len(flist)
 
@@ -848,7 +848,7 @@ def compare_pes(d, pedir='./', outdir='klipims/', nrows=False, ncols=False, save
 	"""
 
 	#how many PEs are there?
-	flist = glob.glob(pedir+'paramexplore*klmodes-all.fits')
+	flist = glob.glob(pedir+'paramexplore*KLmodes-all.fits')
 	npes=len(flist)
 	
 	#make string lists of relevant dictionary keys
@@ -914,7 +914,7 @@ def compare_ims(d, pedir='./', kllist=[5,10,20,50], outdir='klipims/', mode='Lin
 
 	"""
 
-	flist = glob.glob(pedir+'paramexplore*klmodes-all.fits')
+	flist = glob.glob(pedir+'paramexplore*KLmodes-all.fits')
 	npes=len(flist)
 
 	#same as compare_pes, but generates grid of snrmaps

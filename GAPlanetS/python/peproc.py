@@ -295,7 +295,12 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 		#spurious pixels metrics - pulling slice 3 (in between IWA and CR only)
 		spurpix_absmedSNR = avgkl_absmedSNR[3,:,:]
-		contrast = np.abs(avgkl_absmedSNR[4,:,:])/np.abs(np.nanmin(avgkl_absmedSNR[4,:,:]))
+		
+		#make a contrast metric
+		#returned quantity is -1*contrast. turn back into contrast
+		#log so that higher = better
+		logcontrast = np.log10(-1*avgkl_absmedSNR[4,:,:])
+		contrast = np.abs(logcontrast)/np.nanmax(logcontrast)
 
 	#stdev map values
 	if snrmeth in ["stdev", "all"]:
@@ -321,8 +326,13 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		stdev_norm_stdevSNR_umask = 1 - (stdev_norm_stdevSNR_cube[1,:,:]/np.nanmax(stdev_norm_stdevSNR_cube[1,:,:]))
 
 		spurpix_stdevSNR = avgkl_stdevSNR[3,:,:]
-		#contrast dimension is log units. larget negative  number better.
-		contrast = np.abs(avgkl_stdevSNR[4,:,:])/np.abs(np.nanmin(avgkl_stdevSNR[4,:,:]))
+
+		#make a contrast metric
+		#returned quantity is -1*contrast. turn back into contrast
+		#log so that higher = better
+		logcontrast = np.log10(-1*avgkl_stdevSNR[4,:,:])
+		contrast = np.abs(logcontrast)/np.nanmax(logcontrast)
+
 	
 	#spurpix_norm_absmedSNR = 1 - (avgkl_absmedSNR[3,:,:]/np.nanmax(avgkl_absmedSNR[3,:,:]))
 	#spurpix_norm_stdevSNR = 1 - (avgkl_stdevSNR[3,:,:]/np.nanmax(avgkl_stdevSNR[3,:,:]))
@@ -334,6 +344,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		stdev_norm_avg = (stdev_norm_absmedSNR + stdev_norm_stdevSNR) / 2.
 		stdev_norm_avg_umask = (stdev_norm_absmedSNR_umask + stdev_norm_stdevSNR_umask) / 2.
 		spurpix_avg = (spurpix_absmedSNR + spurpix_stdevSNR) / 2.
+
+	#otherwise, pull just the relevant one
 	elif snrmeth=='absmed':
 		snr_norm_avg = snr_norm_absmedSNR
 		snr_norm_avg_umask = snr_norm_absmedSNR_umask
@@ -407,7 +419,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 
 	#write out the cubes being used for the final metric
-	metric_cube = np.zeros([8,nstepy,nstepx])
+	metric_cube = np.zeros([9,nstepy,nstepx])
 	metric_cube[0,:,:]= snr_norm_avg
 	metric_cube[1,:,:]= nq_snr
 	metric_cube[2,:,:]= snr_norm_avg_umask
@@ -423,20 +435,23 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		spurpix_norm_avg= 1+spurpix_avg
 	 
 	metric_cube[6,:,:]= spurpix_norm_avg
+	metric_cube[7,:,:]= contrast
 
 	#calculate parameter quality metric by summing the four quantities
 	if len(kllist) !=1:
 		agg = weights[0] * snr_norm_avg + weights[1] * nq_snr + \
 		weights[2] * snr_norm_avg_umask + weights[3] * nq_snr_umask + \
 		weights[4] * stdev_norm_avg_umask + weights[5] * nq_stdev_umask + \
-		weights[6] * spurpix_norm_avg
+		weights[6] * spurpix_norm_avg + \
+		weights[7] * contrast
 	else:
 		print("only 1 kl mode. ignoring standard deviation slices and weights in aggregate")
 		agg = weights[0] * snr_norm_avg + weights[1] * nq_snr + \
 		weights[2] * snr_norm_avg_umask + weights[3] * nq_snr_umask + \
-		weights[6] * spurpix_norm_avg
+		weights[6] * spurpix_norm_avg + \
+		weights[7] * contrast
 
-	metric_cube[7,:,:]=agg
+	metric_cube[8,:,:]=agg
 
 	fits.writeto(pedir+pename[:-5]+'_paramqual_metrics.fits', metric_cube, overwrite=True)
 
@@ -464,7 +479,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	return (snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask, nq_stdev_umask, spurpix_avg, agg, ann_val, movm_val, metric_scores)
 
 
-def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='Line', 
+def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode='Line', 
 				snrmeth='stdev', snrthresh=False, outdir='klipims/', xname='', 
 				datadir='../',header=True, 
 				hpval=None, collmode=None, owa=None, oldpe=False, calflux=False):
@@ -662,7 +677,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,0,0,1], mode='L
 				d["pe{0}haklipim".format(i+1)]=klim
 	return(d)
 
-def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.5], snrmeth='all', smt=3):
+def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1,1,1], snrmeth='all', smt=3):
     
     snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask, nq_stdev_umask, spurpix_avg, agg, ann_val, movm_val, metric_scores = \
         find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)

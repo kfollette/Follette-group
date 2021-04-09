@@ -444,7 +444,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		weights[4:6]=0
 
 	#calculate an aggregate parameter quality metric by summing the individual metrics * their weights
-	agg=np.zeros((nstepx,nstepy))
+	agg=np.zeros((nstepy,nstepx))
 	for metricind in np.arange(len(metriclist)):
 		#only sum if non-zero (otherwise nans will carry over)
 		if weights[metricind]>0:
@@ -702,8 +702,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
     nstepx = (xmax - xmin) / xstep
     nstepy = (ymax - ymin) / ystep
 
-    # set up tick labels according to parameter ranges
-    fig_xdim = nstepx*0.5
+    fig_xdim = nstepx*0.75
     fig_ydim = nstepy
 
     fig = plt.figure(tight_layout=True, figsize=(fig_ydim,fig_xdim))

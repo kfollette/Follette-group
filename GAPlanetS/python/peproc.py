@@ -904,10 +904,14 @@ def compare_pes(d, pedir='./', outdir='klipims/', nrows=False, ncols=False, save
 	movmlist = ["pe{0}movm".format(i+1) for i in np.arange(npes)]
 	namelist = ["pe{0}dset".format(i+1) for i in np.arange(npes)]
 
-	#if grid rows and columns not specified, set 4 columns and enough rows to fit
+	#if grid rows and columns not specified, set 3 columns and enough rows to fit
 	if nrows == False:
-		ncols=4
+		ncols=3
 		nrows = int(np.ceil(npes/ncols))
+	
+	#fix for indexing error when don't give it enough spots
+	if npes>ncols*nrows:
+		print('Not enough spots for number of pes. Increase ncols or nrows.')
 
 	#size figure according to how many rows and columns there are
 	figsz=(ncols*4, nrows*5)
@@ -942,7 +946,7 @@ def compare_pes(d, pedir='./', outdir='klipims/', nrows=False, ncols=False, save
 
 		#label subplot with dataset title
 		ax[i].set_title("\n".join(textwrap.wrap(d[namelist[i]], 30)))
-	
+
 	plt.tight_layout()
 	if save != None:
 		plt.savefig(outdir+save+d["pestring"])
@@ -974,10 +978,14 @@ def compare_ims(d, pedir='./', kllist=[5,10,20,50], outdir='klipims/', mode='Lin
 	
 	namelist = ["pe{0}dset".format(i+1) for i in np.arange(npes)]
 
-	#if grid rows and columns not specified, set 4 columns and enough rows to fit
+	#if grid rows and columns not specified, set 3 columns and enough rows to fit
 	if nrows == False:
-		ncols=4
+		ncols=3
 		nrows = int(np.ceil(npes/ncols))
+
+		#fix for indexing error when don't give it enough spots
+	if npes>ncols*nrows:
+		print('Not enough spots for number of pes. Increase ncols or nrows.')
 
 	#loop over KL modes
 	for k in kllist:

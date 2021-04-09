@@ -450,6 +450,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		weights[2] * snr_norm_avg_umask + weights[3] * nq_snr_umask + \
 		weights[6] * spurpix_norm_avg + \
 		weights[7] * contrast
+	metric_cube[7,:,:]= contrast 
 
 	metric_cube[8,:,:]=agg
 
@@ -618,7 +619,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 		#runs PE collapse on planet collapsed cube with specified weights and snrmeth
 		#stores optimal annuli and movement values and the aggregate parameter quality map for each PE
 		#pedir is outdir here since that's where it was saved by collapse_planets
-		j1, j2, j3, j4, j5, j6, j7, agg, ann_val, movm_val, j8 = find_best_new(pcolname, kllist, pedir=outdir, outdir=outdir, writestr=writename, weights=wts, snrmeth=snrmeth, smt=3)
+		j1, j2, j3, j4, j5, j6, j7, j8, agg, ann_val, movm_val, j9 = find_best_new(pcolname, kllist, pedir=outdir, outdir=outdir, writestr=writename, weights=wts, snrmeth=snrmeth, smt=smt)
 		d["pe{0}ann".format(i+1)]=ann_val
 		d["pe{0}movm".format(i+1)]=movm_val
 		d["pe{0}agg".format(i+1)]=agg
@@ -680,8 +681,8 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 
 def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1,1,1], snrmeth='all', smt=3):
     
-    snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask, nq_stdev_umask, spurpix_avg, agg, ann_val, movm_val, metric_scores = \
-        find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)
+    snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask, nq_stdev_umask, spurpix_norm_avg, contrast, agg, ann_val, movm_val, metric_scores = \
+        find_best_new(pename, kllist, pedir=pedir, outdir=outdir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)
 
     if writestr == False:
         writestr = pename[:-17]

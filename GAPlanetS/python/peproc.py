@@ -476,13 +476,13 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 	print('peak is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val, ' and movement', movm_val)
 	#print('SNR value for fake planets (avg of SNR methods and planets) is', avgSNR)
-	print('metric scores for (snr peak, snr peak neigbors, snr umask, snr umask neighbors, stdev, stdev neighbors, agg) are:', metric_scores)
-	return (snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask, nq_stdev_umask, spurpix_avg, agg, ann_val, movm_val, metric_scores)
+	print('metric scores for (snr peak, snr peak neigbors, snr umask, snr umask neighbors, stdev, stdev neighbors, spurious pix, contrast, agg) are:', metric_scores)
+	return (snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask, nq_stdev_umask, spurpix_norm_avg, contrast, agg, ann_val, movm_val, metric_scores)
 
 
 def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode='Line', 
 				snrmeth='stdev', snrthresh=False, outdir='proc/', xname='', 
-				datadir='../',header=True, 
+				datadir='../', header=True, smt=3, savefig=True,
 				hpval=None, collmode=None, owa=None, oldpe=False, calflux=False):
 	"""
 	Collapses ALL parameter explorer files in a given directory according to the specified combination of KL modes,
@@ -623,6 +623,10 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 		d["pe{0}ann".format(i+1)]=ann_val
 		d["pe{0}movm".format(i+1)]=movm_val
 		d["pe{0}agg".format(i+1)]=agg
+
+		#save visualization of the metrics for this PE explorer
+		if savefig==True:
+			paramexplore_fig(pcolname, kllist, pedir=outdir, outdir=outdir, writestr=writename, weights=wts, snrmeth=snrmeth, smt=smt)
 	
 		#define image input direcotries for KLIP based on PE filename
 		haindir=d["pe{0}fpath".format(i+1)]+'dq_cuts/'+'Line_'+d["pe{0}cut".format(i+1)]+'_sliced/'
@@ -679,7 +683,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 				d["pe{0}haklipim".format(i+1)]=klim
 	return(d)
 
-def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1,1,1], snrmeth='all', smt=3):
+def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=False, weights=[1,1,1,1,1,1,1,1], snrmeth='all', smt=3):
     
     snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask, nq_stdev_umask, spurpix_norm_avg, contrast, agg, ann_val, movm_val, metric_scores = \
         find_best_new(pename, kllist, pedir=pedir, outdir=outdir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)

@@ -704,79 +704,104 @@ def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1
     fig_ydim = nstepy
 
     fig = plt.figure(tight_layout=True, figsize=(fig_ydim,fig_xdim))
-    gs = fig.add_gridspec(2, 4)
+    gs = fig.add_gridspec(2, 6)
     ax1 = fig.add_subplot(gs[0,0])
     ax2 = fig.add_subplot(gs[0,1])
     ax3 = fig.add_subplot(gs[1,0])
     ax4 = fig.add_subplot(gs[1,1])
     ax5 = fig.add_subplot(gs[0,2])
-    ax6 = fig.add_subplot(gs[1,2])
-    #ax5 = fig.add_subplot(gs[:,2:])
+    ax6 = fig.add_subplot(gs[0,3])
+    ax7 = fig.add_subplot(gs[1,2])
+    ax8 = fig.add_subplot(gs[1,3])
+    ax9 = fig.add_subplot(gs[:,4:])
 
-    plt.setp((ax1, ax2, ax3, ax4, ax5, ax6), xticks=np.arange(nstepx + 1), xticklabels=np.arange(xmin, xmax + 1),
+    plt.setp((ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9), xticks=np.arange(nstepx + 1), xticklabels=np.arange(xmin, xmax + 1),
              yticks=np.arange(nstepy + 1), yticklabels=np.arange(ymin, ymax + 1))
 
     #plt.setp((ax1, ax2, ax3, ax4, ax5), xticks=np.arange(nstepx + 1), yticks=np.arange(nstepy + 1), xticklabels=[], yticklabels=[])
 
     im1 = ax1.imshow(snr_norm_avg, origin='lower', cmap='magma', vmin=0, vmax=1)
-
     ax1.set_xlabel("movement parameter")
     ax1.set_ylabel("annuli parameter")
+    ax1.set_title("Peak SNR: Weight = "+str(weights[0]))
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im1, cax=cax, orientation='vertical', label="Average SNR Metric")
+    plt.colorbar(im1, cax=cax, orientation='vertical')
 
-    im2 = ax2.imshow(nq_snr, origin='lower',
-                     cmap='magma', vmin=0, vmax=1)
+    im2 = ax2.imshow(nq_snr, origin='lower',cmap='magma', vmin=0, vmax=1)
     ax2.set_xlabel("movement parameter")
     ax2.set_ylabel("annuli parameter")
+    ax2.set_title("Peak SNR Neighbor Quality: Weight = "+str(weights[1]))
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im2, cax=cax, orientation='vertical', label="SNR Neighbor Quality")
+    plt.colorbar(im2, cax=cax, orientation='vertical')
 
-    im3 = ax3.imshow(spurpix_avg, origin='lower', cmap='magma', vmin=0, vmax=np.nanmax(spurpix_avg))
+    im3 = ax3.imshow(snr_norm_avg_umask, origin='lower', cmap='magma', vmin=0, vmax=1)
     ax3.set_xlabel("movement parameter")
+    ax3.set_ylabel("annuli parameter")
+    ax3.set_title("Avg SNR Under Mask: Weight = "+str(weights[2]))
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im3, cax=cax, orientation='vertical', label="Spurious Pixels")
-    
-    im4 = ax4.imshow(1-spurpix_avg/np.nanmax(spurpix_avg), origin='lower', cmap='magma', vmin=0, vmax=1)
+    plt.colorbar(im3, cax=cax, orientation='vertical')
+
+    im4 = ax4.imshow(nq_snr, origin='lower', cmap='magma', vmin=0, vmax=1)
     ax4.set_xlabel("movement parameter")
+    ax4.set_ylabel("annuli parameter")
+    ax4.set_title("Avg SNR Neighbor Quality: Weight = "+str(weights[3]))
     divider = make_axes_locatable(ax4)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im4, cax=cax, orientation='vertical', label="Spurious Pixel Metric")
+    plt.colorbar(im4, cax=cax, orientation='vertical')
+
     
-    im5 = ax5.imshow(stdev_norm_avg_umask, origin='lower',
-                     cmap='magma', vmin=0, vmax=1)
+    im5 = ax5.imshow(stdev_norm_avg_umask, origin='lower', cmap='magma', vmin=0, vmax=1)
     ax5.set_xlabel("movement parameter")
     ax5.set_ylabel("annuli parameter")
+    ax5.set_title("Stdev Across KL: Weight = "+str(weights[4]))
     divider = make_axes_locatable(ax5)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im5, cax=cax, orientation='vertical', label="Standard Deviation Metric")
+    plt.colorbar(im5, cax=cax, orientation='vertical')
 
-    #im4 = ax4.imshow(nq_stdev, origin='lower',
-     #                cmap='magma', vmin=0, vmax=1)
-    #ax4.set_xlabel("movement parameter")
-    #ax4.set_ylabel("annuli parameter")
-    #divider = make_axes_locatable(ax4)
-    #cax = divider.append_axes('right', size='5%', pad=0.05)
-    #plt.colorbar(im4, cax=cax, orientation='vertical', label="Stdev Neighbor Quality")
-
-    # plot metric
-    im6 = ax6.imshow(agg, origin='lower', vmin=0, vmax=np.sum(weights))
-    ax6.set_ylabel("annuli parameter")
+    im6 = ax6.imshow(nq_stdev_umask, origin='lower', cmap='magma', vmin=0, vmax=1)
     ax6.set_xlabel("movement parameter")
+    ax6.set_ylabel("annuli parameter")
+    ax6.set_title("Stdev Neighbor Quality: Weight = "+str(weights[5]))
     divider = make_axes_locatable(ax6)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im6, cax=cax, orientation='vertical', label="Parameter Quality Metric")
+    plt.colorbar(im6, cax=cax, orientation='vertical')
+
+    im7 = ax7.imshow(spurpix_norm_avg, origin='lower', cmap='magma', vmin=0, vmax=1)
+    ax7.set_xlabel("movement parameter")
+    ax7.set_ylabel("annuli parameter")
+    ax7.set_title("Spurious Pixels: Weight = "+str(weights[6]))
+    divider = make_axes_locatable(ax7)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im7, cax=cax, orientation='vertical')
+
+
+    im8 = ax8.imshow(contrast, origin='lower', cmap='magma', vmin=0, vmax=1)
+    ax8.set_xlabel("movement parameter")
+    ax8.set_ylabel("annuli parameter")
+    ax8.set_title("Contrast: Weight = "+str(weights[7]))
+    divider = make_axes_locatable(ax8)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im8, cax=cax, orientation='vertical')
+
+    # plot metric
+    im9 = ax9.imshow(agg, origin='lower', vmin=0, vmax=np.sum(weights))
+    ax9.set_ylabel("annuli parameter")
+    ax9.set_xlabel("movement parameter")
+    ax9.set_title("Aggregate Parameter Quality")
+    divider = make_axes_locatable(ax9)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im9, cax=cax, orientation='vertical')
 
     ind = np.where(agg == np.nanmax(agg))
     label_text = 'a' + str(ann_val) + 'm' + str(movm_val)
     rect = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
-    ax6.add_patch(rect)
-    ax6.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
+    ax9.add_patch(rect)
+    ax9.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
 
-    plt.savefig(pedir+writestr+'_paramqual.png')
+    plt.savefig(outdir+writestr+'_paramqual.png')
     
     return(ann_val, movm_val, agg)
 

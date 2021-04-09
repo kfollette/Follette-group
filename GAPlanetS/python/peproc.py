@@ -435,22 +435,20 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		spurpix_norm_avg= 1+spurpix_avg
 	 
 	metric_cube[6,:,:]= spurpix_norm_avg
-	metric_cube[7,:,:]= contrast
-
-	#calculate parameter quality metric by summing the four quantities
-	if len(kllist) !=1:
-		agg = weights[0] * snr_norm_avg + weights[1] * nq_snr + \
-		weights[2] * snr_norm_avg_umask + weights[3] * nq_snr_umask + \
-		weights[4] * stdev_norm_avg_umask + weights[5] * nq_stdev_umask + \
-		weights[6] * spurpix_norm_avg + \
-		weights[7] * contrast
-	else:
-		print("only 1 kl mode. ignoring standard deviation slices and weights in aggregate")
-		agg = weights[0] * snr_norm_avg + weights[1] * nq_snr + \
-		weights[2] * snr_norm_avg_umask + weights[3] * nq_snr_umask + \
-		weights[6] * spurpix_norm_avg + \
-		weights[7] * contrast
 	metric_cube[7,:,:]= contrast 
+
+	metriclist = (snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask,nq_stdev_umask, spurpix_norm_avg, contrast)
+	
+	#make sure weights for stdev slices are 0 if only 1 kl mode
+	if len(kllist) ==1:
+		weights[4:6]=0
+
+	#calculate an aggregate parameter quality metric by summing the individual metrics * their weights
+	agg=np.zeros((nstepx,nstepy))
+	for metricind in np.arange(len(metriclist)):
+		#only sum if non-zero (otherwise nans will carry over)
+		if weights[metricind]>0:
+			agg+=weights[metricind]*metriclist[metricind]
 
 	metric_cube[8,:,:]=agg
 

@@ -717,8 +717,8 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
     ax8 = fig.add_subplot(gs[1,3])
     ax9 = fig.add_subplot(gs[:,4:])
 
-    plt.setp((ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9), xticks=np.arange(nstepx + 1), xticklabels=np.arange(xmin, xmax + 1, 2),
-             yticks=np.arange(nstepy + 1), yticklabels=np.arange(ymin, ymax + 1, 2))
+    plt.setp((ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9), xticks=np.arange(0, nstepx + 1, 2), xticklabels=np.arange(xmin, xmax + 1, 2),
+             yticks=np.arange(0, nstepy + 1, 2), yticklabels=np.arange(ymin, ymax + 1, 2))
 
     #plt.setp((ax1, ax2, ax3, ax4, ax5), xticks=np.arange(nstepx + 1), yticks=np.arange(nstepy + 1), xticklabels=[], yticklabels=[])
 

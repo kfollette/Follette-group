@@ -702,7 +702,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
     nstepx = (xmax - xmin) / xstep
     nstepy = (ymax - ymin) / ystep
 
-    fig_xdim = nstepx*0.75
+    fig_xdim = nstepx*0.25
     fig_ydim = nstepy
 
     fig = plt.figure(tight_layout=True, figsize=(fig_ydim,fig_xdim))

@@ -705,7 +705,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
     fig_xdim = nstepx*0.25
     fig_ydim = nstepy
 
-    fig = plt.figure(tight_layout=True, figsize=(fig_ydim,fig_xdim))
+    fig = plt.figure(figsize=(fig_ydim,fig_xdim))
     gs = fig.add_gridspec(2, 6)
     ax1 = fig.add_subplot(gs[0,0])
     ax2 = fig.add_subplot(gs[0,1])
@@ -804,7 +804,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
     ax9.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
 
     plt.suptitle(writestr)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    gs.tight_layout(rect=[0, 0.03, 1, 0.95])
 
     plt.savefig(outdir+writestr+'_paramqual.png')
     

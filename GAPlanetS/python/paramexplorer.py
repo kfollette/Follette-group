@@ -133,6 +133,8 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
         starpeak.append(head["STARPEAK"])
 
     dataset = MagAO.MagAOData(filelist)
+    #make a clean copy of the dataset that will be pulled each time (parallelized modifies dataset.input object)
+    dataset_input_clean = np.copy(dataset.input)
 
     palist = sorted(dataset._PAs)
     palist_clean = [pa if (pa < 360) else pa-360 for pa in palist]
@@ -331,6 +333,8 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                         if verbose is True:
                             print("Starting KLIP")
                         #run klip for given parameters
+                        #read in a fresh copy of dataset so no compound highpass filtering
+                        dataset.input = dataset_input_clean
                         parallelized.klip_dataset(dataset, outputdir=(path_to_files + "_klip/"), fileprefix=outfile_name+klipstr+suff, 
                             annuli=numAnn, subsections=s, movement=m, numbasis=klmodes, calibrate_flux=calibrate_flux, 
                             mode="ADI", highpass = highpass, time_collapse=time_collapse, verbose = verbose)

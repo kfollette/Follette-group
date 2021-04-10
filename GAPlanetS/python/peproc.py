@@ -804,7 +804,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
     ax9.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
 
     plt.suptitle(writestr)
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
     plt.savefig(outdir+writestr+'_paramqual.png')
     

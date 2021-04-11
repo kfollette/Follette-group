@@ -319,7 +319,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                     if os.path.isfile(fname):
                         print(outfile_name+klipstr+suff, fname)
                         incube = fits.getdata(fname)
-                        head = fits.getheader(fname, 1)
+                        head = fits.getheader(fname)
                         klmodes2 = head['KLMODES'][1:-1]
                         klmodes2 = list(map(int, klmodes2.split(",")))
         

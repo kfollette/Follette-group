@@ -579,7 +579,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 			hpval[i] = head["HIGHPASS"]
 			collmode[i] = head["TIMECOLL"]
 			owa[i] = head["OWA"]
-			calflux[i] = head["CALIBFLUX"]
+			calflux[i] = [head["CALIBFLUX"]=="True"][0]
 			print(i, calflux, head["CALIBFLUX"])
 			print(owa, head["OWA"])
 			print(collmode, head["TIMECOLL"])

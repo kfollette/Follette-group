@@ -54,6 +54,8 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 		ind = np.where(pecube[0,:,:,:,:,:]<snrthresh)
 		lowsnr_mask=np.ones(dims[1:])
 		lowsnr_mask[ind]=np.nan
+		print(lowsnr_mask.shape, pecube.shape)
+		fits.writeto('testmask.fits', lowsnr_mask, overwrite=True)
 		#apply to peak (sl 0) and avg under mask (sl 2)
 		for sl in [0,2]:
 			pecube[sl,:,:,:,:]*=lowsnr_mask

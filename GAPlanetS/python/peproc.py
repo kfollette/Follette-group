@@ -306,7 +306,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		#now take absolute value - smaller is better
 		logcontrast = np.abs(logcontrast)
 		#and subtract the minimum so goes min=0 to max
-		logcontrast = logcontrast - min(logcontrast)
+		logcontrast = logcontrast - np.nanmin(logcontrast)
 		#now divide by the max so goes 0-->1
 		contrast = logcontrast/np.nanmax(logcontrast)
 
@@ -344,7 +344,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		#now take absolute value - smaller is better
 		logcontrast = np.abs(logcontrast)
 		#and subtract the minimum so goes min=0 to max
-		logcontrast = logcontrast - min(logcontrast)
+		logcontrast = logcontrast - np.nanmin(logcontrast)
 		#now divide by the max so goes 0-->1
 		contrast = logcontrast/np.nanmax(logcontrast)
 

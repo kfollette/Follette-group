@@ -14,6 +14,7 @@ import pyklip.instruments.MagAO as MagAO
 import pyklip.parallelized as parallelized
 import SNRMap_new as snr
 import os
+import pdb
 import pickle
 import textwrap
 
@@ -521,6 +522,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 	rundir = os.getcwd()
 	os.chdir(pedir)
 	flist = glob.glob('paramexplore*KLmodes-all.fits')
+	pdb.set_trace()
 	os.chdir(rundir)
 
 	#sort alphabetically so the same objects are together

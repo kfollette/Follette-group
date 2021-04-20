@@ -181,6 +181,7 @@ def collapsekl(pename, kllist, pedir='./', outdir='proc/', snrmeth='stdev', writ
 	# preserve nans so non-recoveries are removed
 	avgkl = np.mean(klkeep, axis=3)
 	stdevkl = np.std(klkeep, axis=3)
+	sumkl = np.sum(klkeep, axis=3)
 
 	# update header to reflect KL modes used
 	head["KLMODES"] = str(kllist)
@@ -188,7 +189,8 @@ def collapsekl(pename, kllist, pedir='./', outdir='proc/', snrmeth='stdev', writ
 	# write arrays
 	fits.writeto(outdir+writestr + '_avgkl.fits', avgkl, head, overwrite=True)
 	fits.writeto(outdir+writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
-	return (avgkl, stdevkl)
+	fits.writeto(outdir+writestr + '_sumkl.fits', sumkl, head, overwrite=True)
+	return (avgkl, stdevkl, sumkl)
 
 
 def filter_nan_gaussian_conserving(arr, sigma):
@@ -265,7 +267,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	if snrmeth in ["absmed", "all"]:
 
 		#output cubes from collapsekl have dimensions metric (n=5 for single method, n=9 for 'all'), ann, movm
-		avgkl_absmedSNR, stdevkl_absmedSNR = collapsekl(pename, kllist, pedir=pedir, outdir=outdir, snrmeth='absmed', writestr=writestr)
+		avgkl_absmedSNR, stdevkl_absmedSNR, sumkl_absmedSNR = collapsekl(pename, kllist, pedir=pedir, outdir=outdir, snrmeth='absmed', writestr=writestr)
 
 		#finds locations of peaks
 		maxind_absmedSNR = np.where(avgkl_absmedSNR[0,:,:] == np.nanmax(avgkl_absmedSNR[0,:,:]))
@@ -295,7 +297,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		stdev_norm_absmedSNR_umask = 1 - (stdev_norm_absmedSNR_cube[1,:,:]/np.nanmax(stdev_norm_absmedSNR_cube[1,:,:]))
 
 		#spurious pixels metrics - pulling slice 3 (in between IWA and CR only)
-		spurpix_absmedSNR = avgkl_absmedSNR[3,:,:]
+		spurpix_absmedSNR = sumkl_absmedSNR[3,:,:]
 		
 		#make a contrast metric
 		#returned quantity is -1*contrast. turn back into contrast
@@ -312,7 +314,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 	#stdev map values
 	if snrmeth in ["stdev", "all"]:
-		avgkl_stdevSNR, stdevkl_stdevSNR = collapsekl(pename, kllist, pedir=pedir, outdir=outdir, snrmeth='stdev', writestr=writestr)
+		avgkl_stdevSNR, stdevkl_stdevSNR, sumkl_stdevSNR = collapsekl(pename, kllist, pedir=pedir, outdir=outdir, snrmeth='stdev', writestr=writestr)
 		
 		maxind_stdevSNR = np.where(avgkl_stdevSNR[0,:,:] == np.nanmax(avgkl_stdevSNR[0,:,:]))
 		maxind_stdevSNR_umask = np.where(avgkl_stdevSNR[1,:,:] == np.nanmax(avgkl_stdevSNR[1,:,:]))
@@ -333,7 +335,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		stdev_norm_stdevSNR = 1 - (stdev_norm_stdevSNR_cube[0,:,:]/np.nanmax(stdev_norm_stdevSNR_cube[0,:,:]))
 		stdev_norm_stdevSNR_umask = 1 - (stdev_norm_stdevSNR_cube[1,:,:]/np.nanmax(stdev_norm_stdevSNR_cube[1,:,:]))
 
-		spurpix_stdevSNR = avgkl_stdevSNR[3,:,:]
+		spurpix_stdevSNR = sumkl_stdevSNR[3,:,:]
 
 		#make a contrast metric
 		#returned quantity is -1*contrast. turn back into contrast

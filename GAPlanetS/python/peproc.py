@@ -303,6 +303,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		#returned quantity is -1*contrast. turn back into contrast
 		#log so that higher = better
 		logcontrast = np.log10(-1*avgkl_absmedSNR[4,:,:])
+		print("max log contrast is", np.nanmax(logcontrast))
 		contrast = np.abs(logcontrast)/np.nanmax(logcontrast)
 
 	#stdev map values

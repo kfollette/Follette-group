@@ -332,8 +332,12 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		#returned quantity is -1*contrast. turn back into contrast
 		#log so that higher = better
 		logcontrast = np.log10(-1*avgkl_stdevSNR[4,:,:])
-		print("max log contrast is", np.nanmax(logcontrast))
-		contrast = np.abs(logcontrast)/np.nanmax(logcontrast)
+		#filter out unphysical contrasts
+		logcontrast[logcontrast>0]=np.nan
+		#now take absolute value - smaller is better
+		logcontrast = np.abs(logcontrast)
+		print("max abs log contrast is", np.nanmax(logcontrast))
+		contrast = logcontrast/np.nanmax(logcontrast)
 
 	
 	#spurpix_norm_absmedSNR = 1 - (avgkl_absmedSNR[3,:,:]/np.nanmax(avgkl_absmedSNR[3,:,:]))
@@ -580,10 +584,6 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 			collmode[i] = head["TIMECOLL"]
 			owa[i] = head["OWA"]
 			calflux[i] = [head["CALIBFLUX"]=="True"][0]
-			print(i, calflux, head["CALIBFLUX"])
-			print(owa, head["OWA"])
-			print(collmode, head["TIMECOLL"])
-			print(hpval, head["HIGHPASS"])
 		
 		#record in dictionary
 		d["pe{0}hpval".format(i+1)]=hpval[i]

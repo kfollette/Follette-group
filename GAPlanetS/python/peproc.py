@@ -301,7 +301,14 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		#returned quantity is -1*contrast. turn back into contrast
 		#log so that higher = better
 		logcontrast = np.log10(-1*avgkl_absmedSNR[4,:,:])
-		contrast = np.abs(logcontrast)/np.nanmax(logcontrast)
+		#filter out unphysical contrasts
+		logcontrast[logcontrast>0]=np.nan
+		#now take absolute value - smaller is better
+		logcontrast = np.abs(logcontrast)
+		#and subtract the minimum so goes min=0 to max
+		logcontrast = logcontrast - min(logcontrast)
+		#now divide by the max so goes 0-->1
+		contrast = logcontrast/np.nanmax(logcontrast)
 
 	#stdev map values
 	if snrmeth in ["stdev", "all"]:
@@ -336,7 +343,9 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		logcontrast[logcontrast>0]=np.nan
 		#now take absolute value - smaller is better
 		logcontrast = np.abs(logcontrast)
-		print("max abs log contrast is", np.nanmax(logcontrast))
+		#and subtract the minimum so goes min=0 to max
+		logcontrast = logcontrast - min(logcontrast)
+		#now divide by the max so goes 0-->1
 		contrast = logcontrast/np.nanmax(logcontrast)
 
 	

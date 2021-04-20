@@ -69,13 +69,13 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 	#normalize each planet by dividing by its maximum SNR across all movement and annuli
 	#does NOT average over KL modes or metric
 	#planet loop
-	for i in np.arange(dims[-1]):
+	#for i in np.arange(dims[-1]):
 		#klloop
-		for j in np.arange(dims[2]):
+		#for j in np.arange(dims[2]):
 			#slice loop
-			for k in np.arange(4):
+			#for k in np.arange(4):
 				#normalize by dividing by max for this planet, klmode, slice (snr slices only)
-				pecube[k,:,j,:,:,i]/=np.nanmax(pecube[k,:,j,:,:,i])
+				#pecube[k,:,j,:,:,i]/=np.nanmax(pecube[k,:,j,:,:,i])
 	
 	#sort of a sloppy fix to make sure spurious pixel metric is NaN where no refims
 	#make a mask from one of the SNR metric slices, which have proper NaNs

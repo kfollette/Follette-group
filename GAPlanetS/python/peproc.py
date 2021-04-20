@@ -54,8 +54,6 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 		ind = np.where(pecube[0,:,:,:,:,:]<snrthresh)
 		lowsnr_mask=np.ones(dims[1:])
 		lowsnr_mask[ind]=np.nan
-		print(lowsnr_mask.shape, pecube.shape)
-		fits.writeto('testmask.fits', lowsnr_mask, overwrite=True)
 		#apply to peak (sl 0) and avg under mask (sl 2)
 		for sl in [0,2]:
 			pecube[sl,:,:,:,:]*=lowsnr_mask
@@ -303,7 +301,6 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		#returned quantity is -1*contrast. turn back into contrast
 		#log so that higher = better
 		logcontrast = np.log10(-1*avgkl_absmedSNR[4,:,:])
-		print("max log contrast is", np.nanmax(logcontrast))
 		contrast = np.abs(logcontrast)/np.nanmax(logcontrast)
 
 	#stdev map values
@@ -335,6 +332,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		#returned quantity is -1*contrast. turn back into contrast
 		#log so that higher = better
 		logcontrast = np.log10(-1*avgkl_stdevSNR[4,:,:])
+		print("max log contrast is", np.nanmax(logcontrast))
 		contrast = np.abs(logcontrast)/np.nanmax(logcontrast)
 
 	

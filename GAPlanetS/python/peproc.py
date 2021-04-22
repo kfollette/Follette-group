@@ -686,7 +686,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 				print('running KLIP. highpass = ', hpval[i], ', calflux = ', calflux[i], ', time collapse = ', collmode[i], ', OWA = ', owa[i])
 				parallelized.klip_dataset(dataset, outputdir=outdir, fileprefix=prefix+strklip, 
                         algo='klip', annuli=ann_val, subsections=1, movement=movm_val,
-                        numbasis=kllist, calibrate_flux=calflux[i], mode="ADI", highpass=float(hpval[i]), 
+                        numbasis=kllist, maxnumbasis=100, calibrate_flux=calflux[i], mode="ADI", highpass=float(hpval[i]), 
                         save_aligned=False, time_collapse=collmode[i])
 				#fits.writeto('test'+str(i)+'.fits', dataset.output, overwrite=True)
 

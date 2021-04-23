@@ -683,7 +683,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 				dataset = MagAO.MagAOData(filelist) 
 				dataset.IWA=iwa
 				dataset.OWA=float(owa[i])
-				print('running KLIP. highpass = ', hpval[i], ', calflux = ', calflux[i], ', time collapse = ', collmode[i], ', OWA = ', owa[i])
+				print('running KLIP. prefix =', prefix, 'first file =', haindir, filelist[0],  ' highpass = ', hpval[i], ', calflux = ', calflux[i], ', time collapse = ', collmode[i], ', OWA = ', owa[i])
 				parallelized.klip_dataset(dataset, outputdir=outdir, fileprefix=prefix+strklip, 
                         algo='klip', annuli=ann_val, subsections=1, movement=movm_val,
                         numbasis=kllist, maxnumbasis=100, calibrate_flux=calflux[i], mode="ADI", highpass=float(hpval[i]), 

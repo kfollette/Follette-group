@@ -591,7 +591,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 		#if header keyword set, pull other KLIP values from header
 		if header == True:
 			head = fits.getheader(pedir+flist[i])
-			hpval[i] = head["HIGHPASS"]
+			hpval[i] = head["HIGHPASS"]*2
 			collmode[i] = head["TIMECOLL"]
 			owa[i] = head["OWA"]
 			calflux[i] = [head["CALIBFLUX"]=="True"][0]

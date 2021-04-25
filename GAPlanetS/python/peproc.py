@@ -79,7 +79,10 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 	
 	#sort of a sloppy fix to make sure spurious pixel metric is NaN where no refims
 	#make a mask from one of the SNR metric slices, which have proper NaNs
-	nanmask = np.where(np.isnan(pecube[3,:,:,:,:,:])==True)
+	if np.ndim(pecube) == 5:
+		nanmask = np.where(np.isnan(pecube[3,:,:,:,:])==True)
+	elif np.ndim(pecube) == 6:
+		nanmask = np.where(np.isnan(pecube[3,:,:,:,:,:])==True)
 	#mask with ones everywhere except these locations
 	msk = np.ones(dims[1:])
 	msk[nanmask]=np.nan

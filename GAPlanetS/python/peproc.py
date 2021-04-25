@@ -671,6 +671,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 				#default prefix has Cont in it, since we ran the PE on fake planets in cont images
 				prefix = prefix.replace('Cont','Line') 
 				filelist = glob.glob(haindir + "sliced*.fits")
+				pdb.set_trace()
 
 			#run KLIP with the optimum values for each PE
 
@@ -679,7 +680,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 				print("This file already exists. I am NOT re-running KLIP, but just reading the existing image in. Check and make sure you weren't intending to change the name")
 			#otherwise, run KLIP
 			else:
-				pdb.set_trace()
+				
 				dataset = MagAO.MagAOData(filelist) 
 				dataset.IWA=iwa
 				dataset.OWA=float(owa[i])
@@ -1011,6 +1012,7 @@ def compare_ims(d, pedir='./', kllist=[5,10,20,50], outdir='klipims/', mode='Lin
 
 		#size figure according to how many rows and columns there are
 		figsz=(ncols*4, nrows*5)
+		pdb.set_trace()
 		#set up plot
 		f, ax = plt.subplots(nrows, ncols, figsize=figsz)
 		ax = ax.ravel()

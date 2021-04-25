@@ -586,6 +586,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 		#extract IWA and store
 		split=flist[i].split('_')
 		s = re.findall(r'iwa(.*?)_', flist[i])
+		pdb.set_trace()
 		d['pe{0}iwa'.format(i+1)]=int(s[0])
 
 		#if header keyword set, pull other KLIP values from header
@@ -1012,7 +1013,7 @@ def compare_ims(d, pedir='./', kllist=[5,10,20,50], outdir='klipims/', mode='Lin
 
 		#size figure according to how many rows and columns there are
 		figsz=(ncols*4, nrows*5)
-		pdb.set_trace()
+	
 		#set up plot
 		f, ax = plt.subplots(nrows, ncols, figsize=figsz)
 		ax = ax.ravel()

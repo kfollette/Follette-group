@@ -572,7 +572,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 	if not isinstance(calflux, list):
 		calflux=np.repeat(calflux,npes)
 
-	#loop over number of PEs found
+	#loop over number of PEs found 
 	for i in np.arange(npes):
 		# creates a dictionary with parameters needed to run KLIp for all images in a dataset
 		#store PE file
@@ -586,7 +586,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 		#extract IWA and store
 		split=flist[i].split('_')
 		s = re.findall(r'iwa(.*?)_', flist[i])
-		pdb.set_trace()
+
 		d['pe{0}iwa'.format(i+1)]=int(s[0])
 
 		#if header keyword set, pull other KLIP values from header

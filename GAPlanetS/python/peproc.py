@@ -675,7 +675,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 				#default prefix has Cont in it, since we ran the PE on fake planets in cont images
 				prefix = prefix.replace('Cont','Line') 
 				filelist = glob.glob(haindir + "sliced*.fits")
-				pdb.set_trace()
+				
 
 			#run KLIP with the optimum values for each PE
 

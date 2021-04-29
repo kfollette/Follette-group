@@ -2,6 +2,7 @@ from astropy.io import fits
 import numpy as np
 import glob
 from astropy.modeling import models, fitting, functional_models
+import pdb
 
 
 def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
@@ -67,6 +68,7 @@ def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
         if ghost == True:
             head['GSTPEAK'] = p.amplitude.value
             head['STARPEAK'] = p.amplitude.value * ghost_scale
+            pdb.set_trace()
             head['FWHM'] = p.fwhm
         else:
             head['STARPEAK'] = p.amplitude.value

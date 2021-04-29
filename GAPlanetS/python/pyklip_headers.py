@@ -68,16 +68,11 @@ def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
         if ghost == True:
             head['GSTPEAK'] = p.amplitude.value
             head['STARPEAK'] = p.amplitude.value * ghost_scale
-            if p.fwhm is not np.nan:
-                head['FWHM'] = p.fwhm
-            else:
-                head['FWHM'] = np.median(fwhmlist)
+            head['FWHM'] = str(p.fwhm)
+    
         else:
             head['STARPEAK'] = p.amplitude.value
-            if p.fwhm is not np.nan:
-                head['FWHM'] = p.fwhm
-            else:
-                head['FWHM'] = np.median(fwhmlist)
+            head['FWHM'] = str(p.fwhm)
 
         # record peak
         peaks.append(p.amplitude.value)

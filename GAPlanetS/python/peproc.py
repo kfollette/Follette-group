@@ -19,7 +19,7 @@ import pickle
 import textwrap
 
 
-def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthresh=False, oldpe=False):
+def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthresh=False, oldpe=False, separate=False):
 	"""
 	Averages over the planet dimension of a parameter explorer file
 
@@ -91,19 +91,28 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 	for k in np.arange(4,9):
 		pecube[k,:,:,:,:,:]*=msk
    
-	#collapse in planet dimension 
-	#mean preserves nans so all planets have to be recovered
-	#quick hack for old PEs where planet dimension was 6th
-	if oldpe==True:
-		pecube=np.mean(pecube,axis=5)
-	else:
-		pecube=np.mean(pecube,axis=3)
-
 	#create directory to save in if doesn't yet exist
 	if not os.path.exists(outdir):
 		os.makedirs(outdir)
+
+
+	#collapse in planet dimension or extract 
+	#mean preserves nans so all planets have to be recovered
+	#separates planets
+	if separate==True: 
+		writename = writestr+'_pl'
+		for i in np.arange(dims[-1]):
+			fits.writeto(outdir+writename+str(i+1)+'.fits', pecube[:,:,i,:,:,:], pehead, overwrite=True)
 	
-	writename = writestr+'_planetcollapse.fits'
+	#collapses planet dimension
+	else: 
+		writename = writestr+'_planetcollapse.fits'
+		#quick hack for old PEs where planet dimension was 6th
+		if oldpe==True:
+			pecube=np.mean(pecube,axis=5)
+		else:
+			pecube=np.mean(pecube,axis=3)
+	
 	fits.writeto(outdir+writename, pecube, pehead, overwrite=True)
 			
 	return (pecube, writename)

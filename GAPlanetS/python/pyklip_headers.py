@@ -2,6 +2,7 @@ from astropy.io import fits
 import numpy as np
 import glob
 from astropy.modeling import models, fitting, functional_models
+import pdb
 
 
 def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
@@ -37,6 +38,7 @@ def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
             return
     diff = np.zeros(len(filelist))
     peaks = []
+    fwhmlist = []
     #size of image stamp
     width = 31
     stmpsz = int((width - 1) / 2)
@@ -66,11 +68,18 @@ def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
         if ghost == True:
             head['GSTPEAK'] = p.amplitude.value
             head['STARPEAK'] = p.amplitude.value * ghost_scale
+            head['FWHM'] = str(p.fwhm)
+    
         else:
             head['STARPEAK'] = p.amplitude.value
+            head['FWHM'] = str(p.fwhm)
 
         # record peak
         peaks.append(p.amplitude.value)
+
+        # record fwhm
+        fwhmlist.append(p.fwhm)
+
 
         # print a warning if any peak values are unphysical
         if (p.amplitude.value < 0) or (p.amplitude.value > 17000) or (np.isnan(p.amplitude.value)) == True:
@@ -92,8 +101,10 @@ def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
     # write out list of peaks one directory up so KLIP doesn't try to pull it
     if ghost == True:
         fits.writeto(dir + '../' + str(wl) + 'ghostpeaks.fits', np.array(peaks), overwrite=True)
+        fits.writeto(dir + '../' + str(wl) + 'fwhmlist.fits', np.array(fwhmlist), overwrite=True)
     else:
         fits.writeto(dir + '../' + str(wl) + 'starpeaks.fits', np.array(peaks), overwrite=True)
+        fits.writeto(dir + '../' + str(wl) + 'fwhmlist.fits', np.array(fwhmlist), overwrite=True)
 
     if debug == True:
         print('standard deviation of difference between fit peak and max pixel is: ', np.std(diff))

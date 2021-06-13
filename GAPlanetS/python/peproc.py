@@ -709,9 +709,9 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
                 d["pe{0}haklipim".format(i+1)]=klim
     return(d)
 
-def paramexplore_fig(metric_fname, kllist, pedir='proc/', outdir='proc/', writestr=False, weights=[1,1,1,1,1,1,1,1], snrmeth='all', smt=3):
+def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=False, weights=[1,1,1,1,1,1,1,1], snrmeth='all', smt=3):
     
-    metric_cube, agg_cube, ann_val, movm_val, metric_scores = find_best_new(pename, kllist, pedir=pedir, 
+    metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = find_best_new(pename, kllist, pedir=pedir, 
         outdir=outdir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)
 
     if writestr == False:

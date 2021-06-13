@@ -701,7 +701,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
                     klim = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outdir, pre=prefix+strklip[kl][pl]))
                     print(klim.shape)
                     if kl==0 and pl==0:
-                        klcube = np.zeros(kldim, pldim, klim.shape[0],klim.shape[1],klim.shape[2])
+                        klcube = np.zeros(nkldim, npldim, klim.shape[0],klim.shape[1],klim.shape[2])
                     klcube[kl,pl,:,:,:]=klim
 
                     #and store in dictionary (overwrites at present until end of loop - needs work)

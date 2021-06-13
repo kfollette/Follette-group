@@ -341,17 +341,18 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			print("peak value for avg SNR under mask is at coordinates:", xcoord, ycoord)
 
 			#normalize the SNR (where high values = good) 
-			snr_norm = kltrim_snr[0,:,k,p,:,:] / np.nanmax(kltrim_snr[0,:,k,p,:,:])
-			snr_norm_umask = kltrim_snr[1,:,k,p,:,:] / np.nanmax(kltrim_snr[1,:,k,p,:,:])
+			#note - hard-coded for susections = 1
+			snr_norm = kltrim_snr[0,0,k,p,:,:] / np.nanmax(kltrim_snr[0,0,k,p,:,:])
+			snr_norm_umask = kltrim_snr[1,0,k,p,:,:] / np.nanmax(kltrim_snr[1,0,k,p,:,:])
 
 			if separate_kls==False:
 				#normalize standard deviations across KL modes. Low values = good
 				# divide by SNR so is Stdev in SNR as fraction of SNR itself
-				stdev_norm_cube = stdevkl[0:2,:,k,p,:,:] / kltrim_snr[0:2,:,k,p,:,:]
+				stdev_norm_cube = stdevkl[0:2,0,k,p,:,:] / kltrim_snr[0:2,0,k,p,:,:]
 				#first slice is peak
-				stdev_norm = 1 - (stdev_norm_cube[0,:,:,:]/np.nanmax(stdev_norm_cube[0,:,:,:]))
+				stdev_norm = 1 - (stdev_norm_cube[0,:,:]/np.nanmax(stdev_norm_cube[0,:,:]))
 				#second slice is under mask
-				stdev_norm_umask = 1 - (stdev_norm_cube[1,:,:,:]/np.nanmax(stdev_norm_cube[1,:,:,:]))
+				stdev_norm_umask = 1 - (stdev_norm_cube[1,:,:]/np.nanmax(stdev_norm_cube[1,:,:]))
 
 			#if extracting separately, fill these arrays with nans 
 			else:

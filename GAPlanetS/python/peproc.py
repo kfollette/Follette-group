@@ -372,10 +372,10 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			
 			#compute neighbor quality metrics by smoothing with Gaussian
 			sig=smt
-			nq_snr = filter_nan_gaussian_conserving(snr_norm_avg,sig)
-			nq_stdev = filter_nan_gaussian_conserving(stdev_norm_avg,sig)
-			nq_snr_umask = filter_nan_gaussian_conserving(snr_norm_avg_umask,sig)
-			nq_stdev_umask = filter_nan_gaussian_conserving(stdev_norm_avg_umask,sig)
+			nq_snr = filter_nan_gaussian_conserving(snr_norm,sig)
+			nq_stdev = filter_nan_gaussian_conserving(stdev_norm,sig)
+			nq_snr_umask = filter_nan_gaussian_conserving(snr_norm_umask,sig)
+			nq_stdev_umask = filter_nan_gaussian_conserving(stdev_norm_umask,sig)
 
 			#normalizes neighbor quality
 			nq_snr /= np.nanmax(nq_snr)

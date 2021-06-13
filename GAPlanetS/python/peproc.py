@@ -388,11 +388,11 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			if debug==True:
 				#make a cube of all these metrics for sanity checking
 				qual_cube = np.zeros([10,nstepy,nstepx])
-				qual_cube[0,:,k,p,:,:]=snr_norm_avg
-				qual_cube[1,:,k,p,:,:]=snr_norm_avg_umask
-				qual_cube[2,:,k,p,:,:]=stdev_norm_avg
-				qual_cube[3,:,:]=stdev_norm_avg_umask
-				qual_cube[4,:,k,p,:,:]=spurpix_avg
+				qual_cube[0,:,k,p,:,:]=snr_norm
+				qual_cube[1,:,k,p,:,:]=snr_norm_umask
+				qual_cube[2,:,k,p,:,:]=stdev_norm
+				qual_cube[3,:,:]=stdev_norm_umask
+				qual_cube[4,:,k,p,:,:]=spurpix
 				qual_cube[5,:,k,p,:,:]=nq_snr
 				qual_cube[6,:,k,p,:,:]=nq_snr_umask
 				qual_cube[7,:,k,p,:,:]=nq_stdev
@@ -416,7 +416,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			metric_cube[5,:,k,p,:,:]= nq_stdev_umask
 
 			#spurious pixel metric = 1 if no spurious pixels and 0 if max number for this dataset
-			if np.nanmax(spurpix_avg)>0:
+			if np.nanmax(spurpix)>0:
 				spurpix_norm = 1-spurpix/np.nanmax(spurpix)
 			else: #edge case - no spurious pixels in any image
 				spurpix_norm= 1+spurpix

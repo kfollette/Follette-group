@@ -637,7 +637,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 
         d["pe{0}ann".format(i+1)]=ann_val
         d["pe{0}movm".format(i+1)]=movm_val
-        d["pe{0}agg".format(i+1)]=agg
+        d["pe{0}agg".format(i+1)]=agg_cube
         nkldim = ann_val.shape[0]
         npldim = ann_val.shape[1]
         strklip = [['']*npldim]*nkldim

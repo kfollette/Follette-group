@@ -308,9 +308,11 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	if len(kllist)>1 and separate_kls==False:
 		klloop = 1
 		kllist=[kllist]
+		stdev_valid=True
 	else: 
 		print("extracting slices for KL modes", kllist, 'separately')
 		klloop = len(kllist)
+		stdev_valid=False
 
 	#set up cubes for planet, kl loop
 	agg=np.zeros([klloop,npldim,nstepy,nstepx])
@@ -426,8 +428,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 			metriclist = (snr_norm, nq_snr, snr_norm_umask, nq_snr_umask, stdev_norm_umask, nq_stdev_umask, spurpix_norm, contrast)
 			
-			#make sure weights for stdev slices are 0 if only 1 kl mode
-			if len(kllist) ==1:
+			#make sure weights for stdev slices are 0 if only 1 kl mode or extracting separately
+			if stdev_valid==False:
 				weights[4:6]=0
 
 			#calculate an aggregate parameter quality metric by summing the individual metrics * their weights

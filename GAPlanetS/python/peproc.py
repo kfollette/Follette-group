@@ -454,8 +454,6 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			metric_cube[8,:,k,p,:,:]=agg
 			agg_cube[k,p,:,:]=agg
 
-			fits.writeto(outdir+writename[:-5]+'_paramqual_metrics.fits', metric_cube, overwrite=True)
-
 			##find location or peak of parameter quality metric and print info
 			ind = np.where(agg == np.nanmax(agg))
 
@@ -480,10 +478,14 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			#print('metric scores for (snr peak, snr peak neigbors, snr umask, snr umask neighbors, stdev, stdev neighbors, spurious pix, contrast, agg) are:', metric_scores)
 
 
+
 	if debug==True:
-		fits.writeto(outdir+writename[:-5]+'_paramqual_cube.fits', qual_cube, overwrite=True)
+		fits.writeto(outdir+writename[:-5]+'_paramqual_fullcube.fits', qual_cube, overwrite=True)
+
+	metric_fname = writename[:-5]+'_paramqual_metrics.fits'
+	fits.writeto(outdir+metric_fname, metric_cube, overwrite=True)
 	
-	return metric_cube, agg_cube, ann_val, movm_val, metric_scores
+	return metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname
 
 
 def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode='Line', 
@@ -628,111 +630,88 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 		writename = d["pe{0}pfx".format(i+1)]+xstr
 
 		## extract best parameters according to weights and methods
-
-		#colapse in planets dimension (or extract separately)
-		pecube, pcolname = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, separate_planets=separate_planets)
-			
-		#collapse in kl dimension
-
-		for i in np.arange(nplanets):
-			#runs PE collapse for each planet with specified weights and snrmeth
-			metric_cube, ann_val_single, movm_val_single, metric_scores= find_best_new(pcolname+str(i)+'.fits', kllist, pedir=outdir, outdir=outdir, writestr=writename, weights=wts, snrmeth=snrmeth, smt=smt, separate_kls=separate_kls)
-				
-			#define some arrays for storing planet and/or kl slices
-			if i == 0:
-				shape = [sh for sh in agg_val_single.shape]
-				shape.append(nplanets)
-				if separate_kls==True:
-					shape.append(nkls)
-					ann_val = np.zeros(nplanets,nkls)
-					movm_val = np.zeros(nplanets,nkls)
-				else:
-					ann_val = np.zeros(nplanets)
-					movm_val = np.zeros(nplanets)
-				agg=np.zeros(shape)
-
-			agg[:,:,i]=agg_single
-			ann_val.append(ann_val_single)
-			movm_val.append(movm_val_single)
-
-		#option 2 - collapse planets and extract signle optimum value
-		else:
-			pecube, pcolname = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe)
-
-			#runs PE collapse on planet collapsed cube with specified weights and snrmeth
-			#stores optimal annuli and movement values and the aggregate parameter quality map for each PE
-			#pedir is outdir here since that's where it was saved by collapse_planets
-			metric_cube, agg, ann_val, movm_val, metric_scores = find_best_new(pcolname, kllist, pedir=outdir, outdir=outdir, writestr=writename, weights=wts, snrmeth=snrmeth, smt=smt)
-			
+		metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = find_best_new(pename, kllist, pedir=outdir, outdir=outdir, 
+			writestr=writename, weights=wts, snrmeth=snrmeth, smt=smt, snrthresh=snrthresh, separate_planets=separate_planets,
+			separate_kls=separate_kls)
 
 		d["pe{0}ann".format(i+1)]=ann_val
 		d["pe{0}movm".format(i+1)]=movm_val
 		d["pe{0}agg".format(i+1)]=agg
 
+    	nkldim = ann_val.shape[0]
+    	npldim = ann_val.shape[1]
+    	strklip = [['']*npldim]*nkldim
+
 		#save visualization of the metrics for this PE explorer
 		if savefig==True:
-			paramexplore_fig(pcolname, kllist, pedir=outdir, outdir=outdir, writestr=writename, weights=wts, snrmeth=snrmeth, smt=smt)
+			paramexplore_fig(metric_fname, kllist, pedir=outdir, outdir=outdir, weights=wts, snrmeth=snrmeth, smt=smt)
 	
 		#define image input direcotries for KLIP based on PE filename
 		haindir=d["pe{0}fpath".format(i+1)]+'dq_cuts/'+'Line_'+d["pe{0}cut".format(i+1)]+'_sliced/'
 		contindir=d["pe{0}fpath".format(i+1)]+'dq_cuts/'+'Cont_'+d["pe{0}cut".format(i+1)]+'_sliced/'
-		
-		#set up some unique naming info
-		prefix=d["pe{0}pfx".format(i+1)]+xstr
-		iwa =d["pe{0}iwa".format(i+1)]
-		strklip = '_a'+str(ann_val)+'m'+str(movm_val)+'iwa'+str(iwa)
-		d["pe{0}strklip".format(i+1)]=strklip
-		
-		#mode loop. need to do everything twice if SDI. Otherwise, choose the correct dataset.
-		if mode=='SDI':
-			modes=['Cont', 'Line']
-		else:
-			runmode=mode
-			modes=['single']
-		
-		for j in np.arange(len(modes)):
-			#print(haindir, contindir)
-			if mode=='SDI':
-				runmode=modes[j]
-			if runmode=='Cont':
-				filelist = glob.glob(contindir + "sliced*.fits")
-			if runmode=='Line':
-				#default prefix has Cont in it, since we ran the PE on fake planets in cont images
-				prefix = prefix.replace('Cont','Line') 
-				filelist = glob.glob(haindir + "sliced*.fits")
+
+
+		for kl in np.arange(nkldim):
+			for pl in np.arange(npldim):		
 				
-
-			#run KLIP with the optimum values for each PE
-
-			#check if file with this name already exists
-			if os.path.exists("{out}/{pre}-KLmodes-all.fits".format(out=outdir, pre=prefix+strklip)):
-				print("This file already exists. I am NOT re-running KLIP, but just reading the existing image in. Check and make sure you weren't intending to change the name")
-			#otherwise, run KLIP
-			else:
+				#set up some unique naming info
+				prefix=d["pe{0}pfx".format(i+1)]+xstr
+				iwa =d["pe{0}iwa".format(i+1)]
+				strklip[kl][pl] = '_a'+str(ann_val[kl][pl])+'m'+str(movm_val[kl][pl])+'iwa'+str(iwa)
+				print(strklip[kl][pl])
 				
-				dataset = MagAO.MagAOData(filelist) 
-				dataset.IWA=iwa
-				dataset.OWA=float(owa[i])
-				print('running KLIP. highpass = ', hpval[i], ', calflux = ', calflux[i], ', time collapse = ', collmode[i], ', OWA = ', owa[i], 'prefix =', prefix, 'first file =', filelist[0])
-				parallelized.klip_dataset(dataset, outputdir=outdir, fileprefix=prefix+strklip, 
-                        algo='klip', annuli=ann_val, subsections=1, movement=movm_val,
-                        numbasis=kllist, maxnumbasis=100, calibrate_flux=calflux[i], mode="ADI", highpass=float(hpval[i]), 
-                        save_aligned=False, time_collapse=collmode[i])
-				#fits.writeto('test'+str(i)+'.fits', dataset.output, overwrite=True)
+				#mode loop. need to do everything twice if SDI. Otherwise, choose the correct dataset.
+				if mode=='SDI':
+					modes=['Cont', 'Line']
+				else:
+					runmode=mode
+					modes=['single']
+				
+				for j in np.arange(len(modes)):
+					#print(haindir, contindir)
+					if mode=='SDI':
+						runmode=modes[j]
+					if runmode=='Cont':
+						filelist = glob.glob(contindir + "sliced*.fits")
+					if runmode=='Line':
+						#default prefix has Cont in it, since we ran the PE on fake planets in cont images
+						prefix = prefix.replace('Cont','Line') 
+						filelist = glob.glob(haindir + "sliced*.fits")
+				
+					#run KLIP with the optimum values for each PE
 
-			#pull output image 
-			klim = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outdir, pre=prefix+strklip))
+					#check if file with this name already exists
+					if os.path.exists("{out}/{pre}-KLmodes-all.fits".format(out=outdir, pre=prefix+strklip[kl][pl])):
+						print("This file already exists. I am NOT re-running KLIP, but just reading the existing image in. Check and make sure you weren't intending to change the name")
+					#otherwise, run KLIP
+					else:
+						
+						dataset = MagAO.MagAOData(filelist) 
+						dataset.IWA=iwa
+						dataset.OWA=float(owa[i])
+
+						print('running KLIP. highpass = ', hpval[i], ', calflux = ', calflux[i], ', time collapse = ', collmode[i], ', OWA = ', owa[i], 'prefix =', prefix, 'first file =', filelist[0])
+						parallelized.klip_dataset(dataset, outputdir=outdir, fileprefix=prefix+strklip[kl][pl], 
+		                        algo='klip', annuli=ann_val[kl][pl], subsections=1, movement=movm_val[kl][pl],
+		                        numbasis=kllist, maxnumbasis=100, calibrate_flux=calflux[i], mode="ADI", highpass=float(hpval[i]), 
+		                        save_aligned=False, time_collapse=collmode[i])
+						#fits.writeto('test'+str(i)+'.fits', dataset.output, overwrite=True)
+
+					#pull output image 
+					klim = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outdir, pre=prefix+strklip))
+					print(klim.shape)
 
 			#and store in dictionary
+			d["pe{0}strklip".format(i+1)]=strklip
 			if runmode=='Cont':
 				d["pe{0}contklipim".format(i+1)]=klim
 			if runmode=='Line':
 				d["pe{0}haklipim".format(i+1)]=klim
 	return(d)
 
-def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=False, weights=[1,1,1,1,1,1,1,1], snrmeth='all', smt=3):
+def paramexplore_fig(metric_fname, kllist, pedir='proc/', outdir='proc/', writestr=False, weights=[1,1,1,1,1,1,1,1], snrmeth='all', smt=3):
     
-    metric_cube, agg, ann_val, movm_val, metric_scores = find_best_new(pename, kllist, pedir=pedir, 
+    metric_cube, agg_cube, ann_val, movm_val, metric_scores = find_best_new(pename, kllist, pedir=pedir, 
     	outdir=outdir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)
 
     if writestr == False:
@@ -755,109 +734,114 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
     fig_ydim = nstepy
 
     fig = plt.figure(figsize=(fig_ydim,fig_xdim))
-    gs = fig.add_gridspec(2, 6)
-    ax1 = fig.add_subplot(gs[0,0])
-    ax2 = fig.add_subplot(gs[0,1])
-    ax3 = fig.add_subplot(gs[1,0])
-    ax4 = fig.add_subplot(gs[1,1])
-    ax5 = fig.add_subplot(gs[0,2])
-    ax6 = fig.add_subplot(gs[0,3])
-    ax7 = fig.add_subplot(gs[1,2])
-    ax8 = fig.add_subplot(gs[1,3])
-    ax9 = fig.add_subplot(gs[:,4:])
+	gs = fig.add_gridspec(2, 6)
+	ax1 = fig.add_subplot(gs[0,0])
+	ax2 = fig.add_subplot(gs[0,1])
+	ax3 = fig.add_subplot(gs[1,0])
+	ax4 = fig.add_subplot(gs[1,1])
+	ax5 = fig.add_subplot(gs[0,2])
+	ax6 = fig.add_subplot(gs[0,3])
+	ax7 = fig.add_subplot(gs[1,2])
+	ax8 = fig.add_subplot(gs[1,3])
+	ax9 = fig.add_subplot(gs[:,4:])
 
-    plt.setp((ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9), xticks=np.arange(0, nstepx + 1, 2), xticklabels=np.arange(xmin, xmax + 1, 2),
-             yticks=np.arange(0, nstepy + 1, 2), yticklabels=np.arange(ymin, ymax + 1, 2))
+	plt.setp((ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9), xticks=np.arange(0, nstepx + 1, 2), xticklabels=np.arange(xmin, xmax + 1, 2),
+	             yticks=np.arange(0, nstepy + 1, 2), yticklabels=np.arange(ymin, ymax + 1, 2))
 
-    #plt.setp((ax1, ax2, ax3, ax4, ax5), xticks=np.arange(nstepx + 1), yticks=np.arange(nstepy + 1), xticklabels=[], yticklabels=[])
+    #if extracted kl or planets separately, make figs separately
+    nkldim = ann_val.shape[0]
+    npldim = ann_val.shape[1]
 
-    im1 = ax1.imshow(metric_cube[0,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-    ax1.set_xlabel("movement parameter")
-    ax1.set_ylabel("annuli parameter")
-    ax1.set_title("Peak SNR: Weight = "+str(weights[0]))
-    divider = make_axes_locatable(ax1)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im1, cax=cax, orientation='vertical')
+    for kl in np.arange(nkldim):
+    	for pl in np.arange(npldim):
 
-    im2 = ax2.imshow(metric_cube[1,:,k,p,:,:], origin='lower',cmap='magma', vmin=0, vmax=1)
-    ax2.set_xlabel("movement parameter")
-    ax2.set_ylabel("annuli parameter")
-    ax2.set_title("Peak SNR Neighbor Quality: Weight = "+str(weights[1]))
-    divider = make_axes_locatable(ax2)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im2, cax=cax, orientation='vertical')
+	    im1 = ax1.imshow(metric_cube[0,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+	    ax1.set_xlabel("movement parameter")
+	    ax1.set_ylabel("annuli parameter")
+	    ax1.set_title("Peak SNR: Weight = "+str(weights[0]))
+	    divider = make_axes_locatable(ax1)
+	    cax = divider.append_axes('right', size='5%', pad=0.05)
+	    plt.colorbar(im1, cax=cax, orientation='vertical')
 
-    im3 = ax3.imshow(metric_cube[2,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-    ax3.set_xlabel("movement parameter")
-    ax3.set_ylabel("annuli parameter")
-    ax3.set_title("Avg SNR Under Mask: Weight = "+str(weights[2]))
-    divider = make_axes_locatable(ax3)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im3, cax=cax, orientation='vertical')
+	    im2 = ax2.imshow(metric_cube[1,:,k,p,:,:], origin='lower',cmap='magma', vmin=0, vmax=1)
+	    ax2.set_xlabel("movement parameter")
+	    ax2.set_ylabel("annuli parameter")
+	    ax2.set_title("Peak SNR Neighbor Quality: Weight = "+str(weights[1]))
+	    divider = make_axes_locatable(ax2)
+	    cax = divider.append_axes('right', size='5%', pad=0.05)
+	    plt.colorbar(im2, cax=cax, orientation='vertical')
 
-    im4 = ax4.imshow(metric_cube[3,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-    ax4.set_xlabel("movement parameter")
-    ax4.set_ylabel("annuli parameter")
-    ax4.set_title("Avg SNR Neighbor Quality: Weight = "+str(weights[3]))
-    divider = make_axes_locatable(ax4)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im4, cax=cax, orientation='vertical')
+	    im3 = ax3.imshow(metric_cube[2,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+	    ax3.set_xlabel("movement parameter")
+	    ax3.set_ylabel("annuli parameter")
+	    ax3.set_title("Avg SNR Under Mask: Weight = "+str(weights[2]))
+	    divider = make_axes_locatable(ax3)
+	    cax = divider.append_axes('right', size='5%', pad=0.05)
+	    plt.colorbar(im3, cax=cax, orientation='vertical')
 
+	    im4 = ax4.imshow(metric_cube[3,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+	    ax4.set_xlabel("movement parameter")
+	    ax4.set_ylabel("annuli parameter")
+	    ax4.set_title("Avg SNR Neighbor Quality: Weight = "+str(weights[3]))
+	    divider = make_axes_locatable(ax4)
+	    cax = divider.append_axes('right', size='5%', pad=0.05)
+	    plt.colorbar(im4, cax=cax, orientation='vertical')
+
+	    
+	    im5 = ax5.imshow(metric_cube[4,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+	    ax5.set_xlabel("movement parameter")
+	    ax5.set_ylabel("annuli parameter")
+	    ax5.set_title("Stdev Across KL: Weight = "+str(weights[4]))
+	    divider = make_axes_locatable(ax5)
+	    cax = divider.append_axes('right', size='5%', pad=0.05)
+	    plt.colorbar(im5, cax=cax, orientation='vertical')
+
+	    im6 = ax6.imshow(metric_cube[5,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+	    ax6.set_xlabel("movement parameter")
+	    ax6.set_ylabel("annuli parameter")
+	    ax6.set_title("Stdev Neighbor Quality: Weight = "+str(weights[5]))
+	    divider = make_axes_locatable(ax6)
+	    cax = divider.append_axes('right', size='5%', pad=0.05)
+	    plt.colorbar(im6, cax=cax, orientation='vertical')
+
+	    im7 = ax7.imshow(metric_cube[6,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+	    ax7.set_xlabel("movement parameter")
+	    ax7.set_ylabel("annuli parameter")
+	    ax7.set_title("Spurious Pixels: Weight = "+str(weights[6]))
+	    divider = make_axes_locatable(ax7)
+	    cax = divider.append_axes('right', size='5%', pad=0.05)
+	    plt.colorbar(im7, cax=cax, orientation='vertical')
+
+
+	    im8 = ax8.imshow(metric_cube[7,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+	    ax8.set_xlabel("movement parameter")
+	    ax8.set_ylabel("annuli parameter")
+	    ax8.set_title("Contrast: Weight = "+str(weights[7]))
+	    divider = make_axes_locatable(ax8)
+	    cax = divider.append_axes('right', size='5%', pad=0.05)
+	    plt.colorbar(im8, cax=cax, orientation='vertical')
+
+	    # plot metric
+	    im9 = ax9.imshow(agg, origin='lower', vmin=0, vmax=np.sum(weights))
+	    ax9.set_ylabel("annuli parameter")
+	    ax9.set_xlabel("movement parameter")
+	    ax9.set_title("Aggregate Parameter Quality")
+	    divider = make_axes_locatable(ax9)
+	    cax = divider.append_axes('right', size='5%', pad=0.05)
+	    plt.colorbar(im9, cax=cax, orientation='vertical')
+
+	    ind = np.where(agg == np.nanmax(agg))
+	    label_text = 'a' + str(ann_val) + 'm' + str(movm_val)
+	    rect = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
+	    ax9.add_patch(rect)
+	    ax9.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
+
+	    plt.suptitle(writestr)
+	    gs.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
+
+	    plt.savefig(outdir+writestr+'_kl'+str(kllist[kl])+'_pl'+str(pl)+'_paramqual.png')
     
-    im5 = ax5.imshow(metric_cube[4,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-    ax5.set_xlabel("movement parameter")
-    ax5.set_ylabel("annuli parameter")
-    ax5.set_title("Stdev Across KL: Weight = "+str(weights[4]))
-    divider = make_axes_locatable(ax5)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im5, cax=cax, orientation='vertical')
-
-    im6 = ax6.imshow(metric_cube[5,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-    ax6.set_xlabel("movement parameter")
-    ax6.set_ylabel("annuli parameter")
-    ax6.set_title("Stdev Neighbor Quality: Weight = "+str(weights[5]))
-    divider = make_axes_locatable(ax6)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im6, cax=cax, orientation='vertical')
-
-    im7 = ax7.imshow(metric_cube[6,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-    ax7.set_xlabel("movement parameter")
-    ax7.set_ylabel("annuli parameter")
-    ax7.set_title("Spurious Pixels: Weight = "+str(weights[6]))
-    divider = make_axes_locatable(ax7)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im7, cax=cax, orientation='vertical')
-
-
-    im8 = ax8.imshow(metric_cube[7,:,k,p,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-    ax8.set_xlabel("movement parameter")
-    ax8.set_ylabel("annuli parameter")
-    ax8.set_title("Contrast: Weight = "+str(weights[7]))
-    divider = make_axes_locatable(ax8)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im8, cax=cax, orientation='vertical')
-
-    # plot metric
-    im9 = ax9.imshow(agg, origin='lower', vmin=0, vmax=np.sum(weights))
-    ax9.set_ylabel("annuli parameter")
-    ax9.set_xlabel("movement parameter")
-    ax9.set_title("Aggregate Parameter Quality")
-    divider = make_axes_locatable(ax9)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im9, cax=cax, orientation='vertical')
-
-    ind = np.where(agg == np.nanmax(agg))
-    label_text = 'a' + str(ann_val) + 'm' + str(movm_val)
-    rect = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
-    ax9.add_patch(rect)
-    ax9.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
-
-    plt.suptitle(writestr)
-    gs.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
-
-    plt.savefig(outdir+writestr+'_paramqual.png')
-    
-    return(ann_val, movm_val, agg)
+    return
 
 def make_klip_snrmaps(d, pedir='./', outdir='proc/', smooth=0.5, snrmeth='stdev', mode='Line', scale=1):
 	"""

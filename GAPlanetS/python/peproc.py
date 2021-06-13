@@ -329,12 +329,12 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			#translates to x and y coordinates
 			xcoord = maxind[0][0]
 			ycoord = maxind[1][0]
-			print("peak value for peak SNR is at coordinates:", xcoord_absmedSNR, ycoord_absmedSNR)
+			print("peak value for peak SNR is at coordinates:", xcoord, ycoord)
 
 			#translates to x and y coordinates for umask
 			xcoord_umask = maxind_umask[0][0]
 			ycoord_umask = maxind_umask[1][0]
-			print("peak value for avg SNR under mask is at coordinates:", xcoord_absmedSNR, ycoord_absmedSNR)
+			print("peak value for avg SNR under mask is at coordinates:", xcoord, ycoord)
 
 			#normalize the SNR (where high values = good) 
 			snr_norm = kltrim_snr[0,:,k,p,:,:] / np.nanmax(kltrim_snr[0,:,k,p,:,:])

@@ -463,7 +463,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	if debug==True:
 		fits.writeto(outdir+pename[:-5]+'_paramqual_cube.fits', qual_cube, overwrite=True)
 	
-	return (metric_cube, agg, ann_val, movm_val, metric_scores)
+	return metric_cube, agg, ann_val, movm_val, metric_scores
 
 
 def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode='Line', 

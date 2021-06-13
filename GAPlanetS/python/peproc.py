@@ -251,12 +251,12 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		print("EXTRACTING PLANETS SEPARATELY")
 	pecube, writename, npldim = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, separate_planets=separate_planets)
 
-	if writestr==False:
-		writestr=writename[:-5]
-
 	#EXTRACT KL MODES OR COLLAPSE
 	print("EXTRACTING ONLY KL MODES SPECIFIED")
 	kltrim = trimkl(writename, kllist, pedir=pedir, outdir=outdir,writestr=writestr)
+
+	if writestr==False:
+		writestr=writename[:-4]
 
 	# if collapsing, make mean and stdev arrays
 	if separate_kls==False:

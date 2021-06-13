@@ -632,7 +632,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
         print(pename)
 
         ## extract best parameters according to weights and methods
-        metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = find_best_new(pename, kllist, pedir=outdir, outdir=outdir, \
+        metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = find_best_new(pename, kllist, pedir=pedir, outdir=outdir, \
             writestr=writename, weights=wts, snrmeth=snrmeth, smt=smt, snrthresh=snrthresh, separate_planets=separate_planets, separate_kls=separate_kls)
 
         d["pe{0}ann".format(i+1)]=ann_val

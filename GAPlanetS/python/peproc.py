@@ -136,7 +136,7 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
 	"""
 
 	if writestr == False:
-		writestr = pename[:-20]
+		writestr = pename[:-5]
 
 	# read in image and header
 	klcube_raw = fits.getdata(pedir + pename)
@@ -174,7 +174,7 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
 	fits.writeto(outdir+writestr + '_trimmedkls.fits', klkeep, head, overwrite=True)
 
 	#return trimmed cubes
-	return (klkeep)
+	return (klkeep, writename)
 
 
 def filter_nan_gaussian_conserving(arr, sigma):
@@ -253,10 +253,10 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 	#EXTRACT KL MODES OR COLLAPSE
 	print("EXTRACTING ONLY KL MODES SPECIFIED")
-	kltrim = trimkl(writename, kllist, pedir=pedir, outdir=outdir,writestr=writestr)
+	kltrim, writename = trimkl(writename, kllist, pedir=pedir, outdir=outdir,writestr=writestr)
 
 	if writestr==False:
-		writestr=writename[:-4]
+		writestr=writename[:-5]
 
 	# if collapsing, make mean and stdev arrays
 	if separate_kls==False:

@@ -244,14 +244,13 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	nq_snr = np.zeros([nstepy, nstepx])
 	nq_stdev = np.zeros([nstepy, nstepx])
 
-	if writestr==False:
-		writestr=writename[:-5]
-
 	#EXTRACT PLANETS OR COLLAPSE
 	pecube, writename, npldim = collapse_planets(pename, pedir=pedir, outdir='proc/', snrthresh=snrthresh, oldpe=oldpe, separate_planets=separate_planets)
 
-	#EXTRACT KL MODES OR COLLAPSE
+	if writestr==False:
+		writestr=writename[:-5]
 
+	#EXTRACT KL MODES OR COLLAPSE
 	kltrim = trimkl(writename, kllist, pedir=pedir, outdir=outdir,writestr=writestr)
 
 	# if collapsing, make mean and stdev arrays

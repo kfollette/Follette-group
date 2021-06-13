@@ -365,7 +365,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			#make a contrast metric
 			#returned quantity is -1*contrast. turn back into contrast
 			#and log so that higher = better
-			logcontrast = np.log10(-1*kltrim_snr[4,:,k,p,:,:])
+			logcontrast = np.log10(-1*kltrim_snr[4,0,k,p,:,:])
 			#filter out unphysical contrasts
 			logcontrast[logcontrast>0]=np.nan
 			#now take absolute value - smaller is better

@@ -405,25 +405,25 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 			#write out the cubes being used for the final metric
 			metric_cube = np.zeros([9,nstepy,nstepx])
-			metric_cube[0,:,k,p,:,:]= snr_norm_avg
+			metric_cube[0,:,k,p,:,:]= snr_norm
 			metric_cube[1,:,k,p,:,:]= nq_snr
-			metric_cube[2,:,k,p,:,:]= snr_norm_avg_umask
+			metric_cube[2,:,k,p,:,:]= snr_norm_umask
 			metric_cube[3,:,k,p,:,:]= nq_snr_umask
 
 			#going to use the under mask values for the final answer - probably more stable
-			metric_cube[4,:,k,p,:,:]= stdev_norm_avg_umask
+			metric_cube[4,:,k,p,:,:]= stdev_norm_umask
 			metric_cube[5,:,k,p,:,:]= nq_stdev_umask
 
 			#spurious pixel metric = 1 if no spurious pixels and 0 if max number for this dataset
 			if np.nanmax(spurpix_avg)>0:
-				spurpix_norm_avg = 1-spurpix_avg/np.nanmax(spurpix_avg)
+				spurpix_norm = 1-spurpix/np.nanmax(spurpix)
 			else: #edge case - no spurious pixels in any image
-				spurpix_norm_avg= 1+spurpix_avg
+				spurpix_norm= 1+spurpix
 			 
-			metric_cube[6,:,k,p,:,:]= spurpix_norm_avg
+			metric_cube[6,:,k,p,:,:]= spurpix_norm
 			metric_cube[7,:,k,p,:,:]= contrast 
 
-			metriclist = (snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask,nq_stdev_umask, spurpix_norm_avg, contrast)
+			metriclist = (snr_norm, nq_snr, snr_norm_umask, nq_snr_umask, stdev_norm_umask, nq_stdev_umask, spurpix_norm, contrast)
 			
 			#make sure weights for stdev slices are 0 if only 1 kl mode
 			if len(kllist) ==1:
@@ -446,8 +446,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 				return()
 
 			#extract metric scores for this location    
-			metric_scores = [snr_norm_avg[ind][0], nq_snr[ind][0], snr_norm_avg_umask[ind][0], nq_stdev_umask[ind][0], \
-			stdev_norm_avg_umask[ind][0], nq_stdev_umask[ind][0], spurpix_norm_avg[ind][0], agg[ind][0]]
+			metric_scores = [snr_norm[ind][0], nq_snr[ind][0], snr_norm_umask[ind][0], nq_stdev_umask[ind][0], \
+			stdev_norm_umask[ind][0], nq_stdev_umask[ind][0], spurpix_norm[ind][0], agg[ind][0]]
 
 			#translate to annuli and movement values
 			ann_val[k,p]= ymin + ind[0][0] * ystep

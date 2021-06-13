@@ -644,7 +644,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 
         #save visualization of the metrics for this PE explorer
         if savefig==True:
-            paramexplore_fig(pename, kllist, pedir=outdir, outdir=outdir, weights=wts, snrmeth=snrmeth, smt=smt)
+            paramexplore_fig(pename, kllist, pedir=pedir, outdir=outdir, weights=wts, snrmeth=snrmeth, smt=smt)
     
         #define image input direcotries for KLIP based on PE filename
         haindir=d["pe{0}fpath".format(i+1)]+'dq_cuts/'+'Line_'+d["pe{0}cut".format(i+1)]+'_sliced/'

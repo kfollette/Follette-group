@@ -453,7 +453,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			metric_cube[8,:,k,p,:,:]=agg
 			agg_cube[k,p,:,:]=agg
 
-			fits.writeto(outdir+pename[:-5]+'_paramqual_metrics.fits', metric_cube, overwrite=True)
+			fits.writeto(outdir+writename[:-5]+'_paramqual_metrics.fits', metric_cube, overwrite=True)
 
 			##find location or peak of parameter quality metric and print info
 			ind = np.where(agg == np.nanmax(agg))
@@ -480,7 +480,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 
 	if debug==True:
-		fits.writeto(outdir+pename[:-5]+'_paramqual_cube.fits', qual_cube, overwrite=True)
+		fits.writeto(outdir+writename[:-5]+'_paramqual_cube.fits', qual_cube, overwrite=True)
 	
 	return metric_cube, agg_cube, ann_val, movm_val, metric_scores
 

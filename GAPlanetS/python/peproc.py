@@ -40,7 +40,7 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 
 	if writestr == False:
 		#use the parameter explorer name for this file as well, minus the '_highpass_klmodes-all.fits'
-		writestr = pename[:-18]
+		writestr = pename[:-17]
 
 	# read in image and header
 	pecube = fits.getdata(pedir + pename)

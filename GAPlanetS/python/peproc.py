@@ -360,7 +360,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 				stdev_norm_umask = np.zeros([len(kllist),npldim,nstepy,nstepx])*np.nan
 
 			#spurious pixels metrics - pulling slice 3 (in between IWA and CR only)
-			spurpix = kltrim_snr[3,:,k,p,:,:]
+			spurpix = kltrim_snr[3,0,k,p,:,:]
 			
 			#make a contrast metric
 			#returned quantity is -1*contrast. turn back into contrast

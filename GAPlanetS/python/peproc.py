@@ -48,6 +48,7 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 	dims = pecube.shape
 	nplanets=dims[3]
 	pehead["NPLANET"]=nplanets
+	pehead["PLSEP"]=separate_planets
 
 	#if snrthresh set, find values where peak pixel SNRs (slices 1/2) are below threshhold and replace with nans
 	if (snrthresh != False):
@@ -115,7 +116,7 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 	fits.writeto(outdir+writename, pecube, pehead, overwrite=True)
 	return (pecube, writename, npldim)
 
-def trimkl(pename, kllist, pedir='./', outdir='proc/', snrmeth='stdev', writestr=False):
+def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
 	"""
 	Reads in a parameter explorer file and collapses it in the KLmode dimension (axis 3)
 
@@ -125,8 +126,6 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', snrmeth='stdev', writestr
 
 	OPTIONAL INPUTS:
 	pedir: 		directory holding parameter explorer file
-	snrmeth: 	one of two ways of computing SNR - possibilities are stdev and absmed (for median absolute value),
-				and 'all' to average the two
 	writestr: 	filename prefix for saved file (suffixes are _avgkl and _stdevkl). 
 				If not specified, preserves name of parameter explorer
 
@@ -142,33 +141,7 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', snrmeth='stdev', writestr
 	klcube_raw = fits.getdata(pedir + pename)
 	head = fits.getheader(pedir + pename)
 
-	#pull only the SNR map slice with the matching snrmeth value
-	if snrmeth == "absmed":
-		slice = 1
-	if snrmeth == "stdev":
-		slice = 0  
-	dims = klcube_raw.shape
-
-	#if only 1 metric
-	if snrmeth != 'all':
-		#for single method cubes, slices are SNR peak, avg SNR, total >thresh pixels, >thresh pixels inside CR
-		print('keeping only', snrmeth, 'maps')
-		klcube_trimmed=klcube_raw[slice::2,:,:,:,:,:]
-
-		#if snrmeth = absmed, grab contrast slice too
-		if slice==1:
-			dmns = np.array(klcube_trimmed.shape)
-			dmns[0]+=1
-			klcube_plusone = np.zeros(dmns)
-			klcube_plusone[0:-1,:,:,:,:,:]=klcube_trimmed
-			#fill last one with contrast cube dimension, which is not dependent on snr method
-			klcube_plusone[-1,:,:,:,:,:]=klcube_raw[-1,:,:,:,:,:]
-			klcube_trimmed = klcube_plusone
-
-		#object to write into with appropriate number of metric dims and truncated KL dim
-		klkeep = np.zeros([5,dims[1],len(kllist),dims[3],dims[4],dims[5]])
-	else:
-		klkeep = np.zeros([9,dims[1],len(kllist),dims[3],dims[4],dims[5]])
+	klkeep = np.zeros([9,dims[1],len(kllist),dims[3],dims[4],dims[5]])
 		
 	# pull KL modes of parameter explorer from the header
 	allkl = list(map(int, head['KLMODES'][1:-1].split(",")))
@@ -201,14 +174,9 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', snrmeth='stdev', writestr
 	# update header to reflect KL modes used
 	head["KLMODES"] = str(kllist)
 
-		# write arrays
-		#fits.writeto(outdir+writestr + '_avgkl.fits', avgkl, head, overwrite=True)
-		#fits.writeto(outdir+writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
-		#fits.writeto(outdir+writestr + '_sumkl.fits', sumkl, head, overwrite=True)
-	
 	fits.writeto(outdir+writestr + '_trimmedkls.fits', avgkl, head, overwrite=True)
 
-	#return trimmed (or collapsed) cube
+	#return trimmed (or collapsed) cubes
 	return (klkeep)
 
 
@@ -252,6 +220,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	weights: 	weights for parameter quality metric. Metrics are listed in order below. 
 				[peak SNR, peak SNR neighbors, avg SNR, avg SNR neighbors, stdev, stdev neighbors, spurious pixels]
 	smt: 		FWHM of gaussian smoothing kernel for 'neighbor quality' metrics
+	snrmeth: 	one of two ways of computing SNR - possibilities are stdev and absmed (for median absolute value),
+				and 'all' to average the two
 
 
 	RETURNS:
@@ -277,173 +247,127 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	nq_snr = np.zeros([nstepy, nstepx])
 	nq_stdev = np.zeros([nstepy, nstepx])
 
-	#collapse KL mode cube or extract slice if single
+	#EXTRACT PLANETS OR COLLAPSE
+	pecube, writename, npldim = collapse_planets(pename, pedir=pedir, outdir='proc/', snrthresh=snrthresh, oldpe=oldpe, separate_planets=separate_planets)
+
+	#EXTRACT KL MODES OR COLLAPSE
+	#set up kllist argument for trimkl function
 	if len(kllist)>1 and separate_kls==False:
 		print("collapsing ", snrmeth, "slices across KL modes", kllist)
 		klloop = 1
 		kllist=[kllist]
 	else: 
-		print("extracting ", snrmeth, "slices for KL modes", kllist, 'separately')
+		print("extracting slices for KL modes", kllist, 'separately')
 		klloop = len(kllist)
 
-	#first collapse planets (or not)
-	pecube, writename, npldim = collapse_planets(pename, pedir=pedir, outdir='proc/', snrthresh=snrthresh, oldpe=oldpe, separate_planets=separate_planets)
+	kltrim = trimkl(writename, kllist[i], pedir=pedir, outdir=outdir,writestr=writestr)
 
-	#now extract only the kl modes we care about for both snr methods
+	# if collapsing, make mean and stdev arrays
+	if separate_kls==False:
+		stdevkl = np.std(kltrim, axis=2, keepdims=True)
+		#sumkl = np.sum(kltrim, axis=2, keepdims=True)
+		#overwrite kltrim with average
+		kltrim= np.mean(kltrim, axis=2, keepdims=True)
 
+		# write arrays
+		fits.writeto(outdir+writestr + '_avgkl.fits', avgkl, head, overwrite=True)
+		fits.writeto(outdir+writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
+		#fits.writeto(outdir+writestr + '_sumkl.fits', sumkl, head, overwrite=True)
 
+	##EXTRACT SNR SLICES
+	#pull the SNR map slices with the matching snrmeth value
+	if snrmeth == "absmed":
+		slice = 1
+	if snrmeth == "stdev":
+		slice = 0  
 
-	if snrmeth in ["absmed", "all"]:
-		kltrim_absmedSNR = trimkl(writename, kllist[i], pedir=pedir, outdir=outdir, snrmeth='absmed',writestr=writestr)
-		if separate_kls==False:
-			# make mean and stdev arrays
-			# preserve nans so non-recoveries are removed
-			avgkl_absmedSNR = np.mean(kltrim_absmedSNR, axis=3, keepdims=True)
-			stdevkl_absmedSNR = np.std(kltrim_absmedSNR, axis=3, keepdims=True)
-			sumkl_absmedSNR = np.sum(kltrim_absmedSNR, axis=3, keepdims=True)
+	dims = kltrim.shape
 
-	if snrmeth in ["stdev", "all"]:
-		kltrim_stdevSNR = trimkl(writename, kllist, pedir=pedir, outdir=outdir, snrmeth='stdev', writestr=writestr)
-		if separate_kls==False:
-			# make mean and stdev arrays
-			# preserve nans so non-recoveries are removed
-			avgkl_stdevSNR = np.mean(kltrim_stdevSNR, axis=3, keepdims=True)
-			stdevkl_stdevdSNR = np.std(kltrim_stdevSNR, axis=3, keepdims=True)
-			sumkl_stdevSNR = np.sum(kltrim_stdevSNR, axis=3, keepdims=True)
+	#extract the appropriate slices
+	if snrmeth != 'all':
+		#for single method cubes, slices are SNR peak, avg SNR, total >thresh pixels, >thresh pixels inside CR
+		print('keeping only', snrmeth, 'maps')
+		kltrim_snr=kltrim[slice::2,:,:,:,:,:]
+
+		#if snrmeth = absmed, grab contrast slice too
+		if slice==1:
+			dmns = np.array(kltrim_snr.shape)
+			dmns[0]+=1
+			kltrim_plusone = np.zeros(dmns)
+			kltrim_plusone[0:-1,:,:,:,:,:]=kltrim_snr
+			#fill last one with contrast cube dimension, which is not dependent on snr method
+			kltrim_plusone[-1,:,:,:,:,:]=kltrim[-1,:,:,:,:,:]
+			kltrim_snr = kltrim_plusone
+
+	#if snrmeth is 'all', average the slices
+	else:
+		#average each of the first 4 pairs of metrics
+		avgdim = kltrim.shape
+		avgdim[0]=5
+		kltrim_snr=np.zeros(avgdim)
+		for i in np.arange(4):
+			kltrim_snr[i,:,:,:,:,:]=np.average(kltrim[2*i:2*i+1,:,:,:,:,:], axis=0)
+		kltrim_snr[-1,:,:,:,:,:]=kltrim[-1,:,:,:,:,:]
+
+	#set up cubes for planet, kl loop
+	agg=np.zeros([len(kllist),npldim,nstepy,nstepx])
+	ann_val = np.zeros([len(kllist),npldim])
+	movm_val = np.zeros([len(kllist),npldim])
 
 	for p in np.arange(npldim):
 
 		for k in np.arange(klloop):
-			#absmed map values
-
-			if snrmeth in ["absmed", "all"]:
-
-				#then collapse kl modes or extract a single one
-				#output cubes from trimekl have dimensions metric (n=5 for single method, n=9 for 'all'), ann, movm	
 				
-				#finds locations of peaks
-				maxind_absmedSNR = np.where(avgkl_absmedSNR[0,:,k,p,:,:] == np.nanmax(avgkl_absmedSNR[0,:,k,p,:,:]))
-				maxind_absmedSNR_umask = np.where(avgkl_absmedSNR[1,:,k,p,:,:] == np.nanmax(avgkl_absmedSNR[1,:,k,p,:,:]))
+			#finds locations of peaks
+			#note - currently hard coded for 1 subsection (second index)
+			maxind = np.where(kltrim_snr[0,0,k,p,:,:] == np.nanmax(kltrim_snr[0,0,k,p,:,:]))
+			maxind = np.where(kltrim_snr[1,0,k,p,:,:] == np.nanmax(kltrim_snr[1,0,k,p,:,:]))
 
-				#translates to x and y coordinates
-				xcoord_absmedSNR = maxind_absmedSNR[0][0]
-				ycoord_absmedSNR = maxind_absmedSNR[1][0]
-				print("peak value for median absolute value SNR is at coordinates:", xcoord_absmedSNR, ycoord_absmedSNR)
+			#translates to x and y coordinates
+			xcoord = maxind[0][0]
+			ycoord = maxind[1][0]
+			print("peak value for peak SNR is at coordinates:", xcoord_absmedSNR, ycoord_absmedSNR)
 
-				#translates to x and y coordinates
-				xcoord_absmedSNR_umask = maxind_absmedSNR_umask[0][0]
-				ycoord_absmedSNR_umask = maxind_absmedSNR_umask[1][0]
-				print("peak value for median absolute value SNR under mask is at coordinates:", xcoord_absmedSNR, ycoord_absmedSNR)
+			#translates to x and y coordinates for umask
+			xcoord_umask = maxind_umask[0][0]
+			ycoord_umask = maxind_umask[1][0]
+			print("peak value for avg SNR under mask is at coordinates:", xcoord_absmedSNR, ycoord_absmedSNR)
 
-				#normalize the SNR (where high values = good) maps normally
-				snr_norm_absmedSNR = avgkl_absmedSNR[0,:,k,p,:,:] / np.nanmax(avgkl_absmedSNR[0,:,k,p,:,:])
-				snr_norm_absmedSNR_umask = avgkl_absmedSNR[1,:,k,p,:,:] / np.nanmax(avgkl_absmedSNR[1,:,k,p,:,:])
+			#normalize the SNR (where high values = good) 
+			snr_norm = kltrim_snr[0,:,k,p,:,:] / np.nanmax(kltrim_snr[0,:,k,p,:,:])
+			snr_norm_umask = kltrim_snr[1,:,k,p,:,:] / np.nanmax(kltrim_snr[1,:,k,p,:,:])
 
+			if separate_kls==False:
 				#normalize standard deviations across KL modes. Low values = good
-				#slice 0 = peak, slice 1 = average SNR under mask, Going with slice 1 for now
 				# divide by SNR so is Stdev in SNR as fraction of SNR itself
-				stdev_norm_absmedSNR_cube = stdevkl_absmedSNR[0:2,:,k,p,:,:] / avgkl_absmedSNR[0:2,:,k,p,:,:]
+				stdev_norm_cube = stdevkl[0:2,:,k,p,:,:] / avgkl[0:2,:,k,p,:,:]
 				#first slice is peak
-				stdev_norm_absmedSNR = 1 - (stdev_norm_absmedSNR_cube[0,:,k,p,:,:]/np.nanmax(stdev_norm_absmedSNR_cube[0,:,k,p,:,:]))
+				stdev_norm = 1 - (stdev_norm_cube[0,:,k,p,:,:]/np.nanmax(stdev_norm_cube[0,:,k,p,:,:]))
 				#second slice is under mask
-				stdev_norm_absmedSNR_umask = 1 - (stdev_norm_absmedSNR_cube[1,:,k,p,:,:]/np.nanmax(stdev_norm_absmedSNR_cube[1,:,k,p,:,:]))
+				stdev_norm_umask = 1 - (stdev_norm_cube[1,:,k,p,:,:]/np.nanmax(stdev_norm_cube[1,:,k,p,:,:]))
 
-				#spurious pixels metrics - pulling slice 3 (in between IWA and CR only)
-				spurpix_absmedSNR = sumkl_absmedSNR[3,:,k,p,:,:]
-				
-				#make a contrast metric
-				#returned quantity is -1*contrast. turn back into contrast
-				#log so that higher = better
-				logcontrast = np.log10(-1*avgkl_absmedSNR[4,:,k,p,:,:])
-				#filter out unphysical contrasts
-				logcontrast[logcontrast>0]=np.nan
-				#now take absolute value - smaller is better
-				logcontrast = np.abs(logcontrast)
-				#and subtract the minimum so goes min=0 to max
-				logcontrast = logcontrast - np.nanmin(logcontrast)
-				#now divide by the max so goes 0-->1
-				contrast = logcontrast/np.nanmax(logcontrast)
-
-			#stdev map values
-			if snrmeth in ["stdev", "all"]:
-
-				#collapse kl modes or extract a single one
-				#output cubes from trimkl have dimensions metric (n=5 for single method, n=9 for 'all'), ann, movm	
-
-				maxind_stdevSNR = np.where(avgkl_stdevSNR[0,:,k,p,:,:] == np.nanmax(avgkl_stdevSNR[0,:,k,p,:,:]))
-				maxind_stdevSNR_umask = np.where(avgkl_stdevSNR[1,:,k,p,:,:] == np.nanmax(avgkl_stdevSNR[1,:,k,p,:,:]))
-
-				xcoord_stdevSNR = maxind_stdevSNR[0][0]
-				ycoord_stdevSNR = maxind_stdevSNR[1][0]
-				print("peak value for standard deviation SNR is at coordinates:", xcoord_stdevSNR, ycoord_stdevSNR)
-
-
-				xcoord_stdevSNR_umask = maxind_stdevSNR_umask[0][0]
-				ycoord_stdevSNR_umask = maxind_stdevSNR_umask[1][0]
-				print("peak value for standard deviation SNR under mask is at coordinates:", xcoord_stdevSNR, ycoord_stdevSNR)
-
-				snr_norm_stdevSNR = avgkl_stdevSNR[0,:,k,p,:,:] / np.nanmax(avgkl_stdevSNR[0,:,k,p,:,:])
-				snr_norm_stdevSNR_umask = avgkl_stdevSNR[1,:,k,p,:,:] / np.nanmax(avgkl_stdevSNR[1,:,k,p,:,:])
-
-				stdev_norm_stdevSNR_cube = stdevkl_stdevSNR[0:2,:,k,p,:,:] / avgkl_stdevSNR[0:2,:,k,p,:,:]
-				stdev_norm_stdevSNR = 1 - (stdev_norm_stdevSNR_cube[0,:,k,p,:,:]/np.nanmax(stdev_norm_stdevSNR_cube[0,:,k,p,:,:]))
-				stdev_norm_stdevSNR_umask = 1 - (stdev_norm_stdevSNR_cube[1,:,k,p,:,:]/np.nanmax(stdev_norm_stdevSNR_cube[1,:,k,p,:,:]))
-
-				spurpix_stdevSNR = sumkl_stdevSNR[3,:,k,p,:,:]
-
-				#make a contrast metric
-				#returned quantity is -1*contrast. turn back into contrast
-				#log so that higher = better
-				logcontrast = np.log10(-1*avgkl_stdevSNR[4,:,k,p,:,:])
-				#filter out unphysical contrasts
-				logcontrast[logcontrast>0]=np.nan
-				#now take absolute value - smaller is better
-				logcontrast = np.abs(logcontrast)
-				#and subtract the minimum so goes min=0 to max
-				logcontrast = logcontrast - np.nanmin(logcontrast)
-				#now divide by the max so goes 0-->1
-				contrast = logcontrast/np.nanmax(logcontrast)
-
-			
-			#spurpix_norm_absmedSNR = 1 - (avgkl_absmedSNR[3,:,:]/np.nanmax(avgkl_absmedSNR[3,:,:]))
-			#spurpix_norm_stdevSNR = 1 - (avgkl_stdevSNR[3,:,:]/np.nanmax(avgkl_stdevSNR[3,:,:]))
-
-			#average the two SNR computation methods
-			if snrmeth=='all':
-				snr_norm_avg = (snr_norm_absmedSNR + snr_norm_stdevSNR) / 2.
-				snr_norm_avg_umask = (snr_norm_absmedSNR_umask + snr_norm_stdevSNR_umask) / 2.
-				stdev_norm_avg = (stdev_norm_absmedSNR + stdev_norm_stdevSNR) / 2.
-				stdev_norm_avg_umask = (stdev_norm_absmedSNR_umask + stdev_norm_stdevSNR_umask) / 2.
-				spurpix_avg = (spurpix_absmedSNR + spurpix_stdevSNR) / 2.
-
-			#otherwise, pull just the relevant one
-			elif snrmeth=='absmed':
-				snr_norm_avg = snr_norm_absmedSNR
-				snr_norm_avg_umask = snr_norm_absmedSNR_umask
-				stdev_norm_avg = stdev_norm_absmedSNR
-				stdev_norm_avg_umask = stdev_norm_absmedSNR_umask
-				spurpix_avg = spurpix_absmedSNR
-			elif snrmeth=='stdev':
-				snr_norm_avg = snr_norm_stdevSNR
-				snr_norm_avg_umask = snr_norm_stdevSNR_umask
-				stdev_norm_avg = stdev_norm_stdevSNR
-				stdev_norm_avg_umask = stdev_norm_stdevSNR_umask
-				spurpix_avg = spurpix_stdevSNR
+			#if extracting separately, fill these arrays with nans 
 			else:
-				print('please provide a valid snr computation method')
-				return
+				stdev_norm = np.zeros([1,1,len(kllist),npldim,nstepy,nstepx])*np.nan
+				stdev_norm_umask = np.zeros([1,1,len(kllist),npldim,nstepy,nstepx])*np.nan
 
-			# stdevkl[avgkl<3]=np.nan
-			# stdev_norm = 1/(stdevkl/np.nanmin(stdevkl))
+			#spurious pixels metrics - pulling slice 3 (in between IWA and CR only)
+			spurpix = kltrim_snr[3,:,k,p,:,:]
 			
-
-			#kern = conv.Gaussian2DKernel(x_stddev=2)
-			#nq_snr = conv.convolve(snr_norm_avg, kern, preserve_nan=True, nan_treatment='interpolate')
-			#nq_stdev = conv.convolve(stdev_norm_avg, kern, preserve_nan = True, nan_treatment='interpolate')
-			#nq_snr_umask = conv.convolve(snr_norm_avg_umask, kern, preserve_nan=True, nan_treatment='interpolate')
-			#nq_stdev_umask = conv.convolve(stdev_norm_avg_umask, kern, preserve_nan = True, nan_treatment='interpolate')
-
-			#computes neighbor quality by smoothing with Gaussian
+			#make a contrast metric
+			#returned quantity is -1*contrast. turn back into contrast
+			#and log so that higher = better
+			logcontrast = np.log10(-1*avgkl[4,:,k,p,:,:])
+			#filter out unphysical contrasts
+			logcontrast[logcontrast>0]=np.nan
+			#now take absolute value - smaller is better
+			logcontrast = np.abs(logcontrast)
+			#and subtract the minimum so goes min=0 to max
+			logcontrast = logcontrast - np.nanmin(logcontrast)
+			#now divide by the max so goes 0-->1
+			contrast = logcontrast/np.nanmax(logcontrast)
+			
+			#compute neighbor quality metrics by smoothing with Gaussian
 			sig=smt
 			nq_snr = filter_nan_gaussian_conserving(snr_norm_avg,sig)
 			nq_stdev = filter_nan_gaussian_conserving(stdev_norm_avg,sig)
@@ -459,20 +383,10 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			if debug==True:
 				#make a cube of all these metrics for sanity checking
 				qual_cube = np.zeros([10,nstepy,nstepx])
-				#qual_cube[0,:,:]=snr_norm_absmedSNR
-				#qual_cube[1,:,:]=snr_norm_stdevSNR
 				qual_cube[0,:,k,p,:,:]=snr_norm_avg
-				#qual_cube[3,:,:]=snr_norm_absmedSNR_umask
-				#qual_cube[4,:,:]=snr_norm_stdevSNR_umask
 				qual_cube[1,:,k,p,:,:]=snr_norm_avg_umask
-				#qual_cube[6,:,:]=stdev_norm_absmedSNR
-				#qual_cube[7,:,:]=stdev_norm_stdevSNR
 				qual_cube[2,:,k,p,:,:]=stdev_norm_avg
-				#qual_cube[9,:,:]=stdev_norm_absmedSNR_umask
-				#qual_cube[10,:,:]=stdev_norm_stdevSNR_umask
 				qual_cube[3,:,:]=stdev_norm_avg_umask
-				#qual_cube[12,:,:]=spurpix_norm_absmedSNR
-				#qual_cube[13,:,:]=spurpix_norm_stdevSNR
 				qual_cube[4,:,k,p,:,:]=spurpix_avg
 				qual_cube[5,:,k,p,:,:]=nq_snr
 				qual_cube[6,:,k,p,:,:]=nq_snr_umask
@@ -486,13 +400,13 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			#stdev_norm_combo = (stdev_norm_avg + stdev_norm_avg_umask) / 2.
 			#nq_stdev_combo = (nq_stdev + nq_stdev_umask) / 2.
 
-
 			#write out the cubes being used for the final metric
 			metric_cube = np.zeros([9,nstepy,nstepx])
 			metric_cube[0,:,k,p,:,:]= snr_norm_avg
 			metric_cube[1,:,k,p,:,:]= nq_snr
 			metric_cube[2,:,k,p,:,:]= snr_norm_avg_umask
 			metric_cube[3,:,k,p,:,:]= nq_snr_umask
+
 			#going to use the under mask values for the final answer - probably more stable
 			metric_cube[4,:,k,p,:,:]= stdev_norm_avg_umask
 			metric_cube[5,:,k,p,:,:]= nq_stdev_umask
@@ -513,7 +427,6 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 				weights[4:6]=0
 
 			#calculate an aggregate parameter quality metric by summing the individual metrics * their weights
-			agg=np.zeros((nstepy,nstepx))
 			for metricind in np.arange(len(metriclist)):
 				#only sum if non-zero (otherwise nans will carry over)
 				if weights[metricind]>0:
@@ -524,8 +437,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			fits.writeto(outdir+pename[:-5]+'_paramqual_metrics.fits', metric_cube, overwrite=True)
 
 			##find location or peak of parameter quality metric and print info
-			ind = np.where(agg == np.nanmax(agg))
-			if agg[ind].shape[0]>1:
+			ind = np.where(agg[k,p,:,:] == np.nanmax(agg[k,p,:,:]))
+			if agg[k,p,ind[0],ind[1]].shape[0]>1:
 				print("the optimal solution for this choice of parameters/weights is not unique")
 				return()
 
@@ -534,18 +447,16 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			stdev_norm_avg_umask[ind][0], nq_stdev_umask[ind][0], spurpix_norm_avg[ind][0], agg[ind][0]]
 
 			#translate to annuli and movement values
-			ann_val = ymin + ind[0][0] * ystep
-			movm_val = xmin + ind[1][0] * xstep
+			ann_val[k,p]= ymin + ind[0][0] * ystep
+			movm_val[k,p] = xmin + ind[1][0] * xstep
 			
-			print('peak is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val, ' and movement', movm_val)
+			print('peak for planet', p+1, 'klmode', klloop[k], 'is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val, ' and movement', movm_val)
 			#print('SNR value for fake planets (avg of SNR methods and planets) is', avgSNR)
-			print('metric scores for (snr peak, snr peak neigbors, snr umask, snr umask neighbors, stdev, stdev neighbors, spurious pix, contrast, agg) are:', metric_scores)
+			#print('metric scores for (snr peak, snr peak neigbors, snr umask, snr umask neighbors, stdev, stdev neighbors, spurious pix, contrast, agg) are:', metric_scores)
 
 
 	if debug==True:
 		fits.writeto(outdir+pename[:-5]+'_paramqual_cube.fits', qual_cube, overwrite=True)
-		#avgSNR = avgkl_absmedSNR[0][ind] + avgkl_absmedSNR[1][ind]  + avgkl_stdevSNR[0][ind] + avgkl_stdevSNR[1][ind] 
-		#avgSNR /= 4
 	
 	return (metric_cube, agg, ann_val, movm_val, metric_scores)
 

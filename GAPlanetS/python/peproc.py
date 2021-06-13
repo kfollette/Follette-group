@@ -41,7 +41,6 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 	if writestr == False:
 		#use the parameter explorer name for this file as well, minus the '_highpass_klmodes-all.fits'
 		writestr = pename[:-17]
-		print(writestr)
 
 	# read in image and header
 	pecube = fits.getdata(pedir + pename)
@@ -235,13 +234,11 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	else:
 		print("EXTRACTING PLANETS SEPARATELY")
 
-	print(pename, writestr)
 	pecube, plwritename, npldim = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, writestr=writestr, separate_planets=separate_planets)
-	print(plwritename, writestr)
+
 	#EXTRACT KL MODES OR COLLAPSE
 	print("EXTRACTING ONLY KL MODES SPECIFIED")
 	kltrim, writename = trimkl(plwritename, kllist, pedir=outdir, outdir=outdir)
-	print(writename)
 
 	if writestr==False:
 		writestr=writename[:-5]

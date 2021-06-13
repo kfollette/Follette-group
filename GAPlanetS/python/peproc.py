@@ -254,7 +254,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		print("EXTRACTING PLANETS SEPARATELY")
 	print(pename, writestr)
 	pecube, plwritename, npldim = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, writestr=writestr, separate_planets=separate_planets)
-	print(pecube, plwritename, writestr)
+	print(plwritename, writestr)
 	#EXTRACT KL MODES OR COLLAPSE
 	print("EXTRACTING ONLY KL MODES SPECIFIED")
 	kltrim, writename = trimkl(plwritename, kllist, pedir=pedir, outdir=outdir)

@@ -433,10 +433,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			
 			#make sure weights for stdev slices are 0 if only 1 kl mode or extracting separately
 			if stdev_valid==False:
-				print(weights)
 				weights[4]=0
 				weights[5]=0
-				print(weights)
 
 			#calculate an aggregate parameter quality metric by summing the individual metrics * their weights
 			for metricind in np.arange(len(metriclist)):
@@ -464,7 +462,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			ann_val[k,p]= ymin + ind[0][0] * ystep
 			movm_val[k,p] = xmin + ind[1][0] * xstep
 			
-			print('peak for planet', p+1, 'klmode', kllist[k], 'is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val, ' and movement', movm_val)
+			print('peak for planet', p+1, 'klmode', kllist[k], 'is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val[k][p], ' and movement', movm_val[k][p])
 			#print('SNR value for fake planets (avg of SNR methods and planets) is', avgSNR)
 			#print('metric scores for (snr peak, snr peak neigbors, snr umask, snr umask neighbors, stdev, stdev neighbors, spurious pix, contrast, agg) are:', metric_scores)
 

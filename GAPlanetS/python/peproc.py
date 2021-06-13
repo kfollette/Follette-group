@@ -584,7 +584,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
         d['pe{0}iwa'.format(i+1)]=int(s[0])
 
         head = fits.getheader(pedir+flist[i])
-        file = fits.gethdata(pedir+flist[i])
+        file = fits.getdata(pedir+flist[i])
         nplanets = file.shape[3]
         print(file, nplanets)
 

@@ -286,7 +286,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	dims = kltrim.shape
 
 	#extract the appropriate slices
-	print("EXTRACTING". snrmeth, "SNR SLICES FROM PE CUBE")
+	print("EXTRACTING", snrmeth, "SNR SLICES FROM PE CUBE")
 	if snrmeth != 'all':
 		#for single method cubes, slices are SNR peak, avg SNR, total >thresh pixels, >thresh pixels inside CR
 		kltrim_snr=kltrim[slice::2,:,:,:,:,:]

@@ -315,7 +315,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		stdev_valid=False
 
 	#set up cubes for planet, kl loop
-	agg=np.zeros([klloop,npldim,nstepy,nstepx])
+	agg_cube=np.zeros([klloop,npldim,nstepy,nstepx])
+	agg=np.zeros([nstepy,nstepx])
 	ann_val = np.zeros([klloop,npldim])
 	movm_val = np.zeros([klloop,npldim])
 	##Note - hard coded for 1 subsection. 
@@ -442,6 +443,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 					agg+=weights[metricind]*metriclist[metricind]
 
 			metric_cube[8,:,k,p,:,:]=agg
+			agg_cube[k,p,:,:]=agg
 
 			fits.writeto(outdir+pename[:-5]+'_paramqual_metrics.fits', metric_cube, overwrite=True)
 
@@ -449,7 +451,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			ind = np.where(agg == np.nanmax(agg))
 			print(ind, agg.shape)
 
-			if agg[k,p,ind[0],ind[1]].shape[0]>1:
+			if agg[ind[0],ind[1]].shape[0]>1:
 				print("the optimal solution for this choice of parameters/weights is not unique")
 				return()
 
@@ -469,7 +471,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	if debug==True:
 		fits.writeto(outdir+pename[:-5]+'_paramqual_cube.fits', qual_cube, overwrite=True)
 	
-	return metric_cube, ann_val, movm_val, metric_scores
+	return metric_cube, agg_cube, ann_val, movm_val, metric_scores
 
 
 def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode='Line', 
@@ -622,7 +624,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 
 		for i in np.arange(nplanets):
 			#runs PE collapse for each planet with specified weights and snrmeth
-			metric_cube, agg_simgle, ann_val_single, movm_val_single, metric_scores= find_best_new(pcolname+str(i)+'.fits', kllist, pedir=outdir, outdir=outdir, writestr=writename, weights=wts, snrmeth=snrmeth, smt=smt, separate_kls=separate_kls)
+			metric_cube, ann_val_single, movm_val_single, metric_scores= find_best_new(pcolname+str(i)+'.fits', kllist, pedir=outdir, outdir=outdir, writestr=writename, weights=wts, snrmeth=snrmeth, smt=smt, separate_kls=separate_kls)
 				
 			#define some arrays for storing planet and/or kl slices
 			if i == 0:

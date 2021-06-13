@@ -115,7 +115,7 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 		npldim=1
 	
 	fits.writeto(outdir+writename, pecube, pehead, overwrite=True)
-	
+
 	return (pecube, writename, npldim)
 
 def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
@@ -266,7 +266,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 		# write arrays
 		fits.writeto(outdir+ writestr + '_avgkl.fits', kltrim, head, overwrite=True)
-		fits.writeto(outdir+ writenstr + '_stdevkl.fits', stdevkl, head, overwrite=True)
+		fits.writeto(outdir+ writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
 		#fits.writeto(outdir+writestr + '_sumkl.fits', sumkl, head, overwrite=True)
 
 	##EXTRACT SNR SLICES

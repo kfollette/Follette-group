@@ -328,6 +328,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	movm_val = np.zeros([klloop,npldim])
 	##Note - hard coded for 1 subsection. 
 	metric_cube = np.zeros([9, 1, klloop, npldim, nstepy, nstepx])
+	qual_cube = np.zeros([10, 1, klloop, npldim, nstepy, nstepx])
 
 	for p in np.arange(npldim):
 
@@ -398,7 +399,6 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 			if debug==True:
 				#make a cube of all these metrics for sanity checking
-				qual_cube = np.zeros([10,nstepy,nstepx])
 				qual_cube[0,:,k,p,:,:]=snr_norm
 				qual_cube[1,:,k,p,:,:]=snr_norm_umask
 				qual_cube[2,:,k,p,:,:]=stdev_norm

@@ -142,9 +142,10 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
 	klcube_raw = fits.getdata(pedir + pename)
 	head = fits.getheader(pedir + pename)
 
-	dims=klcube_raw.shape
+	dims=list(klcube_raw.shape)
 
 	#create an array with same dims except for kl modes
+	
 	dims[2]=len(kllist)
 	klkeep = np.zeros(dims)
 		

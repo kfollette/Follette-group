@@ -161,7 +161,7 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
 			keepind.append(i)
 			print('keeping kl', kl, "with index", i)
 			#only keep KL modes matching kllist
-			klkeep[:, :,j,:,:,:] = klcube_trimmed[:,:,i,:,:,:]
+			klkeep[:, :,j,:,:,:] = klcube_raw[:,:,i,:,:,:]
 			j += 1
 		i += 1
 

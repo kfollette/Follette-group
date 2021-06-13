@@ -345,9 +345,9 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 				# divide by SNR so is Stdev in SNR as fraction of SNR itself
 				stdev_norm_cube = stdevkl[0:2,:,k,p,:,:] / kltrim_snr[0:2,:,k,p,:,:]
 				#first slice is peak
-				stdev_norm = 1 - (stdev_norm_cube[0,:,k,p,:,:]/np.nanmax(stdev_norm_cube[0,:,k,p,:,:]))
+				stdev_norm = 1 - (stdev_norm_cube[0,:,:,:]/np.nanmax(stdev_norm_cube[0,:,:,:]))
 				#second slice is under mask
-				stdev_norm_umask = 1 - (stdev_norm_cube[1,:,k,p,:,:]/np.nanmax(stdev_norm_cube[1,:,k,p,:,:]))
+				stdev_norm_umask = 1 - (stdev_norm_cube[1,:,:,:]/np.nanmax(stdev_norm_cube[1,:,:,:]))
 
 			#if extracting separately, fill these arrays with nans 
 			else:

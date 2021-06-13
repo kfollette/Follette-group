@@ -109,9 +109,9 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 		writename = writestr+'_planetcollapse.fits'
 		#quick hack for old PEs where planet dimension was 6th
 		if oldpe==True:
-			pecube=np.mean(pecube,axis=5)
+			pecube=np.mean(pecube,axis=5, keepdims=True)
 		else:
-			pecube=np.mean(pecube,axis=3)
+			pecube=np.mean(pecube,axis=3, keepdims=True)
 		npldim=1
 	
 	fits.writeto(outdir+writename, pecube, pehead, overwrite=True)

@@ -168,21 +168,12 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
 	# replacing -250 (value when planet too close to annulus) with 0 for ease of display
 	klkeep[klkeep == -1000] = np.nan
 
-	#if not extracting separately, collapse
-	#if separate_kls==False:
-		# make mean and stdev arrays
-		# preserve nans so non-recoveries are removed
-		#klkeep = np.mean(klkeep, axis=3, keepdims=True)
-
-		#stdevkl = np.std(klkeep, axis=3, keepdims=True)
-		#sumkl = np.sum(klkeep, axis=3, keepdims=True)
-
 	# update header to reflect KL modes used
 	head["KLMODES"] = str(kllist)
 
-	fits.writeto(outdir+writestr + '_trimmedkls.fits', avgkl, head, overwrite=True)
+	fits.writeto(outdir+writestr + '_trimmedkls.fits', klkeep, head, overwrite=True)
 
-	#return trimmed (or collapsed) cubes
+	#return trimmed cubes
 	return (klkeep)
 
 

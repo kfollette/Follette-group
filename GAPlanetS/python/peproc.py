@@ -324,7 +324,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			#finds locations of peaks
 			#note - currently hard coded for 1 subsection (second index)
 			maxind = np.where(kltrim_snr[0,0,k,p,:,:] == np.nanmax(kltrim_snr[0,0,k,p,:,:]))
-			maxind = np.where(kltrim_snr[1,0,k,p,:,:] == np.nanmax(kltrim_snr[1,0,k,p,:,:]))
+			maxind_umask = np.where(kltrim_snr[1,0,k,p,:,:] == np.nanmax(kltrim_snr[1,0,k,p,:,:]))
 
 			#translates to x and y coordinates
 			xcoord = maxind[0][0]

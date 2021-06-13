@@ -40,7 +40,7 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 
 	if writestr == False:
 		#use the parameter explorer name for this file as well, minus the '_highpass_klmodes-all.fits'
-		writestr = pename[:-17]
+		writestr = pename[:-18]
 
 	# read in image and header
 	pecube = fits.getdata(pedir + pename)
@@ -115,6 +115,7 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 		npldim=1
 	
 	fits.writeto(outdir+writename, pecube, pehead, overwrite=True)
+	
 	return (pecube, writename, npldim)
 
 def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
@@ -244,7 +245,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	nq_stdev = np.zeros([nstepy, nstepx])
 
 	#EXTRACT PLANETS OR COLLAPSE
-	pecube, writename, npldim = collapse_planets(pename, pedir=pedir, outdir='proc/', snrthresh=snrthresh, oldpe=oldpe, separate_planets=separate_planets)
+	pecube, writename, npldim = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, separate_planets=separate_planets)
 
 	if writestr==False:
 		writestr=writename[:-5]
@@ -260,7 +261,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		kltrim= np.mean(kltrim, axis=2, keepdims=True)
 
 		#grab header
-		head = fits.getheader(writename)
+		head = fits.getheader(outdir+writename)
 		head["KLCOLL"]='True'
 
 		# write arrays

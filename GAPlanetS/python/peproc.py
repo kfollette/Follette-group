@@ -335,12 +335,12 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			#translates to x and y coordinates
 			xcoord = maxind[0][0]
 			ycoord = maxind[1][0]
-			print("peak value for peak SNR is at coordinates:", xcoord, ycoord)
+			#print("peak value for peak SNR is at coordinates:", xcoord, ycoord)
 
 			#translates to x and y coordinates for umask
 			xcoord_umask = maxind_umask[0][0]
 			ycoord_umask = maxind_umask[1][0]
-			print("peak value for avg SNR under mask is at coordinates:", xcoord, ycoord)
+			#print("peak value for avg SNR under mask is at coordinates:", xcoord, ycoord)
 
 			#normalize the SNR (where high values = good) 
 			#note - hard-coded for susections = 1
@@ -462,7 +462,11 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			ann_val[k,p]= ymin + ind[0][0] * ystep
 			movm_val[k,p] = xmin + ind[1][0] * xstep
 			
-			print('peak for planet', p+1, 'klmode', kllist[k], 'is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val[k][p], ' and movement', movm_val[k][p])
+			if separate_planets=False:
+				plno = 'all'
+			else:
+				plno = p+1
+			print('peak for planet =', plno, 'klmode = ', kllist[k], 'is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val[k][p], ' and movement', movm_val[k][p])
 			#print('SNR value for fake planets (avg of SNR methods and planets) is', avgSNR)
 			#print('metric scores for (snr peak, snr peak neigbors, snr umask, snr umask neighbors, stdev, stdev neighbors, spurious pix, contrast, agg) are:', metric_scores)
 

@@ -206,7 +206,7 @@ def filter_nan_gaussian_conserving(arr, sigma):
 
 	return gauss
 
-def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1,1,1,1], outdir='proc/', snrthresh=False
+def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1,1,1,1], outdir='proc/', snrthresh=False,
 	oldpe=False, debug=False, smt=3, snrmeth='all',separate_planets=False, separate_kls=False):
 	"""
 	collapses parameter explorer file and extracts the optimal parameter value

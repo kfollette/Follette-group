@@ -252,16 +252,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	pecube, writename, npldim = collapse_planets(pename, pedir=pedir, outdir='proc/', snrthresh=snrthresh, oldpe=oldpe, separate_planets=separate_planets)
 
 	#EXTRACT KL MODES OR COLLAPSE
-	#set up kllist argument for trimkl function
-	if len(kllist)>1 and separate_kls==False:
-		print("collapsing ", snrmeth, "slices across KL modes", kllist)
-		klloop = 1
-		kllist=[kllist]
-	else: 
-		print("extracting slices for KL modes", kllist, 'separately')
-		klloop = len(kllist)
 
-	kltrim = trimkl(writename, kllist[i], pedir=pedir, outdir=outdir,writestr=writestr)
+	kltrim = trimkl(writename, kllist, pedir=pedir, outdir=outdir,writestr=writestr)
 
 	# if collapsing, make mean and stdev arrays
 	if separate_kls==False:
@@ -314,6 +306,14 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	agg=np.zeros([len(kllist),npldim,nstepy,nstepx])
 	ann_val = np.zeros([len(kllist),npldim])
 	movm_val = np.zeros([len(kllist),npldim])
+
+	#set up kllist argument for loop
+	if len(kllist)>1 and separate_kls==False:
+		klloop = 1
+		kllist=[kllist]
+	else: 
+		print("extracting slices for KL modes", kllist, 'separately')
+		klloop = len(kllist)
 
 	for p in np.arange(npldim):
 

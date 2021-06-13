@@ -244,6 +244,9 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	nq_snr = np.zeros([nstepy, nstepx])
 	nq_stdev = np.zeros([nstepy, nstepx])
 
+	if writestr==False:
+		writestr=writename[:-5]
+
 	#EXTRACT PLANETS OR COLLAPSE
 	pecube, writename, npldim = collapse_planets(pename, pedir=pedir, outdir='proc/', snrthresh=snrthresh, oldpe=oldpe, separate_planets=separate_planets)
 
@@ -259,8 +262,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		kltrim= np.mean(kltrim, axis=2, keepdims=True)
 
 		# write arrays
-		fits.writeto(outdir+writestr + '_avgkl.fits', avgkl, head, overwrite=True)
-		fits.writeto(outdir+writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
+		fits.writeto(outdir+ writestr + '_avgkl.fits', avgkl, head, overwrite=True)
+		fits.writeto(outdir+ writenstr + '_stdevkl.fits', stdevkl, head, overwrite=True)
 		#fits.writeto(outdir+writestr + '_sumkl.fits', sumkl, head, overwrite=True)
 
 	##EXTRACT SNR SLICES

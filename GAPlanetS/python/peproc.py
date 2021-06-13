@@ -463,7 +463,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			ann_val[k,p]= ymin + ind[0][0] * ystep
 			movm_val[k,p] = xmin + ind[1][0] * xstep
 			
-			print('peak for planet', p+1, 'klmode', klloop[k], 'is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val, ' and movement', movm_val)
+			print('peak for planet', p+1, 'klmode', kllist[k], 'is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val, ' and movement', movm_val)
 			#print('SNR value for fake planets (avg of SNR methods and planets) is', avgSNR)
 			#print('metric scores for (snr peak, snr peak neigbors, snr umask, snr umask neighbors, stdev, stdev neighbors, spurious pix, contrast, agg) are:', metric_scores)
 

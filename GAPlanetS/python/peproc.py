@@ -228,24 +228,6 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 
 	"""
-	
-	#extracts parameter explorer inputs from the filename (assumes was autonamed by parameter explorer)
-	namelist = pename.split('_')
-	params = [s for s in namelist if s[0] == 'a']
-	params = params[0]
-	params = re.split('a|-|x|m|s|iwa', params)
-	ymin = int(params[1])
-	ymax = int(params[2])
-	ystep = int(params[3])
-	xmin = int(float(params[4]))
-	xmax = int(float(params[5]))
-	xstep = int(float(params[6]))
-	nstepx = int((xmax - xmin) / xstep) + 1
-	nstepy = int((ymax - ymin) / ystep) + 1
-
-	#sets up arrays for filling
-	nq_snr = np.zeros([nstepy, nstepx])
-	nq_stdev = np.zeros([nstepy, nstepx])
 
 	#EXTRACT PLANETS OR COLLAPSE
 	if separate_planets==False:
@@ -327,6 +309,24 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		stdev_valid=False
 
 	#set up cubes for planet, kl loop
+
+	#extracts parameter explorer inputs from the filename (assumes was autonamed by parameter explorer)
+	namelist = pename.split('_')
+	params = [s for s in namelist if s[0] == 'a']
+	params = params[0]
+	params = re.split('a|-|x|m|s|iwa', params)
+	ymin = int(params[1])
+	ymax = int(params[2])
+	ystep = int(params[3])
+	xmin = int(float(params[4]))
+	xmax = int(float(params[5]))
+	xstep = int(float(params[6]))
+	nstepx = int((xmax - xmin) / xstep) + 1
+	nstepy = int((ymax - ymin) / ystep) + 1
+
+	#sets up arrays for filling
+	nq_snr = np.zeros([nstepy, nstepx])
+	nq_stdev = np.zeros([nstepy, nstepx])
 	agg_cube=np.zeros([klloop,npldim,nstepy,nstepx])
 	agg=np.zeros([nstepy,nstepx])
 	ann_val = np.zeros([klloop,npldim])

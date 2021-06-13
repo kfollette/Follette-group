@@ -434,7 +434,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			#make sure weights for stdev slices are 0 if only 1 kl mode or extracting separately
 			if stdev_valid==False:
 				print(weights)
-				weights[4:6]*=0
+				weights[4]=0
+				weights[5]=0
 				print(weights)
 
 			#calculate an aggregate parameter quality metric by summing the individual metrics * their weights

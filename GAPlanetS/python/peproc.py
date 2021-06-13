@@ -358,8 +358,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 			#if extracting separately, fill these arrays with nans 
 			else:
-				stdev_norm = np.zeros([len(kllist),npldim,nstepy,nstepx])*np.nan
-				stdev_norm_umask = np.zeros([len(kllist),npldim,nstepy,nstepx])*np.nan
+				stdev_norm = np.zeros([nstepy,nstepx])*np.nan
+				stdev_norm_umask = np.zeros([nstepy,nstepx])*np.nan
 
 			#spurious pixels metrics - pulling slice 3 (in between IWA and CR only)
 			spurpix = kltrim_snr[3,0,k,p,:,:]

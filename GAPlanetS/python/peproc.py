@@ -468,7 +468,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			ann_val[k,p]= ymin + ind[0][0] * ystep
 			movm_val[k,p] = xmin + ind[1][0] * xstep
 			
-			if separate_planets=False:
+			if separate_planets==False:
 				plno = 'all'
 			else:
 				plno = p+1

@@ -445,6 +445,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 			##find location or peak of parameter quality metric and print info
 			ind = np.where(agg == np.nanmax(agg))
+			print(ind, agg.shape)
+
 			if agg[k,p,ind[0],ind[1]].shape[0]>1:
 				print("the optimal solution for this choice of parameters/weights is not unique")
 				return()

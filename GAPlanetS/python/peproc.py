@@ -138,6 +138,8 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
 	if writestr == False:
 		writestr = pename[:-5]
 
+	writename=writestr + '_trimmedkls.fits'
+
 	# read in image and header
 	klcube_raw = fits.getdata(pedir + pename)
 	head = fits.getheader(pedir + pename)
@@ -171,7 +173,7 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
 	# update header to reflect KL modes used
 	head["KLMODES"] = str(kllist)
 
-	fits.writeto(outdir+writestr + '_trimmedkls.fits', klkeep, head, overwrite=True)
+	fits.writeto(outdir+writename, klkeep, head, overwrite=True)
 
 	#return trimmed cubes
 	return (klkeep, writename)

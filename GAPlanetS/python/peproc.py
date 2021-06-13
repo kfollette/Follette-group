@@ -308,7 +308,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	agg=np.zeros([len(kllist),npldim,nstepy,nstepx])
 	ann_val = np.zeros([len(kllist),npldim])
 	movm_val = np.zeros([len(kllist),npldim])
-	metric_cube = np.zeros([9,1,klloop npldim, nstepy,nstepx])
+	##Note - hard coded for 1 subsection. 
+	metric_cube = np.zeros([9, 1, klloop, npldim, nstepy, nstepx])
 
 	#set up kllist argument for loop
 	if len(kllist)>1 and separate_kls==False:

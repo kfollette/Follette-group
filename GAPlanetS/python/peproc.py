@@ -259,6 +259,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		#sumkl = np.sum(kltrim, axis=2, keepdims=True)
 		#overwrite kltrim with average
 		kltrim= np.mean(kltrim, axis=2, keepdims=True)
+		print(stdevkl.shape)
 
 		#grab header
 		head = fits.getheader(outdir+writename)
@@ -346,7 +347,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			snr_norm = kltrim_snr[0,0,k,p,:,:] / np.nanmax(kltrim_snr[0,0,k,p,:,:])
 			snr_norm_umask = kltrim_snr[1,0,k,p,:,:] / np.nanmax(kltrim_snr[1,0,k,p,:,:])
 
-			if separate_kls==False:
+			if stdev_valid==True:
 				#normalize standard deviations across KL modes. Low values = good
 				# divide by SNR so is Stdev in SNR as fraction of SNR itself
 				stdev_norm_cube = stdevkl[0:2,0,k,p,:,:] / kltrim_snr[0:2,0,k,p,:,:]
@@ -430,8 +431,6 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 			metriclist = (snr_norm, nq_snr, snr_norm_umask, nq_snr_umask, stdev_norm_umask, nq_stdev_umask, spurpix_norm, contrast)
 			
-			print(snr_norm.shape, snr_norm_umask.shape, stdev_norm_umask.shape, spurpix_norm.shape)
-
 			#make sure weights for stdev slices are 0 if only 1 kl mode or extracting separately
 			if stdev_valid==False:
 				weights[4:6]=0
@@ -449,7 +448,6 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 			##find location or peak of parameter quality metric and print info
 			ind = np.where(agg == np.nanmax(agg))
-			print(ind, agg.shape)
 
 			if agg[ind[0],ind[1]].shape[0]>1:
 				print("the optimal solution for this choice of parameters/weights is not unique")

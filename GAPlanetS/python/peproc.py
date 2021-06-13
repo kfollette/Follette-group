@@ -658,7 +658,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
                 prefix=d["pe{0}pfx".format(i+1)]+xstr
                 iwa =d["pe{0}iwa".format(i+1)]
                 strklip[kl][pl] = '_a'+str(ann_val[kl][pl])+'m'+str(movm_val[kl][pl])+'iwa'+str(iwa)
-                print(strklip[kl][pl])
+                #print(strklip[kl][pl])
                 
                 #mode loop. need to do everything twice if SDI. Otherwise, choose the correct dataset.
                 if mode=='SDI':
@@ -700,13 +700,16 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
                     #pull output image 
                     klim = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outdir, pre=prefix+strklip[kl][pl]))
                     print(klim.shape)
+                    if kl==0 and pl==0
+                        klcube = np.zeros(kldim, pldim, klim.shape[0],klim.shape[1],klim.shape[2])
+                    klcube[kl,pl,:,:,:]=klim
 
-            #and store in dictionary
-            d["pe{0}strklip".format(i+1)]=strklip
-            if runmode=='Cont':
-                d["pe{0}contklipim".format(i+1)]=klim
-            if runmode=='Line':
-                d["pe{0}haklipim".format(i+1)]=klim
+                    #and store in dictionary (overwrites at present until end of loop - needs work)
+                    d["pe{0}strklip".format(i+1)]=strklip
+                    if runmode=='Cont':
+                        d["pe{0}contklipim".format(i+1)]=kl_cube
+                    if runmode=='Line':
+                        d["pe{0}haklipim".format(i+1)]=kl_cube
     return(d)
 
 def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=False, weights=[1,1,1,1,1,1,1,1], snrmeth='all', smt=3):

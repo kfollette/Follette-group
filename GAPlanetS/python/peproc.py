@@ -102,6 +102,7 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 	#separates planets
 	if separate_planets==True: 
 		npldim=nplanets
+		writename=writestr+'_sepplanets.fits'
 	
 	#collapses planet dimension
 	else: 

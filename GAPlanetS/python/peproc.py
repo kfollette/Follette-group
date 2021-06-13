@@ -259,6 +259,10 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		#overwrite kltrim with average
 		kltrim= np.mean(kltrim, axis=2, keepdims=True)
 
+		#grab header
+		head = fits.getheader(writename)
+		head["KLCOLL"]='True'
+
 		# write arrays
 		fits.writeto(outdir+ writestr + '_avgkl.fits', kltrim, head, overwrite=True)
 		fits.writeto(outdir+ writenstr + '_stdevkl.fits', stdevkl, head, overwrite=True)

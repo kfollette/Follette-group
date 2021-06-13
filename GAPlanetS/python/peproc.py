@@ -297,7 +297,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	#if snrmeth is 'all', average the slices
 	else:
 		#average each of the first 4 pairs of metrics
-		avgdim = kltrim.shape
+		avgdim = list(kltrim.shape)
 		avgdim[0]=5
 		kltrim_snr=np.zeros(avgdim)
 		for i in np.arange(4):

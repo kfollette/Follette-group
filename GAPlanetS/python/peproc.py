@@ -304,13 +304,6 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			kltrim_snr[i,:,:,:,:,:]=np.average(kltrim[2*i:2*i+1,:,:,:,:,:], axis=0)
 		kltrim_snr[-1,:,:,:,:,:]=kltrim[-1,:,:,:,:,:]
 
-	#set up cubes for planet, kl loop
-	agg=np.zeros([len(kllist),npldim,nstepy,nstepx])
-	ann_val = np.zeros([len(kllist),npldim])
-	movm_val = np.zeros([len(kllist),npldim])
-	##Note - hard coded for 1 subsection. 
-	metric_cube = np.zeros([9, 1, klloop, npldim, nstepy, nstepx])
-
 	#set up kllist argument for loop
 	if len(kllist)>1 and separate_kls==False:
 		klloop = 1
@@ -318,6 +311,13 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	else: 
 		print("extracting slices for KL modes", kllist, 'separately')
 		klloop = len(kllist)
+
+	#set up cubes for planet, kl loop
+	agg=np.zeros([klloop,npldim,nstepy,nstepx])
+	ann_val = np.zeros([klloop,npldim])
+	movm_val = np.zeros([klloop,npldim])
+	##Note - hard coded for 1 subsection. 
+	metric_cube = np.zeros([9, 1, klloop, npldim, nstepy, nstepx])
 
 	for p in np.arange(npldim):
 

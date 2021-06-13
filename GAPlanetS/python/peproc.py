@@ -356,8 +356,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 			#if extracting separately, fill these arrays with nans 
 			else:
-				stdev_norm = np.zeros([1,1,len(kllist),npldim,nstepy,nstepx])*np.nan
-				stdev_norm_umask = np.zeros([1,1,len(kllist),npldim,nstepy,nstepx])*np.nan
+				stdev_norm = np.zeros([len(kllist),npldim,nstepy,nstepx])*np.nan
+				stdev_norm_umask = np.zeros([len(kllist),npldim,nstepy,nstepx])*np.nan
 
 			#spurious pixels metrics - pulling slice 3 (in between IWA and CR only)
 			spurpix = kltrim_snr[3,:,k,p,:,:]
@@ -394,7 +394,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 				qual_cube[0,:,k,p,:,:]=snr_norm
 				qual_cube[1,:,k,p,:,:]=snr_norm_umask
 				qual_cube[2,:,k,p,:,:]=stdev_norm
-				qual_cube[3,:,:]=stdev_norm_umask
+				qual_cube[3,:,k,p,:,:]=stdev_norm_umask
 				qual_cube[4,:,k,p,:,:]=spurpix
 				qual_cube[5,:,k,p,:,:]=nq_snr
 				qual_cube[6,:,k,p,:,:]=nq_snr_umask
@@ -429,6 +429,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
 			metriclist = (snr_norm, nq_snr, snr_norm_umask, nq_snr_umask, stdev_norm_umask, nq_stdev_umask, spurpix_norm, contrast)
 			
+			print(snr_norm.shape, snr_norm_umask.shape, stdev_norm_umask.shape, spurpix_norm.shape)
+
 			#make sure weights for stdev slices are 0 if only 1 kl mode or extracting separately
 			if stdev_valid==False:
 				weights[4:6]=0

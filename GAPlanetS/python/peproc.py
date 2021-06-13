@@ -127,12 +127,11 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
 
 	OPTIONAL INPUTS:
 	pedir: 		directory holding parameter explorer file
-	writestr: 	filename prefix for saved file (suffixes are _avgkl and _stdevkl). 
+	writestr: 	filename prefix for saved file 
 				If not specified, preserves name of parameter explorer
 
 	RETURNS:
-	avgkl:  	array containing averages over the specified KL modes
-	stdevkl: 	array containing standard deviations over the specified KL modes
+
 	"""
 
 	if writestr == False:
@@ -261,7 +260,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		kltrim= np.mean(kltrim, axis=2, keepdims=True)
 
 		# write arrays
-		fits.writeto(outdir+ writestr + '_avgkl.fits', avgkl, head, overwrite=True)
+		fits.writeto(outdir+ writestr + '_avgkl.fits', kltrim, head, overwrite=True)
 		fits.writeto(outdir+ writenstr + '_stdevkl.fits', stdevkl, head, overwrite=True)
 		#fits.writeto(outdir+writestr + '_sumkl.fits', sumkl, head, overwrite=True)
 
@@ -339,7 +338,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			if separate_kls==False:
 				#normalize standard deviations across KL modes. Low values = good
 				# divide by SNR so is Stdev in SNR as fraction of SNR itself
-				stdev_norm_cube = stdevkl[0:2,:,k,p,:,:] / avgkl[0:2,:,k,p,:,:]
+				stdev_norm_cube = stdevkl[0:2,:,k,p,:,:] / kltrim_snr[0:2,:,k,p,:,:]
 				#first slice is peak
 				stdev_norm = 1 - (stdev_norm_cube[0,:,k,p,:,:]/np.nanmax(stdev_norm_cube[0,:,k,p,:,:]))
 				#second slice is under mask
@@ -356,7 +355,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 			#make a contrast metric
 			#returned quantity is -1*contrast. turn back into contrast
 			#and log so that higher = better
-			logcontrast = np.log10(-1*avgkl[4,:,k,p,:,:])
+			logcontrast = np.log10(-1*kltrim_snr[4,:,k,p,:,:])
 			#filter out unphysical contrasts
 			logcontrast[logcontrast>0]=np.nan
 			#now take absolute value - smaller is better

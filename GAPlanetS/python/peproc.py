@@ -830,7 +830,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
             cax = divider.append_axes('right', size='5%', pad=0.05)
             plt.colorbar(im9, cax=cax, orientation='vertical')
 
-            ind = np.where(agg == np.nanmax(agg))
+            ind = np.where(agg_cube[kl,pl,:,:] == np.nanmax(agg_cube[kl,pl,:,:]))
             label_text = 'a' + str(ann_val[kl][pl]) + 'm' + str(movm_val[kl][pl])
             rect = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
             ax9.add_patch(rect)

@@ -755,7 +755,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
     for kl in np.arange(nkldim):
         for pl in np.arange(npldim):
 
-            im1 = ax1.imshow(metric_cube[0,:,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+            im1 = ax1.imshow(metric_cube[0,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
             ax1.set_xlabel("movement parameter")
             ax1.set_ylabel("annuli parameter")
             ax1.set_title("Peak SNR: Weight = "+str(weights[0]))
@@ -763,7 +763,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
             cax = divider.append_axes('right', size='5%', pad=0.05)
             plt.colorbar(im1, cax=cax, orientation='vertical')
 
-            im2 = ax2.imshow(metric_cube[1,:,kl,pl,:,:], origin='lower',cmap='magma', vmin=0, vmax=1)
+            im2 = ax2.imshow(metric_cube[1,0,kl,pl,:,:], origin='lower',cmap='magma', vmin=0, vmax=1)
             ax2.set_xlabel("movement parameter")
             ax2.set_ylabel("annuli parameter")
             ax2.set_title("Peak SNR Neighbor Quality: Weight = "+str(weights[1]))
@@ -771,7 +771,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
             cax = divider.append_axes('right', size='5%', pad=0.05)
             plt.colorbar(im2, cax=cax, orientation='vertical')
 
-            im3 = ax3.imshow(metric_cube[2,:,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+            im3 = ax3.imshow(metric_cube[2,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
             ax3.set_xlabel("movement parameter")
             ax3.set_ylabel("annuli parameter")
             ax3.set_title("Avg SNR Under Mask: Weight = "+str(weights[2]))
@@ -779,7 +779,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
             cax = divider.append_axes('right', size='5%', pad=0.05)
             plt.colorbar(im3, cax=cax, orientation='vertical')
 
-            im4 = ax4.imshow(metric_cube[3,:,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+            im4 = ax4.imshow(metric_cube[3,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
             ax4.set_xlabel("movement parameter")
             ax4.set_ylabel("annuli parameter")
             ax4.set_title("Avg SNR Neighbor Quality: Weight = "+str(weights[3]))
@@ -788,7 +788,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
             plt.colorbar(im4, cax=cax, orientation='vertical')
 
             
-            im5 = ax5.imshow(metric_cube[4,:,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+            im5 = ax5.imshow(metric_cube[4,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
             ax5.set_xlabel("movement parameter")
             ax5.set_ylabel("annuli parameter")
             ax5.set_title("Stdev Across KL: Weight = "+str(weights[4]))
@@ -796,7 +796,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
             cax = divider.append_axes('right', size='5%', pad=0.05)
             plt.colorbar(im5, cax=cax, orientation='vertical')
 
-            im6 = ax6.imshow(metric_cube[5,:,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+            im6 = ax6.imshow(metric_cube[5,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
             ax6.set_xlabel("movement parameter")
             ax6.set_ylabel("annuli parameter")
             ax6.set_title("Stdev Neighbor Quality: Weight = "+str(weights[5]))
@@ -804,7 +804,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
             cax = divider.append_axes('right', size='5%', pad=0.05)
             plt.colorbar(im6, cax=cax, orientation='vertical')
 
-            im7 = ax7.imshow(metric_cube[6,:,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+            im7 = ax7.imshow(metric_cube[6,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
             ax7.set_xlabel("movement parameter")
             ax7.set_ylabel("annuli parameter")
             ax7.set_title("Spurious Pixels: Weight = "+str(weights[6]))
@@ -813,7 +813,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
             plt.colorbar(im7, cax=cax, orientation='vertical')
 
 
-            im8 = ax8.imshow(metric_cube[7,:,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+            im8 = ax8.imshow(metric_cube[7,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
             ax8.set_xlabel("movement parameter")
             ax8.set_ylabel("annuli parameter")
             ax8.set_title("Contrast: Weight = "+str(weights[7]))

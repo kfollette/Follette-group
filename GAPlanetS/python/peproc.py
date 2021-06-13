@@ -240,7 +240,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 	print(plwritename, writestr)
 	#EXTRACT KL MODES OR COLLAPSE
 	print("EXTRACTING ONLY KL MODES SPECIFIED")
-	kltrim, writename = trimkl(outdir+plwritename, kllist, pedir=pedir, outdir=outdir)
+	kltrim, writename = trimkl(plwritename, kllist, pedir=outdir, outdir=outdir)
 	print(writename)
 
 	if writestr==False:

@@ -586,7 +586,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
         head = fits.getheader(pedir+flist[i])
         file = fits.getdata(pedir+flist[i])
         nplanets = file.shape[3]
-        print(file, nplanets)
+        print(file.shape, nplanets)
 
         #if header keyword set, pull other KLIP values from header
         if header == True:
@@ -629,10 +629,11 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
         d["pe{0}dset".format(i+1)] = dsetname
         writename = d["pe{0}pfx".format(i+1)]+xstr
 
+        print(pename)
+
         ## extract best parameters according to weights and methods
-        metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = find_best_new(pename, kllist, pedir=outdir, outdir=outdir, 
-            writestr=writename, weights=wts, snrmeth=snrmeth, smt=smt, snrthresh=snrthresh, separate_planets=separate_planets,
-            separate_kls=separate_kls)
+        metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = find_best_new(pename, kllist, pedir=outdir, outdir=outdir, \
+            writestr=writename, weights=wts, snrmeth=snrmeth, smt=smt, snrthresh=snrthresh, separate_planets=separate_planets, separate_kls=separate_kls)
 
         d["pe{0}ann".format(i+1)]=ann_val
         d["pe{0}movm".format(i+1)]=movm_val

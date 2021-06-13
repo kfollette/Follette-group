@@ -28,7 +28,7 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 
 	OPTIONAL INPUTS
 	pedir:  	directory holding parameter explorer file
-	writestr: 	filename prefix for saved file (suffix is _planetcollapse). 
+	writestr: 	filename prefix for saved file  
 				If not specified, preserves name of parameter explorer
 	snrthresh:	SNR threshhold for peak pixel under mask. All lower values will be masked.
  
@@ -252,12 +252,12 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 		print("COLLAPSING IN PLANET DIMENSION")
 	else:
 		print("EXTRACTING PLANETS SEPARATELY")
-	print(pename)
-	pecube, writename, npldim = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, writestr=writestr, separate_planets=separate_planets)
-	print(writename)
+	print(pename, writestr)
+	pecube, plwritename, npldim = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, writestr=writestr, separate_planets=separate_planets)
+	print(pecube, plwritename, writestr)
 	#EXTRACT KL MODES OR COLLAPSE
 	print("EXTRACTING ONLY KL MODES SPECIFIED")
-	kltrim, writename = trimkl(writename, kllist, pedir=pedir, outdir=outdir,writestr=writestr)
+	kltrim, writename = trimkl(plwritename, kllist, pedir=pedir, outdir=outdir)
 	print(writename)
 
 	if writestr==False:

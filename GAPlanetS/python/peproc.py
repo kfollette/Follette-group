@@ -698,7 +698,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
                         #fits.writeto('test'+str(i)+'.fits', dataset.output, overwrite=True)
 
                     #pull output image 
-                    klim = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outdir, pre=prefix+strklip))
+                    klim = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outdir, pre=prefix+strklip[kl][pl]))
                     print(klim.shape)
 
             #and store in dictionary

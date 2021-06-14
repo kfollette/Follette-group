@@ -707,9 +707,9 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
                     #and store in dictionary (overwrites at present until end of loop - needs work)
                     d["pe{0}strklip".format(i+1)]=strklip
                     if runmode=='Cont':
-                        d["pe{0}contklipim".format(i+1)]=kl_cube
+                        d["pe{0}contklipim".format(i+1)]=klcube
                     if runmode=='Line':
-                        d["pe{0}haklipim".format(i+1)]=kl_cube
+                        d["pe{0}haklipim".format(i+1)]=klcube
     return(d)
 
 def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=False, weights=[1,1,1,1,1,1,1,1], snrmeth='all', smt=3):

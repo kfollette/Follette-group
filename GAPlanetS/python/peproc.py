@@ -102,6 +102,7 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 	if separate==True: 
 		writename = writestr+'_pl'
 		for i in np.arange(dims[-1]):
+			pdb.set_trace()
 			fits.writeto(outdir+writename+str(i+1)+'.fits', pecube[:,:,i,:,:,:], pehead, overwrite=True)
 	
 	#collapses planet dimension

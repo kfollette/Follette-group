@@ -101,7 +101,7 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
 	#separates planets
 	if separate==True: 
 		writename = writestr+'_pl'
-		for i in np.arange(dims[0]):
+		for i in np.arange(dims[2]):
 			fits.writeto(outdir+writename+str(i+1)+'.fits', pecube[:,:,i,:,:,:], pehead, overwrite=True)
 	
 	#collapses planet dimension

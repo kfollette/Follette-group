@@ -13,7 +13,7 @@ import matplotlib.patches as patches
 import glob
 import pyklip.klip as klip
 import pyklip.instruments.MagAO as MagAO
-import pyklip.paralslelized as parallelized
+import pyklip.parallelized as parallelized
 import SNRMap_new as snr
 import os
 import pdb
@@ -26,7 +26,7 @@ class CollapsedPE():
     Collapse the parameter explorer
     """
 
-    def __init__(self, pename, pedir='./', outdir='./', writestr=False, snrthresh=False, oldpe=False, separate_planets=False, iwa = 0)
+    def __init__(self, pename, pedir='./', outdir='./', writestr=False, snrthresh=False, oldpe=False, separate_planets=False, iwa = 0):
         """
         Averages over the planet dimension of a parameter explorer file
 
@@ -39,6 +39,7 @@ class CollapsedPE():
         Returns:
             pecube:     parameter explorer matrix with planet dimension collapsed to 1
             writename:  name of output file
+
         """
 
         self.pename = pename
@@ -47,38 +48,37 @@ class CollapsedPE():
         self.writestr = writestr
         self.snrthresh = snrthresh
         self.oldpe = oldpe
-        self.separate_planets = separate_planets
+        #self.separate_planets = separate_planets
         self.iwa = iwa
 
-         if writestr == False:
-        #use the parameter explorer name for this file as well, minus the '_highpass_klmodes-all.fits'
-            writestr = pename[:-17]
 
-        # read in image and header
-        pecube = fits.getdata(pedir + pename)
-        pehead = fits.getheader(pedir + pename)
+    def collapse_all(self):
+        """
+        Collapses PE's across all KL modes and Planets
+        """
+
+        if self.writestr == False:
+        # Use the parameter explorer name for this minus the '.fits'
+            writestr = self.pename[:-5]
+
+        # Read in image and header
+        pecube = fits.getdata(self.pedir + self.pename)
+        pehead = fits.getheader(self.pedir + self.pename)
         dims = pecube.shape
         nplanets=dims[3]
-        pehead["NPLANET"]=nplanets
-        pehead["PLSEP"]=separate_planets
+        pehead["NPLANET"] = nplanets
+        pehead["PLSEP"]= separate_planets
 
-        #if snrthresh set, find values where peak pixel SNRs (slices 1/2) are below threshhold and replace with nans
-        if (snrthresh != False):
-            #stdev maps
-            ind = np.where(pecube[0,:,:,:,:,:]<snrthresh)
-            lowsnr_mask=np.ones(dims[1:])
-            lowsnr_mask[ind]=np.nan
-            #apply to peak (sl 0) and avg under mask (sl 2)
+        # If snrthresh set, find values where peak pixel SNRs (slices 1/2) are below threshhold and replace with nans
+        if (self.snrthresh is not False):
+            ind = np.where(pecube[0,:,:,:,:,:] < self.nrthresh)
+            lowsnr_mask = np.ones(dims[1:])
+            lowsnr_mask[ind] = np.nan
+
+            # Apply to peak (slice 0) and avg under mask (slice 2)
             for sl in [0,2]:
                 pecube[sl,:,:,:,:]*=lowsnr_mask
             
-            #absmed maps
-            ind_absmed = np.where(pecube[1,:,:,:,:,:]<snrthresh)
-            lowsnr_mask_absmed=np.ones(dims[1:])
-            lowsnr_mask_absmed[ind_absmed]=np.nan
-            #apply to peak (sl 1) and avg under mask (sl 3)
-            for sl in [1,3]:
-                pecube[sl,:,:,:,:]*=lowsnr_mask_absmed
 
         
         #sort of a sloppy fix to make sure spurious pixel metric is NaN where no refims

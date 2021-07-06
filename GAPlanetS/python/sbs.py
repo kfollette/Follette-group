@@ -241,7 +241,7 @@ class CollapsedPE():
         return gauss
 
 
-    def find_best_new(self, debug=False, smt=3):
+    def find_best_new(self, writestr, debug=False, smt=3):
         """
         Collapses parameter explorer file and extracts the optimal parameter value
 

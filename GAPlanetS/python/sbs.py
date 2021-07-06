@@ -216,7 +216,7 @@ class CollapsedPE():
         return klkeep, writename
 
 
-    def __filter_nan_gaussian_conserving(arr, sigma):
+    def __filter_nan_gaussian_conserving(self, arr, sigma):
         """Apply a gaussian filter to an array with nans.
 
         Intensity is only shifted between not-nan pixels and is hence conserved.

@@ -659,7 +659,7 @@ class CollapsedPE():
 
             #save visualization of the metrics for this PE explorer
             if self.savefig==True:
-                self.paramexplore_fig(self.pename, self.kllist, pedir=self.pedir, outdir= self.outdir, weights= self.wts, snrmeth= self.snrmeth, smt= self.smt)
+                self.paramexplore_fig(smt= 3)
         
             #define image input direcotries for KLIP based on PE filename
             haindir=d["pe{0}fpath".format(i+1)]+'dq_cuts/'+'Line_'+d["pe{0}cut".format(i+1)]+'_sliced/'

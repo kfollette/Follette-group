@@ -727,10 +727,9 @@ class CollapsedPE():
                             d["pe{0}haklipim".format(i+1)]=klcube
         return d
 
-    def paramexplore_fig(self):
+    def paramexplore_fig(self, smt=3):
     
-        metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = self.find_best_new(self.pename, self.kllist, pedir=self.pedir, 
-            outdir=self.outdir, writestr=self.writestr, weights=self.weights, snrmeth=self.snrmeth, smt=self.smt)
+        metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = self.find_best_new(smt=smt)
 
         if self.writestr == False:
             writestr = self.pename[:-17]
@@ -1081,7 +1080,7 @@ class CollapsedPE():
                 plt.savefig(outdir+save+'_kl'+str(k)+d["pestring"])
         return()
 
-    def save_pe_dict(d, dwritename, doutdir='./dicts/'):
+    def save_pe_dict(self, d, dwritename, doutdir='./dicts/'):
         if not os.path.exists(doutdir):
-            os.makedirs(outdir)
+            os.makedirs(self.outdir)
         pickle.dump(d,open(doutdir+dwritename+".p","wb"))

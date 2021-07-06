@@ -513,7 +513,7 @@ class CollapsedPE():
         return metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname
 
 
-    def collapse_pes(self):
+    def collapse_pes(self, smt = 3):
         """
         Collapses ALL parameter explorer files in a given directory according to the specified combination of KL modes,
         metric weights, and SNR computation method and runs the corresponding KLIP reductions for that set of parameters
@@ -650,7 +650,7 @@ class CollapsedPE():
 
             ## extract best parameters according to weights and methods
             metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = self.find_best_new(self.pename, self.kllist, pedir=self.pedir, outdir=self.outdir, \
-                writestr=writename, weights=self.wts, snrmeth=self.snrmeth, smt=self.smt, snrthresh=self.snrthresh, separate_planets=self.separate_planets, separate_kls=self.separate_kls)
+                writestr=writename, weights=self.wts, snrmeth=self.snrmeth, smt=smt, snrthresh=self.snrthresh, separate_planets=self.separate_planets, separate_kls=self.separate_kls)
 
             d["pe{0}ann".format(i+1)]=ann_val
             d["pe{0}movm".format(i+1)]=movm_val

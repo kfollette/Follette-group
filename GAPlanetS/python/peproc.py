@@ -11,7 +11,7 @@ import matplotlib.patches as patches
 import glob
 import pyklip.klip as klip
 import pyklip.instruments.MagAO as MagAO
-import pyklip.parallelized as parallelized
+import pyklip.paralslelized as parallelized
 import SNRMap_new as snr
 import os
 import pdb
@@ -685,7 +685,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
                         print("This file already exists. I am NOT re-running KLIP, but just reading the existing image in. Check and make sure you weren't intending to change the name")
                     #otherwise, run KLIP
                     else:
-                        
+                        pdb.set_trace()
                         dataset = MagAO.MagAOData(filelist) 
                         dataset.IWA=iwa
                         dataset.OWA=float(owa[i])

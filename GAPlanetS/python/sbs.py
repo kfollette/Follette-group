@@ -66,7 +66,7 @@ class CollapsedPE():
         self.kllist = kllist
         self.datadir = datadir
         self.snrmeth = snrmeth
-        
+
 
 
 
@@ -210,7 +210,7 @@ class CollapsedPE():
         # update header to reflect KL modes used
         head["KLMODES"] = str(self.kllist)
 
-        fits.writeto(self.outdir + self.writename, klkeep, head, overwrite=True)
+        fits.writeto(self.outdir + writename, klkeep, head, overwrite=True)
 
         #return trimmed cubes
         return klkeep, writename
@@ -270,7 +270,7 @@ class CollapsedPE():
         kltrim, writename = self.trimkl(plwritename, self.kllist, pedir=self.outdir, outdir=self.outdir)
 
         if self.writestr == False:
-            writestr = self.writename[:-5]
+            writestr = writename[:-5]
 
         # If collapsing, make mean and stdev arrays
         if self.separate_kls == False:
@@ -650,7 +650,7 @@ class CollapsedPE():
 
             ## extract best parameters according to weights and methods
             metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = self.find_best_new(self.pename, self.kllist, pedir=self.pedir, outdir=self.outdir, \
-                writestr=self.writename, weights=self.wts, snrmeth=self.snrmeth, smt=self.smt, snrthresh=self.snrthresh, separate_planets=self.separate_planets, separate_kls=self.separate_kls)
+                writestr=writename, weights=self.wts, snrmeth=self.snrmeth, smt=self.smt, snrthresh=self.snrthresh, separate_planets=self.separate_planets, separate_kls=self.separate_kls)
 
             d["pe{0}ann".format(i+1)]=ann_val
             d["pe{0}movm".format(i+1)]=movm_val

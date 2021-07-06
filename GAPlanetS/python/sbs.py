@@ -862,3 +862,228 @@ class CollapsedPE():
                 plt.savefig(self.outdir+writestr+'_kl'+str(self.kllist[kl])+'_pl'+str(pl)+'_paramqual.png')
         
         return
+
+    
+    def make_klip_snrmaps(d, pedir='./', outdir='proc/', smooth=0.5, snrmeth='stdev', mode='Line', scale=1):
+        """
+        Generate SNR maps with specified parameters for all KLIP images in a directory
+
+        REQUIRED INPUTS:
+        d:      The dictionary storing the KLIPed images
+
+        OPTIONAL INPUTS:
+        outdir:     location to store output files
+        smooth:     gaussian FWHM with which to smooth the map
+        mode:       what type of image to pull and generate SNR maps for
+        snrmeth:    one of two ways of computing SNR - possibilities are stdev and absmed (for median absolute value),
+                    and 'all' to average the two
+        scale:      for SDI mode, how to scale the images
+
+        RETURNS:
+        d:      Ths input dictionary with SNR map images added
+
+        """
+
+        d["smooth"]=smooth
+
+        #figure out how many pes we have
+        flist = glob.glob(pedir+'paramexplore*KLmodes-all.fits')
+        flist = sorted(flist)
+        npes=len(flist)
+
+        #loop over the pes
+        for i in np.arange(npes):
+
+            #pull various naming strings
+            strklip=d["pe{0}strklip".format(i+1)]
+            prefix=d["pe{0}pfx".format(i+1)]
+            
+            #pull fwhm - needed for Mawet correction
+            head=fits.getheader(pedir+d["pe{0}name".format(i+1)])
+            fwhm = float(head["SNRFWHM"])
+            d["pe{0}fwhm".format(i+1)]=fwhm
+            
+            #pull the correct image(s) to create the map
+            if mode=='Line' or mode=='SDI':
+                haim = d["pe{0}haklipim".format(i+1)]
+                klipim = haim
+                writeprefix = prefix.replace('Cont','Line')
+            if mode=='Cont' or mode=='SDI':
+                contim = d["pe{0}contklipim".format(i+1)]
+                klipim = contim
+                writeprefix=prefix
+
+            #make SDI image
+            if mode=='SDI':
+                klipim = haim - scale*contim
+                writeprefix = prefix.replace('Cont','SDI')
+                
+            #name and make SNR Map
+            outname = outdir+writeprefix+strklip + '_sm'+str(smooth)+'_'+mode+'SNRMap_'+snrmeth+'.fits'
+
+            #check whether file already exists
+            if os.path.exists(outname):
+                print("This file already exists. I am NOT re-running SNRMap, but just reading the existing image in. Check and make sure you weren't intending to change the name")
+                Output = fits.getdata(outname)
+            else:   
+                Output = snr.create_map(klipim, fwhm, smooth=smooth, saveOutput=True, outputName=outname[:-5], checkmask=False, method=snrmeth)
+            
+            #store maps
+            if mode=='Line':
+                d["pe{0}hasnrmap".format(i+1)]=Output
+            if mode=='Cont':
+                d["pe{0}contsnrmap".format(i+1)]=Output
+            if mode=='SDI':
+                d["pe{0}sdisnrmap".format(i+1)]=Output
+                
+        return(d)
+
+    def compare_pes(d, pedir='./', outdir='klipims/', nrows=False, ncols=False, save=None, title=None):
+    
+        """
+        Generates an image with a grid of collapsed PE aggregate metric score maps for all PEs in a dictionary.
+
+        REQUIRED INPUTS
+        d:      The dictionary storing the PE info
+
+        """
+
+        #how many PEs are there?
+        flist = glob.glob(pedir+'paramexplore*KLmodes-all.fits')
+        npes=len(flist)
+        
+        #make string lists of relevant dictionary keys
+        imlist = ["pe{0}agg".format(i+1) for i in np.arange(npes)]
+        annlist = ["pe{0}ann".format(i+1) for i in np.arange(npes)]
+        movmlist = ["pe{0}movm".format(i+1) for i in np.arange(npes)]
+        namelist = ["pe{0}dset".format(i+1) for i in np.arange(npes)]
+
+        #if grid rows and columns not specified, set 3 columns and enough rows to fit
+        if nrows == False:
+            ncols=3
+            nrows = int(np.ceil(npes/ncols))
+        
+        #fix for indexing error when don't give it enough spots
+        if npes>ncols*nrows:
+            print('Not enough spots for number of pes. Increase ncols or nrows.')
+
+        #size figure according to how many rows and columns there are
+        figsz=(ncols*4, nrows*5)
+
+        #set up plot
+        f, ax = plt.subplots(nrows, ncols, figsize=figsz)
+        ax = ax.ravel()
+
+        #add master title for the grid
+        if title != None:
+            f.suptitle(title, size=20)
+        
+        #loop over all of the images
+        for i in np.arange(len(imlist)):
+
+            #pull the aggregate PE metric map
+            im = ax[i].imshow(d[imlist[i]], origin='lower', vmin=1, vmax=np.nanmax(d[imlist[i]]))
+            ax[i].set_ylabel("annuli parameter")
+            ax[i].set_xlabel("movement parameter")
+
+            #add colorbar
+            divider = make_axes_locatable(ax[i])
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            plt.colorbar(im, cax=cax, orientation='vertical', label="Parameter Quality Metric")
+            
+            #find and mark the peak location
+            ind = np.where(d[imlist[i]] == np.nanmax(d[imlist[i]]))
+            label_text = 'a' + str(d[annlist[i]]) + 'm' + str(d[movmlist[i]])
+            rect = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
+            ax[i].add_patch(rect)
+            ax[i].text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
+
+            #label subplot with dataset title
+            ax[i].set_title("\n".join(textwrap.wrap(d[namelist[i]], 30)))
+
+        plt.tight_layout()
+        if save != None:
+            plt.savefig(outdir+save+d["pestring"])
+        return()
+
+    def compare_ims(d, pedir='./', kllist=[5,10,20,50], outdir='klipims/', mode='Line', nrows=False, ncols=False, save=None, title=None, boxsz=50):
+        """
+        Generates an image with a grid of collapsed PE aggregate metric score maps for all PEs in a dictionary.
+
+        REQUIRED INPUTS
+        d:      The dictionary storing the PE info
+
+        OPTIONAL INPUTS:
+        boxsz:  radius of box around image center to show
+
+        """
+
+        flist = glob.glob(pedir+'paramexplore*KLmodes-all.fits')
+        npes=len(flist)
+
+        #same as compare_pes, but generates grid of snrmaps
+        if mode=='SDI':
+            snmaplist = ["pe{0}sdisnrmap".format(i+1) for i in np.arange(npes)]
+        if mode=='Line':
+            snmaplist = ["pe{0}hasnrmap".format(i+1) for i in np.arange(npes)]
+        if mode=='Cont':
+            snmaplist = ["pe{0}contsnrmap".format(i+1) for i in np.arange(npes)]
+        
+        namelist = ["pe{0}dset".format(i+1) for i in np.arange(npes)]
+
+        #if grid rows and columns not specified, set 3 columns and enough rows to fit
+        if nrows == False:
+            ncols=3
+            nrows = int(np.ceil(npes/ncols))
+
+            #fix for indexing error when don't give it enough spots
+        if npes>ncols*nrows:
+            print('Not enough spots for number of pes. Increase ncols or nrows.')
+
+        #loop over KL modes
+        for k in kllist:
+
+            #size figure according to how many rows and columns there are
+            figsz=(ncols*4, nrows*5)
+        
+            #set up plot
+            f, ax = plt.subplots(nrows, ncols, figsize=figsz)
+            ax = ax.ravel()
+
+            #add master title for the grid
+            if title != None:
+                f.suptitle(title + ' - KL ' + str(k), size=20)
+
+            #loop over all of the images   
+            for i in np.arange(len(snmaplist)):
+
+                klind = [i for i in range(len(kllist)) if kllist[i] == k]
+                print(k, 'kl modes is index', klind)
+
+                #figure out where the image center is
+                dims = d[snmaplist[i]][0,0,:,:].shape
+                cen = int((dims[0]-1)/2.)
+
+                #pull the region around the image center for plotting
+                im = ax[i].imshow(d[snmaplist[i]][0,klind[0],cen-boxsz:cen+boxsz,cen-boxsz:cen+boxsz], cmap='magma',
+                                origin='lower', vmin=-2, vmax=5)
+                ax[i].set_ylabel("")
+                ax[i].set_xlabel("")
+
+                #add colorbar
+                divider = make_axes_locatable(ax[i])
+                cax = divider.append_axes('right', size='5%', pad=0.05)
+                plt.colorbar(im, cax=cax, orientation='vertical', label="SNR")
+                
+                #label subplot with dataset title
+                ax[i].set_title("\n".join(textwrap.wrap(d[namelist[i]], 30)))
+
+            plt.tight_layout()
+            if save != None:
+                plt.savefig(outdir+save+'_kl'+str(k)+d["pestring"])
+        return()
+
+    def save_pe_dict(d, dwritename, doutdir='./dicts/'):
+        if not os.path.exists(doutdir):
+            os.makedirs(outdir)
+        pickle.dump(d,open(doutdir+dwritename+".p","wb"))

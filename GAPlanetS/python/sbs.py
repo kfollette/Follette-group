@@ -62,6 +62,7 @@ class CollapsedPE():
         self.separate_kls = separate_kls
         self.owa = owa
         self.header = header
+        self.kllist = kllist
 
 
 

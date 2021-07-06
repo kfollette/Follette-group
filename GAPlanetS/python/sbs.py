@@ -26,8 +26,8 @@ class CollapsedPE():
     Collapse the parameter explorer
     """
 
-    def __init__(self, pename, pedir='./', outdir='./',  kllist = [5,10,20,50], datadir = './', writestr=False, snrthresh=False, oldpe=False, separate_planets=False, iwa = 0,  wts = [1,1,1,1,1,1,1,1],
-     hpval = 5, header = True, mode = 'Line', xname = '',  collmode = None, separate_kls = False, owa = None, savefig = True, snrmeth = 'stdev', calflux = False):
+    def __init__(self, pename, pedir='./', outdir='./',  kllist = [5,10,20,50],  calflux = False, datadir = './', writestr=False, snrthresh=False, oldpe=False, separate_planets=False, iwa = 0,  wts = [1,1,1,1,1,1,1,1],
+     hpval = 5, header = True, mode = 'Line', xname = '',  collmode = None, separate_kls = False, owa = None, savefig = True, snrmeth = 'stdev'):
         
         """
         Averages over the planet dimension of a parameter explorer file
@@ -279,7 +279,7 @@ class CollapsedPE():
             kltrim= np.mean(kltrim, axis=2, keepdims=True)
 
             #grab header
-            head = fits.getheader(outdir+writename)
+            head = fits.getheader(self.outdir+writename)
             head["KLCOLL"]='True'
 
             # write arrays

@@ -264,10 +264,10 @@ class CollapsedPE():
 
         #EXTRACT PLANETS OR COLLAPSE
 
-        pecube, plwritename, npldim = self.collapse_planets(self.pename, pedir=self.pedir, outdir=self.outdir, snrthresh=self.snrthresh, oldpe=self.oldpe, writestr=self.writestr, separate_planets=self.separate_planets)
+        pecube, plwritename, npldim = self.collapse_planets()
 
         #EXTRACT KL MODES OR COLLAPSE
-        kltrim, writename = self.trimkl(plwritename, self.kllist, pedir=self.outdir, outdir=self.outdir)
+        kltrim, writename = self.trimkl(plwritename)
 
         if self.writestr == False:
             writestr = writename[:-5]
@@ -649,8 +649,7 @@ class CollapsedPE():
             print(pename)
 
             ## extract best parameters according to weights and methods
-            metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = self.find_best_new(self.pename, self.kllist, pedir=self.pedir, outdir=self.outdir, \
-            writestr=writename, weights=self.wts, snrmeth=self.snrmeth, smt=smt, snrthresh=self.snrthresh, separate_planets=self.separate_planets, separate_kls=self.separate_kls)
+            metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = self.find_best_new(writestr=writename, smt=smt)
             d["pe{0}ann".format(i+1)]=ann_val
             d["pe{0}movm".format(i+1)]=movm_val
             d["pe{0}agg".format(i+1)]=agg_cube

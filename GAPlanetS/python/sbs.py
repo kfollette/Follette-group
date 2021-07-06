@@ -49,6 +49,7 @@ class CollapsedPE():
         self.outdir = outdir
         self.writestr = writestr
         self.snrthresh = snrthresh
+        self.calflux = calflux
         self.oldpe = oldpe
         self.separate_planets = separate_planets
         self.iwa = iwa
@@ -65,7 +66,7 @@ class CollapsedPE():
         self.kllist = kllist
         self.datadir = datadir
         self.snrmeth = snrmeth
-        self.calflux = calflux
+        
 
 
 
@@ -579,6 +580,7 @@ class CollapsedPE():
             collmode = np.repeat(self.collmode, npes)
         if not isinstance(self.owa, list):
             owa=np.repeat(self.owa, npes)
+     
         if not isinstance(self.calflux, list):
             calflux=np.repeat(self.calflux,npes)
 

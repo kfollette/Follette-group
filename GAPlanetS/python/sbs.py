@@ -63,6 +63,7 @@ class CollapsedPE():
         self.owa = owa
         self.header = header
         self.kllist = kllist
+        self.datadir = datadir
 
 
 
@@ -540,8 +541,7 @@ class CollapsedPE():
 
 
         #set up file name
-        klliststr=str(self.kllist).replace(',','_')[1:-1]
-        klliststr=klliststr.replace(" ","")
+        klliststr="_".join([str(n) for n in self.kllist])
         wtstr = re.sub(r'\W+', '', str(self.wts))
         xstr = '_'+wtstr+'_'+ self.snrmeth+'_'+klliststr+ self.xname
 

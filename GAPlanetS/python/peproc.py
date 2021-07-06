@@ -11,7 +11,7 @@ import matplotlib.patches as patches
 import glob
 import pyklip.klip as klip
 import pyklip.instruments.MagAO as MagAO
-import pyklip.paralslelized as parallelized
+import pyklip.parallelized as parallelized
 import SNRMap_new as snr
 import os
 import pdb

@@ -27,7 +27,7 @@ class CollapsedPE():
     """
 
     def __init__(self, pename, pedir='./', outdir='./',  kllist = [5,10,20,50], datadir = './', writestr=False, snrthresh=False, oldpe=False, separate_planets=False, iwa = 0,  wts = [1,1,1,1,1,1,1,1],
-     hpval = 5, header = True, mode = 'Line', xname = '',  collmode = None, separate_kls = False, owa = None, savefig = True):
+     hpval = 5, header = True, mode = 'Line', xname = '',  collmode = None, separate_kls = False, owa = None, savefig = True, snrmeth = 'stdev'):
         
         """
         Averages over the planet dimension of a parameter explorer file
@@ -64,6 +64,7 @@ class CollapsedPE():
         self.header = header
         self.kllist = kllist
         self.datadir = datadir
+        self.snrmeth = snrmeth
 
 
 
@@ -538,8 +539,6 @@ class CollapsedPE():
 
 
         """
-
-
         #set up file name
         klliststr="_".join([str(n) for n in self.kllist])
         wtstr = re.sub(r'\W+', '', str(self.wts))

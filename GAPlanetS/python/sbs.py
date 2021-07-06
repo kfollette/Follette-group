@@ -729,7 +729,7 @@ class CollapsedPE():
 
     def paramexplore_fig(self, smt=3):
     
-        metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = self.find_best_new(smt=smt)
+        metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = self.find_best_new(writestr = self.writestr, smt=smt)
 
         if self.writestr == False:
             writestr = self.pename[:-17]

@@ -649,7 +649,7 @@ class CollapsedPE():
             print(pename)
 
             ## extract best parameters according to weights and methods
-            metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = self.find_best_new(self.pename, self.kllist, pedir=self.pedir, outdir=self.outdir, \
+            metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = self.find_best_new(self.pename, self.kllist, outdir=self.outdir, \
                 writestr=writename, weights=self.wts, snrmeth=self.snrmeth, smt=smt, snrthresh=self.snrthresh, separate_planets=self.separate_planets, separate_kls=self.separate_kls)
 
             d["pe{0}ann".format(i+1)]=ann_val

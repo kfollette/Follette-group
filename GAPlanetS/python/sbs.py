@@ -157,7 +157,7 @@ class CollapsedPE():
         return pecube, writename, npldim
 
 
-    def trimkl(self):
+    def trimkl(self, pename):
         """
         Reads in a parameter explorer file and collapses it in the KLmode dimension (axis 3)
 
@@ -267,7 +267,7 @@ class CollapsedPE():
         pecube, plwritename, npldim = self.collapse_planets()
 
         #EXTRACT KL MODES OR COLLAPSE
-        kltrim, writename = self.trimkl(plwritename)
+        kltrim, writename = self.trimkl(pename = plwritename)
 
         if self.writestr == False:
             writestr = writename[:-5]

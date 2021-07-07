@@ -853,7 +853,7 @@ class CollapsedPE():
                 ax9.add_patch(rect)
                 ax9.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
 
-                plt.suptitle(writestr)
+                plt.suptitle(self.writestr)
                 gs.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
 
                 plt.savefig(self.outdir+self.writestr+'_kl'+str(self.kllist[kl])+'_pl'+str(pl)+'_paramqual.png')

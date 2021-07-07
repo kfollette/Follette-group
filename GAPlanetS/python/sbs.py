@@ -732,7 +732,7 @@ class CollapsedPE():
         metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = self.find_best_new(writestr = self.writestr, smt=smt)
 
         if self.writestr == False:
-            writestr = self.pename[:-17]
+            self.writestr = self.pename[:-17]
 
         namelist = self.pename.split('_')
         params = [s for s in namelist if s[0] == 'a']
@@ -856,7 +856,7 @@ class CollapsedPE():
                 plt.suptitle(writestr)
                 gs.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
 
-                plt.savefig(self.outdir+writestr+'_kl'+str(self.kllist[kl])+'_pl'+str(pl)+'_paramqual.png')
+                plt.savefig(self.outdir+self.writestr+'_kl'+str(self.kllist[kl])+'_pl'+str(pl)+'_paramqual.png')
         
         return
 

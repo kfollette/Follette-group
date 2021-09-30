@@ -206,7 +206,7 @@ def filter_nan_gaussian_conserving(arr, sigma):
     return gauss
 
 def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1,1,1,1], outdir='proc/', snrthresh=False,
-    oldpe=False, debug=False, smt=3, snrmeth='all',separate_planets=False, separate_kls=False):
+    oldpe=False, debug=False, smt=3, snrmeth='all',separate_planets=False, separate_kls=False, verbose=False):
     """
     collapses parameter explorer file and extracts the optimal parameter value
 
@@ -229,15 +229,18 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
     """
 
     #EXTRACT PLANETS OR COLLAPSE
-    if separate_planets==False:
-        print("COLLAPSING IN PLANET DIMENSION")
-    else:
-        print("EXTRACTING PLANETS SEPARATELY")
+
+    if verbose==True:
+        if separate_planets==False:
+            print("COLLAPSING IN PLANET DIMENSION")
+        else:
+            print("EXTRACTING PLANETS SEPARATELY")
 
     pecube, plwritename, npldim = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, writestr=writestr, separate_planets=separate_planets)
 
     #EXTRACT KL MODES OR COLLAPSE
-    print("EXTRACTING ONLY KL MODES SPECIFIED")
+    if verbose==True:
+        print("EXTRACTING ONLY KL MODES SPECIFIED")
     kltrim, writename = trimkl(plwritename, kllist, pedir=outdir, outdir=outdir)
 
     if writestr==False:
@@ -245,12 +248,13 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
     # if collapsing, make mean and stdev arrays
     if separate_kls==False:
-        print("COLLAPSING IN KL DIMENSION")
+        if verbose==True:
+            print("COLLAPSING IN KL DIMENSION")
         stdevkl = np.std(kltrim, axis=2, keepdims=True)
         #sumkl = np.sum(kltrim, axis=2, keepdims=True)
         #overwrite kltrim with average
         kltrim= np.mean(kltrim, axis=2, keepdims=True)
-        print(stdevkl.shape)
+        #print(stdevkl.shape)
 
         #grab header
         head = fits.getheader(outdir+writename)
@@ -271,7 +275,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
     dims = kltrim.shape
 
     #extract the appropriate slices
-    print("EXTRACTING", snrmeth, "SNR SLICES FROM PE CUBE")
+    if verbose==True:
+        print("EXTRACTING", snrmeth, "SNR SLICES FROM PE CUBE")
     if snrmeth != 'all':
         #for single method cubes, slices are SNR peak, avg SNR, total >thresh pixels, >thresh pixels inside CR
         kltrim_snr=kltrim[slice::2,:,:,:,:,:]
@@ -301,8 +306,9 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
         klloop = 1
         kllist=[kllist]
         stdev_valid=True
-    else: 
-        print("EXTRACTING SLICES FOR KL MODES", kllist, 'SEPARATELY')
+    else:
+        if verbose==True: 
+            print("EXTRACTING SLICES FOR KL MODES", kllist, 'SEPARATELY')
         klloop = len(kllist)
         stdev_valid=False
 
@@ -473,7 +479,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
                 plno = 'all'
             else:
                 plno = p+1
-            print('peak for planet =', plno, 'klmode = ', kllist[k], 'is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val[k][p], ' and movement', movm_val[k][p])
+            if verbose==True:
+                print('peak for planet =', plno, 'klmode = ', kllist[k], 'is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val[k][p], ' and movement', movm_val[k][p])
             #print('SNR value for fake planets (avg of SNR methods and planets) is', avgSNR)
             #print('metric scores for (snr peak, snr peak neigbors, snr umask, snr umask neighbors, stdev, stdev neighbors, spurious pix, contrast, agg) are:', metric_scores)
 

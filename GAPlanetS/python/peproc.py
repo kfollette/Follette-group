@@ -19,7 +19,7 @@ import pickle
 import textwrap
 
 
-def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, writefiles==True, snrthresh=False, oldpe=False, separate_planets=False):
+def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, writefiles=True, snrthresh=False, oldpe=False, separate_planets=False):
     """
     Averages over the planet dimension of a parameter explorer file
 

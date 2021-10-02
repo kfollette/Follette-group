@@ -490,7 +490,9 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
         fits.writeto(outdir+writename[:-5]+'_paramqual_fullcube.fits', qual_cube, overwrite=True)
 
     metric_fname = writename[:-5]+'_paramqual_metrics.fits'
-    fits.writeto(outdir+metric_fname, metric_cube, overwrite=True)
+
+    if writename != False
+        fits.writeto(outdir+metric_fname, metric_cube, overwrite=True)
     
     return metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname
 

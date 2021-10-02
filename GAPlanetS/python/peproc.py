@@ -116,9 +116,9 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, writefi
     if writefiles==True:
         fits.writeto(outdir+writename, pecube, pehead, overwrite=True)
 
-    return (pecube, writename, npldim)
+    return (pecube, pehead, writename, npldim)
 
-def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
+def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False, hdr=False, writename=False, writefiles=True):
     """
     Reads in a parameter explorer file and collapses it in the KLmode dimension (axis 3)
 
@@ -135,14 +135,22 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
 
     """
 
-    if writestr == False:
-        writestr = pename[:-5]
+    #if provided string, read in file
+    if type(pename) is str:
+        if writestr == False:
+            writestr = pename[:-5]
 
-    writename=writestr + '_trimmedkls.fits'
+        writename=writestr + '_trimmedkls.fits'
 
-    # read in image and header
-    klcube_raw = fits.getdata(pedir + pename)
-    head = fits.getheader(pedir + pename)
+        # read in image and header
+        klcube_raw = fits.getdata(pedir + pename)
+        head = fits.getheader(pedir + pename)
+
+    #if provided array, carry over
+    else:
+        klcube_raw = pename
+        head = hdr
+        writename = writename + '_trimmedkls.fits'
 
     dims=list(klcube_raw.shape)
 
@@ -173,7 +181,8 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False):
     # update header to reflect KL modes used
     head["KLMODES"] = str(kllist)
 
-    fits.writeto(outdir+writename, klkeep, head, overwrite=True)
+    if writefiles==True:
+        fits.writeto(outdir+writename, klkeep, head, overwrite=True)
 
     #return trimmed cubes
     return (klkeep, writename)
@@ -236,12 +245,15 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
         else:
             print("EXTRACTING PLANETS SEPARATELY")
 
-    pecube, plwritename, npldim = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, writestr=writestr, writefiles=writefiles, separate_planets=separate_planets)
+    pecube, pehead, plwritename, npldim = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, writestr=writestr, writefiles=writefiles, separate_planets=separate_planets)
 
     #EXTRACT KL MODES OR COLLAPSE
     if verbose==True:
         print("EXTRACTING ONLY KL MODES SPECIFIED")
-    kltrim, writename = trimkl(plwritename, kllist, pedir=outdir, outdir=outdir)
+    if writefiles==True:
+        kltrim, writename = trimkl(plwritename, kllist, pedir=outdir, outdir=outdir)
+    else:
+        kltrim, writename = trimkl(pecube, kllist, pedir=outdir, outdir=outdir, hdr=pehead, writename=plwritename, writefiles=writefiles)
 
     if writestr==False:
         writestr=writename[:-5]

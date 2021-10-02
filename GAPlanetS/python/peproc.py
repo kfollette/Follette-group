@@ -19,7 +19,7 @@ import pickle
 import textwrap
 
 
-def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthresh=False, oldpe=False, separate_planets=False):
+def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, writefiles==True, snrthresh=False, oldpe=False, separate_planets=False):
     """
     Averages over the planet dimension of a parameter explorer file
 
@@ -113,8 +113,8 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, snrthre
         else:
             pecube=np.mean(pecube,axis=3, keepdims=True)
         npldim=1
-    
-    fits.writeto(outdir+writename, pecube, pehead, overwrite=True)
+    if writefiles==True:
+        fits.writeto(outdir+writename, pecube, pehead, overwrite=True)
 
     return (pecube, writename, npldim)
 
@@ -236,7 +236,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
         else:
             print("EXTRACTING PLANETS SEPARATELY")
 
-    pecube, plwritename, npldim = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, writestr=writestr, separate_planets=separate_planets)
+    pecube, plwritename, npldim = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, writestr=writestr, writefiles=writefiles, separate_planets=separate_planets)
 
     #EXTRACT KL MODES OR COLLAPSE
     if verbose==True:

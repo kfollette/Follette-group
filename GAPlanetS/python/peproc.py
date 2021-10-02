@@ -205,7 +205,7 @@ def filter_nan_gaussian_conserving(arr, sigma):
 
     return gauss
 
-def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1,1,1,1], outdir='proc/', snrthresh=False,
+def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, weights=[1,1,1,1,1,1,1,1], outdir='proc/', snrthresh=False,
     oldpe=False, debug=False, smt=3, snrmeth='all',separate_planets=False, separate_kls=False, verbose=False):
     """
     collapses parameter explorer file and extracts the optimal parameter value
@@ -491,7 +491,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, weights=[1,1,1,1,1
 
     metric_fname = writename[:-5]+'_paramqual_metrics.fits'
 
-    if writename != False:
+    if writefiles == True:
         fits.writeto(outdir+metric_fname, metric_cube, overwrite=True)
     
     return metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname

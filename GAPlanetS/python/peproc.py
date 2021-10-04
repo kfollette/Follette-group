@@ -185,7 +185,7 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False, hdr=False
         fits.writeto(outdir+writename, klkeep, head, overwrite=True)
 
     #return trimmed cubes
-    return (klkeep, writename)
+    return (klkeep, klkeephead,writename)
 
 
 def filter_nan_gaussian_conserving(arr, sigma):
@@ -251,9 +251,9 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
     if verbose==True:
         print("EXTRACTING ONLY KL MODES SPECIFIED")
     if writefiles==True:
-        kltrim, writename = trimkl(plwritename, kllist, pedir=outdir, outdir=outdir)
+        kltrim, head, writename = trimkl(plwritename, kllist, pedir=outdir, outdir=outdir)
     else:
-        kltrim, writename = trimkl(pecube, kllist, pedir=outdir, outdir=outdir, hdr=pehead, writename=plwritename, writefiles=writefiles)
+        kltrim, head, writename = trimkl(pecube, kllist, pedir=outdir, outdir=outdir, hdr=pehead, writename=plwritename, writefiles=writefiles)
 
     if writestr==False:
         writestr=writename[:-5]
@@ -261,7 +261,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
     # if collapsing, make mean and stdev arrays
     if separate_kls==False:
         if verbose==True:
-            print("COLLAPSING IN KL DIMENSION")
+        print("COLLAPSING IN KL DIMENSION")
         stdevkl = np.std(kltrim, axis=2, keepdims=True)
         #sumkl = np.sum(kltrim, axis=2, keepdims=True)
         #overwrite kltrim with average
@@ -269,7 +269,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
         #print(stdevkl.shape)
 
         #grab header
-        head = fits.getheader(outdir+writename)
+        #head = fits.getheader(outdir+writename)
         head["KLCOLL"]='True'
 
         # write arrays

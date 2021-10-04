@@ -370,19 +370,19 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             ycoord_umask = maxind_umask[1][0]
             #print("peak value for avg SNR under mask is at coordinates:", xcoord, ycoord)
 
-            #normalize the SNR (where high values = good) 
+            #normalize the SNR metric to range from 0 to 1
             #note - hard-coded for susections = 1
-            snr_norm = kltrim_snr[0,0,k,p,:,:] / np.nanmax(kltrim_snr[0,0,k,p,:,:])
-            snr_norm_umask = kltrim_snr[1,0,k,p,:,:] / np.nanmax(kltrim_snr[1,0,k,p,:,:])
+            snr_norm = (kltrim_snr[0,0,k,p,:,:]-npnanmin(kltrim_snr[0,0,k,p,:,:]) / np.nanmax(kltrim_snr[0,0,k,p,:,:])
+            snr_norm_umask = (kltrim_snr[1,0,k,p,:,:]-npnanmin(kltrim_snr[0,0,k,p,:,:]) / np.nanmax(kltrim_snr[1,0,k,p,:,:])
 
             if stdev_valid==True:
                 #normalize standard deviations across KL modes. Low values = good
                 # divide by SNR so is Stdev in SNR as fraction of SNR itself
                 stdev_norm_cube = stdevkl[0:2,0,k,p,:,:] / kltrim_snr[0:2,0,k,p,:,:]
                 #first slice is peak
-                stdev_norm = 1 - (stdev_norm_cube[0,:,:]/np.nanmax(stdev_norm_cube[0,:,:]))
+                stdev_norm = 1 - ((stdev_norm_cube[0,:,:]-np.nanmin(stdev_norm_cube[0,:,:]))/np.nanmax(stdev_norm_cube[0,:,:]))
                 #second slice is under mask
-                stdev_norm_umask = 1 - (stdev_norm_cube[1,:,:]/np.nanmax(stdev_norm_cube[1,:,:]))
+                stdev_norm_umask = 1 - ((stdev_norm_cube[1,:,:]-np.nanmin(stdev_norm_cube[1,:,:]))/np.nanmax(stdev_norm_cube[1,:,:]))
 
             #if extracting separately, fill these arrays with nans 
             else:
@@ -449,7 +449,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
 
             #spurious pixel metric = 1 if no spurious pixels and 0 if max number for this dataset
             if np.nanmax(spurpix)>0:
-                spurpix_norm = 1-spurpix/np.nanmax(spurpix)
+                spurpix_norm = 1-(spurpix-np.nanmin(spurpix))/np.nanmax(spurpix)
             else: #edge case - no spurious pixels in any image
                 spurpix_norm= 1+spurpix
              

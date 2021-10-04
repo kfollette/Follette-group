@@ -261,7 +261,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
     # if collapsing, make mean and stdev arrays
     if separate_kls==False:
         if verbose==True:
-        print("COLLAPSING IN KL DIMENSION")
+            print("COLLAPSING IN KL DIMENSION")
         stdevkl = np.std(kltrim, axis=2, keepdims=True)
         #sumkl = np.sum(kltrim, axis=2, keepdims=True)
         #overwrite kltrim with average

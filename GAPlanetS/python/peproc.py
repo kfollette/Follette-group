@@ -372,8 +372,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
 
             #normalize the SNR metric to range from 0 to 1
             #note - hard-coded for susections = 1
-            snr_norm = (kltrim_snr[0,0,k,p,:,:]-np.nanmin(kltrim_snr[0,0,k,p,:,:]) / np.nanmax(kltrim_snr[0,0,k,p,:,:])
-            snr_norm_umask = (kltrim_snr[1,0,k,p,:,:]-np.nanmin(kltrim_snr[1,0,k,p,:,:])) / np.nanmax(kltrim_snr[1,0,k,p,:,:])
+            snr_norm = (kltrim_snr[0,0,k,p,:,:]-np.nanmin(kltrim_snr[0,0,k,p,:,:]))/ np.nanmax(kltrim_snr[0,0,k,p,:,:]
+            snr_norm_umask = (kltrim_snr[1,0,k,p,:,:]-np.nanmin(kltrim_snr[1,0,k,p,:,:])) / np.nanmax(kltrim_snr[1,0,k,p,:,:]
 
             if stdev_valid==True:
                 #normalize standard deviations across KL modes. Low values = good

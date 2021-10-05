@@ -185,7 +185,7 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False, hdr=False
         fits.writeto(outdir+writename, klkeep, head, overwrite=True)
 
     #return trimmed cubes
-    return (klkeep, klkeephead,writename)
+    return (klkeep, head, writename)
 
 
 def filter_nan_gaussian_conserving(arr, sigma):

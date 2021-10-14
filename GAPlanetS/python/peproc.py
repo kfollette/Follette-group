@@ -464,6 +464,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
                 weights[5]=0
 
             #calculate an aggregate parameter quality metric by summing the individual metrics * their weights
+            agg=np.zeros((25,25))
             for metricind in np.arange(len(metriclist)):
                 #only sum if non-zero (otherwise nans will carry over)
                 if weights[metricind]>0:

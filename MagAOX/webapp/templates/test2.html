@@ -121,10 +121,11 @@
         Objects (Seperated by Commas)
         <input class="form-control" name="Objects" type="text" placeholder="ex. Vega, Sirius, ... HD43691" required>
       </div>
+    </form>
    <form method="POST" action="" enctype="multipart/form-data">
       <p><input type="file" name="file"></p>
     </form>
-<!--
+	<!--
       <div class="form-group">
         Start Time & Date In Military Time (YYYY-MM-DD HH:MM:SS)
         <input class="form-control" name="start_Date" type="text" placeholder="ex. 2020-07-19 22:00:00" required>
@@ -134,7 +135,8 @@
         End Time & Date In Military Time (YYYY-MM-DD HH:MM:SS)
         <input class="form-control" name="end_Date" type="text" placeholder="ex. 2020-07-20 6:00:00" required>
       </div>
--->
+	-->
+     <form action="/" method="POST">
       <div class="form-group">
         Date (YYYY-MM-DD)
         <input class="form-control" name="Date" type="date" required>
@@ -153,8 +155,10 @@
         Rotator Offset (0.00°-360.00°)
         <input class="form-control" name="Offset" type="number" step="0.01" min="0.00" max="360.00" value="0.00"
       </div>
-
+      
+     <div>
       <button type="submit" class="btn btn-primary" >Submit</button>
+     </div>
     </form>
   </h2>
 

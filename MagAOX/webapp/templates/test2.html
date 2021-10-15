@@ -116,12 +116,6 @@
   <h3>Please select all the data data you want generated. The web tool will always generate the catalog entry. </h3>
 
   <h2>
-    <form action="/" method="POST"> <!-- changing "action="/initial"" to "action="/"" -->
-      <div class="form-group">
-        Objects (Seperated by Commas)
-        <input class="form-control" name="Objects" type="text" placeholder="ex. Vega, Sirius, ... HD43691" required>
-      </div>
-    </form>
    <form method="POST" action="" enctype="multipart/form-data">
       <p><input type="file" name="file"></p>
     </form>
@@ -136,7 +130,12 @@
         <input class="form-control" name="end_Date" type="text" placeholder="ex. 2020-07-20 6:00:00" required>
       </div>
 	-->
-     <form action="/" method="POST">
+	  
+    <form action="/" method="POST"> <!-- changing "action="/initial"" to "action="/"" -->
+      <div class="form-group">
+        Objects (Seperated by Commas)
+        <input class="form-control" name="Objects" type="text" placeholder="ex. Vega, Sirius, ... HD43691" required>
+      </div>
       <div class="form-group">
         Date (YYYY-MM-DD)
         <input class="form-control" name="Date" type="date" required>

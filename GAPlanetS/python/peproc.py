@@ -482,7 +482,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
 
             #extract metric scores for this location    
             metric_scores = [snr_norm[ind][0], nq_snr[ind][0], snr_norm_umask[ind][0], nq_stdev_umask[ind][0], \
-            stdev_norm_umask[ind][0], nq_stdev_umask[ind][0], spurpix_norm[ind][0], agg[ind][0]]
+            stdev_norm_umask[ind][0], nq_stdev_umask[ind][0], spurpix_norm[ind][0], contrast[ind][0], agg[ind][0]]
 
             #translate to annuli and movement values
             ann_val[k,p]= ymin + ind[0][0] * ystep

@@ -1574,7 +1574,7 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
 def get_scale_factor(data_str, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     #scalefile=scalefile.decode('utf-8')
     df3 = pd.read_csv(scalefile)
-    data_path = data_str.replace('_','/')
+    data_path = data_str.replace('_','/',1)
     scale = df3[df3["Folder Name"] == data_path]["Scale Factor"].values[0]
     return (scale)
 

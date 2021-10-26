@@ -1504,7 +1504,7 @@ def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', cuts_df
     return (objname, date, cut, movm, numann, fwhm, IWA, kllist)
 
 
-def klip_data(data_str, wl, params=False, fakes=False, planets=False, klinput = False, indir='dq_cuts/', imstring='_clip451_flat_reg_nocosmics_', outputdir='final_ims/', ctrlrad=30):
+def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=False, klinput = False, indir='dq_cuts/', imstring='_clip451_flat_reg_nocosmics_', outputdir='final_ims/', ctrlrad=30):
 
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
@@ -1554,7 +1554,7 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, klinput = 
 
     if runrdx==True:   
         filelist = glob.glob(slicedir + "/sliced*.fits")
-        dataset = MagAO.MagAOData(filelist, highpass=True) 
+        dataset = MagAO.MagAOData(filelist, highpass=highpass) 
         parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix, algo='klip', annuli=numann, subsections=1, movement=movm,
                               numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=False, save_aligned=False, time_collapse='median')
         klcube = fits.getdata("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix))
@@ -1579,7 +1579,7 @@ def get_scale_factor(data_str, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     return (scale)
 
 
-def run_redx(data_str, scale = False, indir='dq_cuts/',imstring='_clip451_flat_reg_nocosmics_', params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
+def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=False, imstring='_clip451_flat_reg_nocosmics_', params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     wls = ['Line', 'Cont']
     if params == False:
         objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
@@ -1587,8 +1587,8 @@ def run_redx(data_str, scale = False, indir='dq_cuts/',imstring='_clip451_flat_r
         objname, date, cut, movm, numann, fwhm, IWA, kllist = params
 
     #print(data_str, imstring, indir, outputdir)
-    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput, params=params)
-    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput, params=params)
+    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass)
+    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass)
     
     if scale == False:
         scale = get_scale_factor(data_str, scalefile=scalefile)

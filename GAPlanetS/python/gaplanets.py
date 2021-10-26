@@ -1297,7 +1297,7 @@ def ctrlmask(xdim, ydim, rin, rout):
 def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.5], snrmeth='all', smt=3):
     
     snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask, nq_stdev_umask, spurpix_avg, agg, ann_val, movm_val, metric_scores = \
-        peproc.find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)
+        peproc.f(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)
 
     if writestr == False:
         writestr = pename[:-17]
@@ -1578,15 +1578,19 @@ def get_scale_factor(data_str, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     return (scale)
 
 
-def run_redx(data_str, scale = False, indir='dq_cuts/',imstring='_clip451_flat_reg_nocosmics_', outputdir = 'final_ims/', klinput=False):
+def run_redx(data_str, scale = False, indir='dq_cuts/',imstring='_clip451_flat_reg_nocosmics_', params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     wls = ['Line', 'Cont']
-    objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
+    if not params == False:
+        objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
+    else:
+        objname, date, cut, movm, numann, fwhm, IWA, kllist = params
+
     #print(data_str, imstring, indir, outputdir)
     linecube, linesnr, linefwhm = klip_data(data_str, wls[0], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput)
     contcube, contsnr, contfwhm = klip_data(data_str, wls[1], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput)
     
     if scale == False:
-        scale = get_scale_factor(data_str)
+        scale = get_scale_factor(data_str, scalefile=scalefile)
     else:
         scale = float(scale)
     

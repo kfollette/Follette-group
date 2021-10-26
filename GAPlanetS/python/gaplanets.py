@@ -1580,7 +1580,7 @@ def get_scale_factor(data_str, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
 
 def run_redx(data_str, scale = False, indir='dq_cuts/',imstring='_clip451_flat_reg_nocosmics_', params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     wls = ['Line', 'Cont']
-    if not params == False:
+    if params == False:
         objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
     else:
         objname, date, cut, movm, numann, fwhm, IWA, kllist = params

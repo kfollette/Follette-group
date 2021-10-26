@@ -298,7 +298,7 @@ def make_prefix(data_str, wl, cut):
 
 def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numann=3, movm=4, KLlist=[10], IWA=0,
                   contrast=1e-2, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
-                  ghost=False, savefig=False, iterations=3,cuts_dfname='dq_cuts/cuts.csv'):
+                  highpass=True, ghost=False, savefig=False, iterations=3,cuts_dfname='dq_cuts/cuts.csv'):
     """
     PURPOSE
     Injects false planets separated by the measured fwhm of the dataset in radius and the clockang parameter
@@ -488,7 +488,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             # KLIP dataset with fake planets. Highpass filter here.
             parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=pfx, algo='klip', annuli=numann,
                                       subsections=1, movement=movm, numbasis=KLlist, calibrate_flux=False, mode="ADI",
-                                      highpass=True, save_aligned=False, time_collapse='median')
+                                      highpass=highpass, save_aligned=False, time_collapse='median')
 
         # reset initial theta for recovery loop
         inittheta = 75.*iter
@@ -647,7 +647,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
 def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir = 'dq_cuts/contrastcurves/', numann=3,
                         movm=4, KLlist=[10], IWA=0, cuts_dfname='dq_cuts/cuts.csv', record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], 
-                        savefig=False, debug=False):
+                        savefig=False, debug=False, highpass=True):
     """
     PURPOSE
     calculates raw contrast by running KLIP on images and then corrects for throughput
@@ -718,7 +718,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
         # klip the dataset with same set of KLIP parameters as fake planets
         parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=dataset_prefix, annuli=numann, subsections=1,
                                   algo='klip', movement=movm, numbasis=KLlist, calibrate_flux=False,
-                                  mode="ADI", highpass=True, time_collapse='median')
+                                  mode="ADI", highpass=highpass, time_collapse='median')
 
         ##pull some needed info from headers
         kl_hdulist = fits.open("{out}/{pre}-KLmodes-all.fits".format(out=outputdir, pre=dataset_prefix))
@@ -1080,7 +1080,7 @@ def clean_fakes(keepstr, fakesdir):
 
 def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_nocosmics_', outputdir='fakes/', numann=6, movm=1, KLlist=[1,2,3,4,5,10,20,50,100],
                  contrasts=[1e-2,1e-2,1e-2], seps=[10, 10, 10], thetas=[0, 120, 240], debug=False,
-                 ghost=False, mask=[3, 15], slicefakes=True,ctrlrad=30):
+                 ghost=False, mask=[3, 15], slicefakes=True,ctrlrad=30, highpass=True):
     """
     PURPOSE
     Injects false planets at specified locations, runs through KLIP, calculates throughput and
@@ -1204,7 +1204,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_noco
     # KLIP dataset with fake planets. Highpass filter here.
     parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix_fakes+strklip, algo='klip', annuli=numann,
                               subsections=1, movement=movm, numbasis=KLlist, calibrate_flux=False, mode="ADI",
-                              highpass=True, save_aligned=False, time_collapse='median', verbose = False)
+                              highpass=highpass, save_aligned=False, time_collapse='median', verbose = False)
 
     # read in the KLIP cube that was just created
     klcube = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix_fakes+strklip))
@@ -1504,7 +1504,7 @@ def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', cuts_df
     return (objname, date, cut, movm, numann, fwhm, IWA, kllist)
 
 
-def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=False, klinput = False, indir='dq_cuts/', imstring='_clip451_flat_reg_nocosmics_', outputdir='final_ims/', ctrlrad=30):
+def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=True, klinput = False, indir='dq_cuts/', imstring='_clip451_flat_reg_nocosmics_', outputdir='final_ims/', ctrlrad=30):
 
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
@@ -1554,9 +1554,9 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=F
 
     if runrdx==True:   
         filelist = glob.glob(slicedir + "/sliced*.fits")
-        dataset = MagAO.MagAOData(filelist, highpass=highpass) 
+        dataset = MagAO.MagAOData(filelist, highpass=False) 
         parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix, algo='klip', annuli=numann, subsections=1, movement=movm,
-                              numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=False, save_aligned=False, time_collapse='median')
+                              numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=highpass, save_aligned=False, time_collapse='median')
         klcube = fits.getdata("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix))
     
     #check whether this SNRMap has already been generated
@@ -1579,7 +1579,7 @@ def get_scale_factor(data_str, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     return (scale)
 
 
-def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=False, imstring='_clip451_flat_reg_nocosmics_', params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
+def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, imstring='_clip451_flat_reg_nocosmics_', params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     wls = ['Line', 'Cont']
     if params == False:
         objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)

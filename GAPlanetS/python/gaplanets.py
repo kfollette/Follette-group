@@ -1586,8 +1586,8 @@ def run_redx(data_str, scale = False, indir='dq_cuts/',imstring='_clip451_flat_r
         objname, date, cut, movm, numann, fwhm, IWA, kllist = params
 
     #print(data_str, imstring, indir, outputdir)
-    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput)
-    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput)
+    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput, params=params)
+    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput, params=params)
     
     if scale == False:
         scale = get_scale_factor(data_str, scalefile=scalefile)

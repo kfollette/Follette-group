@@ -1660,7 +1660,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, secondscale=False, second
         minm = lims[0]
         linemax = lims[1]
     #otherwise limits set by default
-    else: matplotli
+    else: 
         linemax = np.nanstd(lineim[low:high, low:high])*5
         minm = -1 * linemax / 2
 

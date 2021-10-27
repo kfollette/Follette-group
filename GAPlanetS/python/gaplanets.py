@@ -400,7 +400,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
     prefix_fakes = prefix +'_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
 
-    dataset_prefix = prefix_fakes +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA)
+    dataset_prefix = prefix_fakes +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + 'hp'+str(highpass)
 
     tpt_fname = outputdir + dataset_prefix + '_throughputs.fits'
 
@@ -912,7 +912,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
     df = get_cuts_df(cuts_dfname)
 
     fakestr = '_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
-    klipstr =  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) #+'_KL'+str(KLlist[0])
+    klipstr =  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) +'hp'+str(highpass)#+'_KL'+str(KLlist[0])
     outstr = fakestr + klipstr
 
     i=0
@@ -1612,11 +1612,13 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     """
 
     if secondscale!=False:
-        f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, sharey=True)
+        axs = (ax1, ax2, ax3, ax4)
+        f, axs = plt.subplots(1, 4, sharey=True)
         f.set_figwidth(24)
         f.set_figheight(6)
     else:
-        f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
+        axs = (ax1, ax2, ax3)
+        f, axs = plt.subplots(1, 3, sharey=True)
         f.set_figwidth(18)
         f.set_figheight(6)
     
@@ -1652,8 +1654,9 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
             secondscaleim = conv.convolve(secondscaleim, gauss, preserve_nan=True)
 
     # set up tick labels according to parameter ranges
-    plt.setp((ax1, ax2, ax3), xticks=ticks, xticklabels=ticklabels_str,
+    plt.setp(axs, xticks=ticks, xticklabels=ticklabels_str,
              yticks=ticks, yticklabels=ticklabels_str)
+
 
     if snr==True:
         cbarlabel = 'SNR'
@@ -1701,7 +1704,9 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
         plt.colorbar(im4, cax=cax, orientation='vertical', label=cbarlabel)    
 
     if title!=False:
-        plt.suptitle(title, size=22)    
+        plt.suptitle(title, size=22)   
+
+    plt.tight_layout() 
 
     plt.savefig(outputdir+prefix+'.png')
     plt.show()

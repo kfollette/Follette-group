@@ -949,7 +949,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
             print('computing contrasts for', cut, 'pct cut')
             ctrsts, df, OWA = make_contrast_curve(data_str, wl, cut,
                                                                  thrpt_out, namestr, record_seps=record_seps,
-                                                                 savefig=savefig, outputdir=outputdir, overwrite=overwrite
+                                                                 savefig=savefig, outputdir=outputdir, overwrite=overwrite,
                                                                  ##KLIP parameters
                                                                  numann=numann, movm=movm, KLlist=KLlist, IWA=IWA,
                                                                  cuts_dfname=cuts_dfname, debug=debug)

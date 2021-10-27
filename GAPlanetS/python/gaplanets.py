@@ -1628,6 +1628,8 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, secondscale=False, second
     lineim*=IWAmask
     contim*=IWAmask
     sdiim*=IWAmask
+    if secondscale!=False:
+        secondscaleim*=IWAmask
 
     ##NOT DONE. LABEL COORDS  NEED TO BE RELATIVE TO STAMP CENTER
     stampcen = (stampsz - 1)/2.
@@ -1685,7 +1687,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, secondscale=False, second
 
     im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     ax3.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
-    ax3.text(0.75,0.95, 'scale='+'{:.2f}'.format(scale), transform=ax3.transAxes,**labelstyle)
+    ax3.text(0.68,0.93, 'scale='+'{:.2f}'.format(scale), transform=ax3.transAxes,**labelstyle)
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im3, cax=cax, orientation='vertical', label=cbarlabel)
@@ -1693,7 +1695,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, secondscale=False, second
     if secondscale!=False:
         im4 = ax4.imshow(secondscaleim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
         ax4.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
-        ax4.text(0.75,0.95, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,**labelstyle)
+        ax4.text(0.72,0.93, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,**labelstyle)
         divider = make_axes_locatable(ax4)
         cax = divider.append_axes('right', size='5%', pad=0.05)
         plt.colorbar(im4, cax=cax, orientation='vertical', label=cbarlabel)        

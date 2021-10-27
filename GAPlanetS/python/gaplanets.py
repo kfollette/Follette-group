@@ -1538,7 +1538,7 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
         SliceCube(imname, rotoff_name, slicedir=slicedir)
         pykh.addstarpeak(slicedir, debug=True, mask=True)
 
-    prefix =namestr[:-6] + 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA)
+    prefix =namestr[:-6] + 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + 'tp' + str(throughput)
 
     #check whether this KLIP image has already been generated
     runrdx=True
@@ -1603,7 +1603,7 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, imstring=
     
     sdicube = linecube - scale * contcube
     prefix = data_str+ str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
-        movm) + 'iwa' + str(IWA)
+        movm) + 'iwa' + str(IWA)+ 'tp'+str(throughput)
     sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits')
     return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale)
 

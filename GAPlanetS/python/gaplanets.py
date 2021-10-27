@@ -60,10 +60,10 @@ def SliceCube(imfile, rotfile, indir='./', slicedir='sliced/'):
 
 def get_cuts_df(dfname):
     # define dataframe if doesn't already exist
-    try:
+    if os.path.exists(dfname):
         df=pd.read_csv(dfname)
         print("found existing data quality cuts data frame. Reading in.") #with the following contents: \n", df)
-    except:
+    else:
         print("creating new data frame")
         #if none found, make one
         df_cols = ['Dataset', 'wl', 'pctcut', 'nims', 'minpeak', 'medfwhm','rotrange']
@@ -333,11 +333,17 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     #read in or make data frame
     df = get_cuts_df(cuts_dfname)
 
+    #new values and column names to store in df
+    vals = (contrast, numann, movm,  ','.join(map("'{0}'".format, KLlist)), IWA, highpass, theta, clockang, iterations, ghost)
+    cols = ["ctrst_fkpl", "tpt ann", "tpt movm","tpt KL", "tpt IWA", "tpt hp", "tpt theta", "tpt clockang", "tpt iters","ghost"]
+        
     #add contrast to df
-    if "ctrst_fkpl" not in df:
-        df["ctrst_fkpl"] = np.nan
-        print("creating column", "ctrst_fkpl")
-    df["ctrst_fkpl"]=contrast
+    for i in np.arange((len(cols))):
+        if cols[i] not in df:
+            df[cols[i]] = np.nan
+            print("creating column", cols[i] )
+        df[cols[i]]=vals[i]
+    #df["ctrst_fkpl"]=contrast
 
     # if directory doesn't already exist, create it
     if os.path.exists(outputdir) == False:

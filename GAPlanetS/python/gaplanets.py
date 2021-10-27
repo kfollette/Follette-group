@@ -1614,11 +1614,11 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     if secondscale!=False:
         f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, sharey=True)
         f.set_figwidth(24)
-        f.set_figheight(6.5)
+        f.set_figheight(6)
     else:
         f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
         f.set_figwidth(18)
-        f.set_figheight(6.5)
+        f.set_figheight(6)
     
     pixscale = 0.0078513
     imsz = lineim.shape[1]

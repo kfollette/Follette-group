@@ -1677,9 +1677,10 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, secondscale=False, second
     plt.colorbar(im2, cax=cax, orientation='vertical', label=cbarlabel)
     # plot metric
 
+
     im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     ax3.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)')
-    ax3.text('scale='+'{:.2f}'.format(scale),0.75,0.9, color='white')
+    ax3.text(0.75,0.9, 'scale='+'{:.2f}'.format(scale), transform=ax.transAxes,color='white')
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im3, cax=cax, orientation='vertical', label=cbarlabel)
@@ -1687,7 +1688,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, secondscale=False, second
     if secondscale!=False:
         im4 = ax4.imshow(secondscaleim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
         ax4.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)')
-        ax4.text('scale='+'{:.2f}'.format(secondscale),0.75,0.9, color='white')
+        ax4.text(0.75,0.9, 'scale='+'{:.2f}'.format(secondscale), transform=ax.transAxes,color='white')
         divider = make_axes_locatable(ax4)
         cax = divider.append_axes('right', size='5%', pad=0.05)
         plt.colorbar(im4, cax=cax, orientation='vertical', label=cbarlabel)        

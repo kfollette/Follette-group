@@ -1596,13 +1596,13 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, imstring=
         scale = float(scale)
     
     sdicube = linecube - scale * contcube
-    prefix = data_str+'SDI_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
+    prefix = data_str+ str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
         movm) + 'iwa' + str(IWA)
-    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=prefix + '_SNRMap.fits')
-    return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix)
+    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits')
+    return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale)
 
 
-def indivobj_fig(lineim, contim, sdiim, prefix, IWA=0, outputdir='final_ims/', stampsz=75, smooth=0, lims = False):
+def indivobj_fig(lineim, contim, sdiim, scale, prefix, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False):
     """
     creates a three panel figure with line, continuum and SDI images
 
@@ -1610,9 +1610,16 @@ def indivobj_fig(lineim, contim, sdiim, prefix, IWA=0, outputdir='final_ims/', s
     lims = tuple in the form (min, max) to set colorbar limits
 
     """
+
     f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
     f.set_figwidth(18)
     f.set_figheight(10)
+
+    if secondscale==True:
+        f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, sharey=True)
+        f.set_figwidth(24)
+        f.set_figheight(10)
+
     pixscale = 0.0078513
     imsz = lineim.shape[1]
 
@@ -1644,35 +1651,47 @@ def indivobj_fig(lineim, contim, sdiim, prefix, IWA=0, outputdir='final_ims/', s
     plt.setp((ax1, ax2, ax3), xticks=ticks, xticklabels=ticklabels_str,
              yticks=ticks, yticklabels=ticklabels_str)
 
+    if snr==True:
+        cbarlabel = 'SNR'
+    else:
+        cbarlabel = 'Intensity'
     #user defined limits
     if lims != False:
         minm = lims[0]
         linemax = lims[1]
     #otherwise limits set by default
-    else:
+    else: matplotli
         linemax = np.nanstd(lineim[low:high, low:high])*5
         minm = -1 * linemax / 2
 
     im1 = ax1.imshow(lineim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    
-    # ax1.set_xlabel("")
-    # ax1.set_ylabel("")
+    ax1.set_title(r'KLIP-ed H$\alpha$ Image')
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im1, cax=cax, orientation='vertical', label="Intensity")
+    plt.colorbar(im1, cax=cax, orientation='vertical', label=cbarlabel)
 
     im2 = ax2.imshow(contim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    # ax2.set_xlabel("movement parameter")
+    ax2.set_title(r'KLIP-ed Continuum Image')
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im2, cax=cax, orientation='vertical', label="Intensity")
+    plt.colorbar(im2, cax=cax, orientation='vertical', label=cbarlabel)
     # plot metric
 
     im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    # ax3.set_xlabel("movement parameter")
+    ax3.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)')
+    ax3.text('scale='+'{:.2f}'.format(scale),0.75,0.9, color='white')
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im3, cax=cax, orientation='vertical', label="Intensity")
+    plt.colorbar(im3, cax=cax, orientation='vertical', label=cbarlabel)
+
+    if secondscale!=False:
+        im4 = ax4.imshow(secondscaleim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
+        ax4.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)')
+        ax4.text('scale='+'{:.2f}'.format(secondscale),0.75,0.9, color='white')
+        divider = make_axes_locatable(ax4)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        plt.colorbar(im4, cax=cax, orientation='vertical', label=cbarlabel)        
+
     plt.savefig(outputdir+prefix+'.png')
     plt.show()
     plt.clf()

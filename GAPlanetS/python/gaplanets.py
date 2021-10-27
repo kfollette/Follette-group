@@ -1611,15 +1611,15 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, secondscale=False, second
 
     """
 
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
-    f.set_figwidth(18)
-    f.set_figheight(10)
-
-    if secondscale==True:
+    if secondscale!=False:
         f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, sharey=True)
         f.set_figwidth(24)
         f.set_figheight(10)
-
+    else:
+        f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
+        f.set_figwidth(18)
+        f.set_figheight(10)
+    
     pixscale = 0.0078513
     imsz = lineim.shape[1]
 
@@ -1646,6 +1646,8 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, secondscale=False, second
         lineim = conv.convolve(lineim, gauss, preserve_nan=True)
         contim = conv.convolve(contim, gauss, preserve_nan=True)
         sdiim = conv.convolve(sdiim, gauss, preserve_nan=True)
+        if secondscale!=False:
+            secondscaleim = conv.convolve(secondscaleim, gauss, preserve_nan=True)
 
     # set up tick labels according to parameter ranges
     plt.setp((ax1, ax2, ax3), xticks=ticks, xticklabels=ticklabels_str,
@@ -1664,31 +1666,34 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, secondscale=False, second
         linemax = np.nanstd(lineim[low:high, low:high])*5
         minm = -1 * linemax / 2
 
+    titlestyle=dict(size=18)
+
     im1 = ax1.imshow(lineim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    ax1.set_title(r'KLIP-ed H$\alpha$ Image')
+    ax1.set_title(r'KLIP-ed H$\alpha$ Image', **titlestyle)
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im1, cax=cax, orientation='vertical', label=cbarlabel)
 
     im2 = ax2.imshow(contim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    ax2.set_title(r'KLIP-ed Continuum Image')
+    ax2.set_title(r'KLIP-ed Continuum Image',**titlestyle)
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im2, cax=cax, orientation='vertical', label=cbarlabel)
     # plot metric
 
+    labelstyle = dict(size=16, color='white', weight='bold')
 
     im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    ax3.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)')
-    ax3.text(0.75,0.9, 'scale='+'{:.2f}'.format(scale), transform=ax3.transAxes,color='white')
+    ax3.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
+    ax3.text(0.75,0.95, 'scale='+'{:.2f}'.format(scale), transform=ax3.transAxes,**labelstyle)
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im3, cax=cax, orientation='vertical', label=cbarlabel)
 
     if secondscale!=False:
         im4 = ax4.imshow(secondscaleim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-        ax4.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)')
-        ax4.text(0.75,0.9, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,color='white')
+        ax4.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
+        ax4.text(0.75,0.95, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,**labelstyle)
         divider = make_axes_locatable(ax4)
         cax = divider.append_axes('right', size='5%', pad=0.05)
         plt.colorbar(im4, cax=cax, orientation='vertical', label=cbarlabel)        

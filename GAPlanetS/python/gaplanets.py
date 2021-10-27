@@ -298,7 +298,7 @@ def make_prefix(data_str, wl, cut):
 
 def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numann=3, movm=4, KLlist=[10], IWA=0,
                   contrast=1e-2, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
-                  highpass=True, ghost=False, savefig=False, iterations=3,cuts_dfname='dq_cuts/cuts.csv'):
+                  highpass=True, ghost=False, savefig=False, overwrite=False, iterations=3,cuts_dfname='dq_cuts/cuts.csv'):
     """
     PURPOSE
     Injects false planets separated by the measured fwhm of the dataset in radius and the clockang parameter
@@ -406,7 +406,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
     calcthrpt=True
     
-    if os.path.exists(tpt_fname):
+    if (os.path.exists(tpt_fname)) and (overwrite == False):
         print("throughput file", tpt_fname, "already exists.")
         calcthrpt=False
         thrpt_cube = fits.getdata(tpt_fname)
@@ -438,7 +438,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         #check whether fake files or throughputs with these parameters have already been calculated
         runfakes=True
 
-        if os.path.exists(outputdir+pfx+'-KLmodes-all.fits'):
+        if (os.path.exists(outputdir+pfx+'-KLmodes-all.fits')) and (overwrite==False):
             print("file with prefix", pfx, "already exists")
             #check whether KL modes same
             fakes_header = fits.getheader(outputdir+pfx+'-KLmodes-all.fits')
@@ -647,7 +647,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
 def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir = 'dq_cuts/contrastcurves/', numann=3,
                         movm=4, KLlist=[10], IWA=0, cuts_dfname='dq_cuts/cuts.csv', record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], 
-                        savefig=False, debug=False, highpass=True):
+                        savefig=False, debug=False, overwrite=False, highpass=True):
     """
     PURPOSE
     calculates raw contrast by running KLIP on images and then corrects for throughput
@@ -691,7 +691,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
     thrpt_avgs = thrpt_out[:,1,:]
     thrpts = thrpt_out[:,2:,:]
 
-    if os.path.exists(outputdir+dataset_prefix+'-KLmodes-all.fits'):
+    if (os.path.exists(outputdir+dataset_prefix+'-KLmodes-all.fits')) and (overwrite == False):
         klcube = fits.getdata(outputdir+dataset_prefix+'-KLmodes-all.fits')
         klheader = fits.getheader(outputdir+dataset_prefix+'-KLmodes-all.fits')
         print('KLIPed image without fakes already exists for these parameters')
@@ -740,7 +740,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
         OWA = 140  # a little beyond 1" is the furthest out we will go for computing contrast. Can change if needed.
 
     #check whether has already been computed
-    if os.path.exists(outputdir+rawc_prefix+'_rawcontrast.fits'):
+    if (os.path.exists(outputdir+rawc_prefix+'_rawcontrast.fits')) and (overwrite==False):
         ctrst = fits.getdata(outputdir+rawc_prefix+'_rawcontrast.fits')
         contrast_seps = ctrst[0,:]
         contrast = ctrst[1,:]
@@ -884,7 +884,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
 
 def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                    contrast=1e-2, numann=3, movm=4, KLlist=[10], IWA=0, savefig=False, ghost=False, cuts_dfname="dq_cuts/cuts.csv", debug=False,
-                   iterations=3, theta=0., clockang=85):
+                   iterations=3, theta=0., overwrite==False, clockang=85):
     """
     PURPOSE
     loop through data quality cuts and compile corrected contrast curves into single array
@@ -924,7 +924,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
         prefix = make_prefix(data_str, wl, cut)
         namestr = prefix+outstr
 
-        if os.path.exists(outputdir + namestr + '_throughputs.fits'):
+        if (os.path.exists(outputdir + namestr + '_throughputs.fits')) and (overwrite==False):
             print ('found existing throughput file', outputdir + namestr + '_throughputs.fits')
             thrpt_out = fits.getdata(outputdir + namestr + '_throughputs.fits')
             head = fits.getheader(outputdir + namestr + '_throughputs.fits')
@@ -939,9 +939,9 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
                                                                     #KLIP parameters
                                                                     numann=numann, movm=movm,
                                                                     KLlist=KLlist, IWA=IWA, cuts_dfname=cuts_dfname, 
-                                                                    debug=debug, iterations=iterations)
+                                                                    debug=debug, iterations=iterations, overwrite=overwrite)
 
-        if os.path.exists(outputdir + namestr + '_contrasts.fits'):
+        if (os.path.exists(outputdir + namestr + '_contrasts.fits')) and (overwrite==False):
             print ('found existing contrast curve', outputdir + namestr + '_contrasts.fits')
             ctrsts = fits.getdata(outputdir + namestr + '_contrasts.fits')
 
@@ -949,7 +949,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
             print('computing contrasts for', cut, 'pct cut')
             ctrsts, df, OWA = make_contrast_curve(data_str, wl, cut,
                                                                  thrpt_out, namestr, record_seps=record_seps,
-                                                                 savefig=savefig, outputdir=outputdir,
+                                                                 savefig=savefig, outputdir=outputdir, overwrite=overwrite
                                                                  ##KLIP parameters
                                                                  numann=numann, movm=movm, KLlist=KLlist, IWA=IWA,
                                                                  cuts_dfname=cuts_dfname, debug=debug)
@@ -1504,7 +1504,7 @@ def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', cuts_df
     return (objname, date, cut, movm, numann, fwhm, IWA, kllist)
 
 
-def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=True, klinput = False, indir='dq_cuts/', imstring='_clip451_flat_reg_nocosmics_', outputdir='final_ims/', ctrlrad=30):
+def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=True, overwrite=False, klinput = False, indir='dq_cuts/', imstring='_clip451_flat_reg_nocosmics_', outputdir='final_ims/', ctrlrad=30):
 
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
@@ -1536,7 +1536,7 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
 
     #check whether this KLIP image has already been generated
     runrdx=True
-    if os.path.exists(outputdir+prefix+'-KLmodes-all.fits'):
+    if (os.path.exists(outputdir+prefix+'-KLmodes-all.fits')) and (overwrite==False):
         klcube_header = fits.getheader(outputdir+prefix+'-KLmodes-all.fits')
         #pyklip writes out each KL mode value to separate keyword
         kls = klcube_header["KLMODE*"]

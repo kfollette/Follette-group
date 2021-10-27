@@ -1614,11 +1614,11 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     if secondscale!=False:
         f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, sharey=True)
         f.set_figwidth(24)
-        f.set_figheight(10)
+        f.set_figheight(8)
     else:
         f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
         f.set_figwidth(18)
-        f.set_figheight(10)
+        f.set_figheight(8)
     
     pixscale = 0.0078513
     imsz = lineim.shape[1]
@@ -1687,7 +1687,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
 
     im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     ax3.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
-    ax3.text(0.68,0.93, 'scale='+'{:.2f}'.format(scale), transform=ax3.transAxes,**labelstyle)
+    ax3.text(0.62,0.93, 'scale='+'{:.2f}'.format(scale), transform=ax3.transAxes,**labelstyle)
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im3, cax=cax, orientation='vertical', label=cbarlabel)
@@ -1695,7 +1695,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     if secondscale!=False:
         im4 = ax4.imshow(secondscaleim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
         ax4.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
-        ax4.text(0.72,0.93, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,**labelstyle)
+        ax4.text(0.62,0.93, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,**labelstyle)
         divider = make_axes_locatable(ax4)
         cax = divider.append_axes('right', size='5%', pad=0.05)
         plt.colorbar(im4, cax=cax, orientation='vertical', label=cbarlabel)    

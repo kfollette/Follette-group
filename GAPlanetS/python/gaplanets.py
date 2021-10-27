@@ -730,7 +730,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
 
     #raw contrast is independent of fake injection so simpler name string
     rawc_prefix = make_prefix(data_str, wl, cut)
-    rawc_prefix += '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA)
+    rawc_prefix += '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + 'hp' + str(highpass)
 
     #set OWA
     klim = klcube[0, :, :]
@@ -1612,13 +1612,12 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     """
 
     if secondscale!=False:
-        axs = (ax1, ax2, ax3, ax4)
-        f, axs = plt.subplots(1, 4, sharey=True)
+        
+        f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, sharey=True)
         f.set_figwidth(24)
         f.set_figheight(6)
     else:
-        axs = (ax1, ax2, ax3)
-        f, axs = plt.subplots(1, 3, sharey=True)
+        f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
         f.set_figwidth(18)
         f.set_figheight(6)
     
@@ -1654,8 +1653,10 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
             secondscaleim = conv.convolve(secondscaleim, gauss, preserve_nan=True)
 
     # set up tick labels according to parameter ranges
-    plt.setp(axs, xticks=ticks, xticklabels=ticklabels_str,
-             yticks=ticks, yticklabels=ticklabels_str)
+    if secondscale!=False:
+        plt.setp((ax1, ax2, ax3, ax4), xticks=ticks, xticklabels=ticklabels_str, yticks=ticks, yticklabels=ticklabels_str)
+    else:
+        plt.setp((ax1, ax2, ax3), xticks=ticks, xticklabels=ticklabels_str, yticks=ticks, yticklabels=ticklabels_str)
 
 
     if snr==True:

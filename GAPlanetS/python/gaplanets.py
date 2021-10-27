@@ -1602,7 +1602,7 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, imstring=
     return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale)
 
 
-def indivobj_fig(lineim, contim, sdiim, scale, prefix, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False):
+def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False):
     """
     creates a three panel figure with line, continuum and SDI images
 
@@ -1698,7 +1698,10 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, secondscale=False, second
         ax4.text(0.72,0.93, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,**labelstyle)
         divider = make_axes_locatable(ax4)
         cax = divider.append_axes('right', size='5%', pad=0.05)
-        plt.colorbar(im4, cax=cax, orientation='vertical', label=cbarlabel)        
+        plt.colorbar(im4, cax=cax, orientation='vertical', label=cbarlabel)    
+
+    if title!=False:
+        plt.suptitle(title, size=22)    
 
     plt.savefig(outputdir+prefix+'.png')
     plt.show()

@@ -342,7 +342,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     else:
         df=read_csv(rdx_params_dfname)
 
-    if not int(df.loc[(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]==str),["nims"]].values[0]) > 0:
+    if not int(df.loc[(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]==str(cut)),["nims"]].values[0][0]) > 0:
         #if hasn't been run, run this peak cut
         peak_cut(data_str, wl, rdx_params_dfname=rdx_params_dfname, rerun=False,
              debug=False, ghost=ghost, pctcuts=[cut])

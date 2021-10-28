@@ -1619,8 +1619,10 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
     contcube, contsnr, contfwhm = klip_data(data_str, wls[1], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass)
     
     if scale == False:
+        print('pulling scale from file')
         scale = get_scale_factor(data_str, scalefile=scalefile)
     else:
+        print('setting scale to', scale)
         scale = float(scale)
     
     sdicube = linecube - scale * contcube

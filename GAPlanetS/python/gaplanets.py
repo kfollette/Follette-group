@@ -58,7 +58,7 @@ def SliceCube(imfile, rotfile, indir='./', slicedir='sliced/'):
 
     return
 
-def get_cuts_df(dfname):
+def get_df(dfname):
     # define dataframe if doesn't already exist
     if os.path.exists(dfname):
         df=pd.read_csv(dfname)
@@ -73,7 +73,7 @@ def get_cuts_df(dfname):
             df[name] = []
     return(df)
 
-def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_flat_reg_nocosmics', rerun=False,
+def peak_cut(data_str, wl, rdx_params_dfname='rdx_params.csv', rerun=False,
              debug=False, ghost=False, pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], electrons=False):
     """
     PURPOSE
@@ -103,11 +103,11 @@ def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_fl
     """
 
     #check whether has already been run
-    if os.path.exists(cuts_dfname):
+    if os.path.exists(rdx_params_dfname):
         #read in
-        df = get_cuts_df(cuts_dfname)
-        #check whether has values for 90pct cut (last)
-        if df[df["pctcut"]==90]["nims"].values[0] > 0:
+        df = get_df(rdx_params_dfname)
+        #check whether this dataset has values for 90pct cut (last)
+        if int(df.loc[(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]=='90'),["nims"]].values[0][0]) > 0:
             if rerun==False:
                 print("dq cuts have already been run. not rerunning")
                 return
@@ -117,8 +117,14 @@ def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_fl
     if wl == 'Cont':
         rotstring = 'rotoff_noContcosmics'
 
-    #read in image, header, and rotoffs
+    #read in rotoffs
     rotoffs = fits.getdata('preprocessed/'+rotstring + '.fits')
+    
+    #figure out what the fname is
+    preims = glob.glob('preprocessed/'+wl+'*nocosmics.fits')
+    preims = preims[0].split(wl)
+    imstring = preims[1][:-5]
+
     imcube = fits.getdata('preprocessed/'+wl + imstring + '.fits')
     head = fits.getheader('preprocessed/'+wl + imstring + '.fits')
 
@@ -128,7 +134,7 @@ def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_fl
     if not os.path.exists('dq_cuts/cubes'):
         os.makedirs('dq_cuts/cubes')
 
-    df = get_cuts_df(cuts_dfname)
+    df = get_cuts_df(rdx_params_dfname)
 
     # Basic parameters needed for fits
     dim = imcube.shape[1]  # dimension
@@ -279,7 +285,7 @@ def peak_cut(data_str, wl, cuts_dfname='dq_cuts/cuts.csv', imstring='_clip451_fl
         df = df.append(datalist)
         j += 1
 
-    df.to_csv(cuts_dfname, index=False)
+    df.to_csv(rdx_params_dfname, index=False)
 
     return
 
@@ -297,8 +303,8 @@ def make_prefix(data_str, wl, cut):
     return(prefix)
 
 def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numann=3, movm=4, KLlist=[10], IWA=0,
-                  contrast=1e-2, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
-                  highpass=True, ghost=False, savefig=False, overwrite=False, iterations=3,cuts_dfname='dq_cuts/cuts.csv'):
+                  contrast=1e-2, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0]
+                  highpass=True, ghost=False, savefig=False, overwrite=False, iterations=3,rdx_params_dfname='rdx_params.csv'):
     """
     PURPOSE
     Injects false planets separated by the measured fwhm of the dataset in radius and the clockang parameter
@@ -330,19 +336,28 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     written by Kate Follette June 2019
     """
 
-    #read in or make data frame
-    df = get_cuts_df(cuts_dfname)
+    #read in cuts data frame
+    if not os.path.exists(rdx_params_dfname):
+        df = get_df(rdx_params_dfname)
+    else:
+        df=read_csv(rdx_params_dfname)
+
+    if not int(df.loc[(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]==str),["nims"]].values[0][0]) > 0:
+        #if hasn't been run, run this peak cut
+        peak_cut(data_str, wl, rdx_params_dfname=rdx_params_dfname, rerun=False,
+             debug=False, ghost=ghost, pctcuts=[cut])
 
     #new values and column names to store in df
-    vals = (contrast, numann, movm,  ','.join(map("'{0}'".format, KLlist)), IWA, highpass, theta, clockang, iterations, ghost)
-    cols = ["ctrst_fkpl", "tpt ann", "tpt movm","tpt KL", "tpt IWA", "tpt hp", "tpt theta", "tpt clockang", "tpt iters","ghost"]
+    uniq_rdx_str = 'ctrst'+str(ctrst_fkpl)+'_a'+str(numann)+'m'+str(movm)+'IWA'+str(IWA)+'hp'+str(highpass)
+    vals = (contrast, numann, movm,  ','.join(map("'{0}'".format, KLlist)), IWA, highpass, theta, clockang, iterations, ghost, uniq_rdx_str)
+    cols = ["ctrst_fkpl", "tpt ann", "tpt movm", "tpt KL", "tpt IWA", "tpt hp", "tpt theta", "tpt clockang", "tpt iters","ghost", "uniq rdx str"]
         
     #add contrast to df
     for i in np.arange((len(cols))):
         if cols[i] not in df:
             df[cols[i]] = np.nan
             print("creating column", cols[i] )
-        df[cols[i]]=vals[i]
+            df.loc(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]==str(cut)),[cols[i]]=vals[i]
     #df["ctrst_fkpl"]=contrast
 
     # if directory doesn't already exist, create it
@@ -622,7 +637,8 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
                     if colname not in df:
                         df[colname] = np.nan
                         print("creating column", colname)
-                    df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = tpt
+                    df.loc[(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]==str(cut)) & (df["uniq rdx str"]==uniq_rdx_str),[colname]]=tpt
+                    #df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = tpt
             klctr+=1
 
     thrpt_out=np.zeros((len(KLlist), 2+iterations, len(thrpt_seps)))
@@ -646,13 +662,13 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
                 
     fits.writeto(tpt_fname, thrpt_out, header=head, overwrite=True)
 
-    df.to_csv(cuts_dfname, index=False)
+    df.to_csv(rdx_params_dfname, index=False)
 
-    return (thrpt_out, zone_boundaries, df, dataset_prefix)
+    return (thrpt_out, zone_boundaries, df, dataset_prefix, uniq_rdx_str)
 
 
-def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir = 'dq_cuts/contrastcurves/', numann=3,
-                        movm=4, KLlist=[10], IWA=0, cuts_dfname='dq_cuts/cuts.csv', record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], 
+def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, uniq_rdx_str, outputdir = 'dq_cuts/contrastcurves/', numann=3,
+                        movm=4, KLlist=[10], IWA=0, rdx_params_dfname='rdx_params.csv', record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], 
                         savefig=False, debug=False, overwrite=False, highpass=True):
     """
     PURPOSE
@@ -682,7 +698,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
     """
 
     #read in or make data frame
-    df = get_cuts_df(cuts_dfname)
+    df = get_df(rdx_params_dfname)
 
     iterations = len(thrpt_out[0,:,0])-2
     platescale = 0.0078513
@@ -882,9 +898,10 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
             if colname not in df:
                 df[colname] = np.nan
                 print("creating column", colname)
-            df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = contrast
+            df.loc[(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]==str(cut)) & (df["uniq rdx str"]==uniq_rdx_str),[colname]]=contrast       
+            #df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = contrast
 
-    df.to_csv(cuts_dfname, index=False)
+    df.to_csv(rdx_params_dfname, index=False)
 
     return (contrast_out, df, OWA)
 
@@ -938,7 +955,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
 
         else:
             print('computing throughputs for', cut, 'pct cut')
-            thrpt_out, zone_boundaries, df, dataset_prefix = compute_thrpt(data_str, wl, cut,
+            thrpt_out, zone_boundaries, df, dataset_prefix, uniq_rdx_str = compute_thrpt(data_str, wl, cut,
                                                                     savefig=savefig, ghost=ghost, contrast=contrast,
                                                                     record_seps=record_seps, theta=theta,
                                                                     outputdir=outputdir, clockang=clockang,
@@ -954,7 +971,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
         else:
             print('computing contrasts for', cut, 'pct cut')
             ctrsts, df, OWA = make_contrast_curve(data_str, wl, cut,
-                                                                 thrpt_out, namestr, record_seps=record_seps,
+                                                                 thrpt_out, namestr, uniq_rdx_str, record_seps=record_seps,
                                                                  savefig=savefig, outputdir=outputdir, overwrite=overwrite,
                                                                  ##KLIP parameters
                                                                  numann=numann, movm=movm, KLlist=KLlist, IWA=IWA,
@@ -1084,7 +1101,7 @@ def clean_fakes(keepstr, fakesdir):
 
 
 
-def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_nocosmics_', outputdir='fakes/', numann=6, movm=1, KLlist=[1,2,3,4,5,10,20,50,100],
+def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=6, movm=1, KLlist=[1,2,3,4,5,10,20,50,100],
                  contrasts=[1e-2,1e-2,1e-2], seps=[10, 10, 10], thetas=[0, 120, 240], debug=False,
                  ghost=False, mask=[3, 15], slicefakes=True,ctrlrad=30, highpass=True):
     """
@@ -1112,10 +1129,12 @@ def inject_fakes(data_str, cut, IWA, wl='Line', imstring='_clip451_flat_reg_noco
 
     written by Kate Follette June 2019
     """
+    #figure out what the fname is
+
     #if doesn't exist yet, make it
     if not os.path.exists('dq_cuts/' + wl + '_' + str(cut) + 'pctcut_sliced'):
         print("this wavelength and cut has not yet been generated. making now.")
-        peak_cut(data_str, wl, imstring=imstring, pctcuts=[cut], ghost=ghost, rerun=True)
+        peak_cut(data_str, wl, pctcuts=[cut], ghost=ghost, rerun=True)
     
     # if contrast curve directory doesn't already exist, create it
     if os.path.exists(outputdir) == False:
@@ -1481,7 +1500,7 @@ def clean_pe(pedir, keepparams):
     return
 
 
-def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', cuts_dfname='dq_cuts/cuts.csv'):
+def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', rdx_params_dfname='rdx_params.csv'):
     """
     pulls info for naming and KLIP parameters from two data frames storing this info
     pe_dfname: dataframe containing info about optimal parameters
@@ -1489,7 +1508,7 @@ def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', cuts_df
     :return:
     """
     df, df_cols =get_pe_df(pe_dfname)
-    df2=get_cuts_df(cuts_dfname)
+    df2=get_df(rdx_params_dfname)
     name_split=re.split('_',data_str_uniq)
     objname = name_split[0]
     date = name_split[1]
@@ -1510,7 +1529,7 @@ def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', cuts_df
     return (objname, date, cut, movm, numann, fwhm, IWA, kllist)
 
 
-def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=True, overwrite=False, klinput = False, indir='dq_cuts/', imstring='_clip451_flat_reg_nocosmics_', outputdir='final_ims/', ctrlrad=30):
+def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=True, overwrite=False, klinput = False, indir='dq_cuts/', outputdir='final_ims/', ctrlrad=30):
 
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
@@ -1532,8 +1551,11 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
     slicedir = indir + namestr + '/'
 
     if os.path.exists(slicedir) == False:
+        preims = glob.glob('preprocessed/'+wl+'*nocosmics.fits')
+        preims = preims[0].split(wl)
+        imstring = preims[1][:-5]
         print(wl, " image has not yet been sliced. Slicing now.")
-        imname = indir+wl+imstring+str(cut)+'pctcut.fits'
+        imname = indir+wl+imstring+'_'+str(cut)+'pctcut.fits'
         rotoff_name = indir+'rotoff_no'+wl+'cosmics_'+str(cut)+'pctcut.fits'
         SliceCube(imname, rotoff_name, slicedir=slicedir)
         pykh.addstarpeak(slicedir, debug=True, mask=True)
@@ -1585,7 +1607,7 @@ def get_scale_factor(data_str, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     return (scale)
 
 
-def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, imstring='_clip451_flat_reg_nocosmics_', params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
+def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     wls = ['Line', 'Cont']
     if params == False:
         objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
@@ -1593,8 +1615,8 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, imstring=
         objname, date, cut, movm, numann, fwhm, IWA, kllist = params
 
     #print(data_str, imstring, indir, outputdir)
-    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass)
-    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], imstring=imstring, indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass)
+    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass)
+    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass)
     
     if scale == False:
         scale = get_scale_factor(data_str, scalefile=scalefile)

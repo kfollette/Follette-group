@@ -357,7 +357,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         if cols[i] not in df:
             df[cols[i]] = np.nan
             print("creating column", cols[i] )
-            df.loc(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]==str(cut)),[cols[i]]=vals[i]
+            df.loc[(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]==str(cut)),[cols[i]]]=vals[i]
     #df["ctrst_fkpl"]=contrast
 
     # if directory doesn't already exist, create it

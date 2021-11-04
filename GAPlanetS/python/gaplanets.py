@@ -983,7 +983,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
                                                                     record_seps=record_seps, theta=theta,
                                                                     outputdir=outputdir, clockang=clockang,
                                                                     #KLIP parameters
-                                                                    numann=numann, movm=movm,
+                                                                    numann=numann, movm=movm, highpass=highpass,
                                                                     KLlist=KLlist, IWA=IWA, cuts_dfname=cuts_dfname, 
                                                                     debug=debug, iterations=iterations, overwrite=overwrite)
 
@@ -997,7 +997,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
                                                                  thrpt_out, namestr, uniq_rdx_str, record_seps=record_seps,
                                                                  savefig=savefig, outputdir=outputdir, overwrite=overwrite,
                                                                  ##KLIP parameters
-                                                                 numann=numann, movm=movm, KLlist=KLlist, IWA=IWA,
+                                                                 numann=numann, movm=movm, KLlist=KLlist, IWA=IWA, highpass=highpass,
                                                                  cuts_dfname=cuts_dfname, debug=debug)
 
         # compile contrasts for all cuts into array

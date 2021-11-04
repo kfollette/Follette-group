@@ -929,7 +929,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, uniq_rdx_s
     return (contrast_out, df, OWA)
 
 def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
-                   contrast=1e-2, numann=3, movm=4, KLlist=[10], IWA=0, savefig=False, ghost=False, cuts_dfname="dq_cuts/cuts.csv", debug=False,
+                   contrast=1e-2, numann=3, movm=4, KLlist=[10], IWA=0, savefig=False, ghost=False, rdx_params_dfname='rdx_params.csv', debug=False,
                    iterations=3, theta=0., overwrite=False, highpass=True, clockang=85):
     """
     PURPOSE
@@ -955,7 +955,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
     NOTE NOT COMPATIBLE WITH MULTIPLE KL MODES AT PRESENT
     """
     #read in or make data frame
-    df = get_df(cuts_dfname)
+    df = get_df(rdx_params_dfname)
 
     fakestr = '_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
     klipstr =  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) +'hp'+str(highpass)#+'_KL'+str(KLlist[0])
@@ -984,7 +984,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
                                                                     outputdir=outputdir, clockang=clockang,
                                                                     #KLIP parameters
                                                                     numann=numann, movm=movm, highpass=highpass,
-                                                                    KLlist=KLlist, IWA=IWA, cuts_dfname=cuts_dfname, 
+                                                                    KLlist=KLlist, IWA=IWA, rdx_params_dfname=rdx_params_dfname, 
                                                                     debug=debug, iterations=iterations, overwrite=overwrite)
 
         if (os.path.exists(outputdir + namestr + '_contrasts.fits')) and (overwrite==False):
@@ -998,7 +998,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
                                                                  savefig=savefig, outputdir=outputdir, overwrite=overwrite,
                                                                  ##KLIP parameters
                                                                  numann=numann, movm=movm, KLlist=KLlist, IWA=IWA, highpass=highpass,
-                                                                 cuts_dfname=cuts_dfname, debug=debug)
+                                                                 rdx_params_dfname=rdx_params_dfname, debug=debug)
 
         # compile contrasts for all cuts into array
         contrast_seps = ctrsts[0,0,:]

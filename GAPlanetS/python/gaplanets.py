@@ -62,7 +62,7 @@ def get_df(dfname):
     # define dataframe if doesn't already exist
     if os.path.exists(dfname):
         df=pd.read_csv(dfname)
-        print("found existing data quality cuts data frame. Reading in.") #with the following contents: \n", df)
+        #print("found existing data frame. Reading in.") #with the following contents: \n", df)
     else:
         print("creating new data frame")
         #if none found, make one
@@ -103,14 +103,17 @@ def peak_cut(data_str, wl, rdx_params_dfname='rdx_params.csv', rerun=False,
     """
 
     #check whether has already been run
-    if os.path.exists(rdx_params_dfname):
-        #read in
-        df = get_df(rdx_params_dfname)
-        #check whether this dataset has values for 90pct cut (last)
-        if int(df.loc[(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]=='90'),["nims"]].values[0][0]) > 0:
+
+    df = get_df(rdx_params_dfname)
+
+    #check whether this dataset has values for 90pct cut (last)
+    try: 
+        if int(df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==90),["nims"]].values[0][0]) > 0:
             if rerun==False:
                 print("dq cuts have already been run. not rerunning")
                 return
+    except:
+        print('running data quality cuts', pctcuts)
 
     if wl == 'Line':
         rotstring = 'rotoff_noLinecosmics'
@@ -134,7 +137,6 @@ def peak_cut(data_str, wl, rdx_params_dfname='rdx_params.csv', rerun=False,
     if not os.path.exists('dq_cuts/cubes'):
         os.makedirs('dq_cuts/cubes')
 
-    df = get_cuts_df(rdx_params_dfname)
 
     # Basic parameters needed for fits
     dim = imcube.shape[1]  # dimension
@@ -280,7 +282,7 @@ def peak_cut(data_str, wl, rdx_params_dfname='rdx_params.csv', rerun=False,
             pykh.addstarpeak(outdir, debug=debug, mask=True)
 
         # record relevant quantities for this data cut to dataframe
-        datalist = pd.DataFrame([[data_str[:-1], wl, pctcuts[j], new_nims, cuts[j], np.nanmedian(goodfwhm),
+        datalist = pd.DataFrame([[data_str, wl, pctcuts[j], new_nims, cuts[j], np.nanmedian(goodfwhm),
                                   rotrange]], columns=['Dataset', 'wl', 'pctcut', 'nims', 'minpeak', 'medfwhm','rotrange'])
         df = df.append(datalist)
         j += 1
@@ -336,19 +338,38 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     written by Kate Follette June 2019
     """
 
-    #read in cuts data frame
-    if not os.path.exists(rdx_params_dfname):
-        df = get_df(rdx_params_dfname)
-    else:
-        df=read_csv(rdx_params_dfname)
+    #read in data frame
+    df = get_df(rdx_params_dfname)
 
-    if not int(df.loc[(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]==str(cut)),["nims"]].values[0][0]) > 0:
+    uniq_rdx_str = 'ctrst'+str(contrast)+'_a'+str(numann)+'m'+str(movm)+'IWA'+str(IWA)+'hp'+str(highpass)
+
+    #check whether thisDQ cut has been run
+    if True in (df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["nims"]].values > 0):
+        print('dataset has a basic entry already')
+        idx = df.index[(df["Dataset"]==data_str) &  (df["pctcut"]==cut)].tolist()
+        if len(idx)>1:
+            idx=idx[0]
+        print(df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]].values)
+        if uniq_rdx_str in df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]].values:
+            print('and the uniq rdx str is the same. Overwriting')
+        else:
+            print('but these are new KLIP parameters. copying this line')
+            dfnewrow=df.loc[idx]
+            dfnewrow["uniq rdx str"]=uniq_rdx_str
+            df=df.append(dfnewrow,ignore_index=True)
+        print("try", df["uniq rdx str"])
+
+    else:
+        print('dataset does not have a basic entry from peak_cut yet')    
         #if hasn't been run, run this peak cut
         peak_cut(data_str, wl, rdx_params_dfname=rdx_params_dfname, rerun=False,
              debug=False, ghost=ghost, pctcuts=[cut])
-
+        #needs to pull the new df now
+        df = get_df(rdx_params_dfname)
+        df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]]=uniq_rdx_str
+        print("except", df["uniq rdx str"])
+    
     #new values and column names to store in df
-    uniq_rdx_str = 'ctrst'+str(ctrst_fkpl)+'_a'+str(numann)+'m'+str(movm)+'IWA'+str(IWA)+'hp'+str(highpass)
     vals = (contrast, numann, movm,  ','.join(map("'{0}'".format, KLlist)), IWA, highpass, theta, clockang, iterations, ghost, uniq_rdx_str)
     cols = ["ctrst_fkpl", "tpt ann", "tpt movm", "tpt KL", "tpt IWA", "tpt hp", "tpt theta", "tpt clockang", "tpt iters","ghost", "uniq rdx str"]
         
@@ -357,7 +378,10 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         if cols[i] not in df:
             df[cols[i]] = np.nan
             print("creating column", cols[i] )
-            df.loc[(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]==str(cut)),[cols[i]]]=vals[i]
+        df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut) & (df["uniq rdx str"]==uniq_rdx_str),[cols[i]]]=vals[i]
+
+    print('add cols', df)
+    
     #df["ctrst_fkpl"]=contrast
 
     # if directory doesn't already exist, create it
@@ -454,7 +478,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         theta=75.*iter
         
         #make prefixes for output files
-        pfx=prefix_fakes + '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + '_set' + str(iter+1) 
+        pfx=prefix_fakes + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + 'hp' + str(highpass) + '_set' + str(iter+1) 
 
         #check whether fake files or throughputs with these parameters have already been calculated
         runfakes=True
@@ -631,13 +655,13 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
                     tpt = np.nan
                 thrpt_table_vals.append(tpt)
                 # if df keyword is set, records in dataframe.
-                if len(df) > 1:
+                if len(df) > 0:
                     colname = "tpt_" + str(loc)+'_KL'+str(KL)
                     # if column doesn't already exist, create and fill with nans
                     if colname not in df:
                         df[colname] = np.nan
                         print("creating column", colname)
-                    df.loc[(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]==str(cut)) & (df["uniq rdx str"]==uniq_rdx_str),[colname]]=tpt
+                    df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut) & (df["uniq rdx str"]==uniq_rdx_str),[colname]]=tpt
                     #df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = tpt
             klctr+=1
 
@@ -892,22 +916,21 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, uniq_rdx_s
         contrast = np.interp(loc / platescale, contrast_seps, corrected_contrast_curve)
         ctrst_table_vals.append(contrast)
         # if df keyword is set, recors in dataframe.
-        if len(df) > 1:
+        if len(df) > 0:
             colname = "ctrst_" + str(loc)
             # if column doesn't already exist, create and fill with nans
             if colname not in df:
                 df[colname] = np.nan
                 print("creating column", colname)
-            df.loc[(df["Dataset"]==data_str[:-1]) &  (df["pctcut"]==str(cut)) & (df["uniq rdx str"]==uniq_rdx_str),[colname]]=contrast       
+            df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut) & (df["uniq rdx str"]==uniq_rdx_str),[colname]]=contrast       
             #df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = contrast
-
     df.to_csv(rdx_params_dfname, index=False)
 
     return (contrast_out, df, OWA)
 
 def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                    contrast=1e-2, numann=3, movm=4, KLlist=[10], IWA=0, savefig=False, ghost=False, cuts_dfname="dq_cuts/cuts.csv", debug=False,
-                   iterations=3, theta=0., overwrite=False, clockang=85):
+                   iterations=3, theta=0., overwrite=False, highpass=True, clockang=85):
     """
     PURPOSE
     loop through data quality cuts and compile corrected contrast curves into single array
@@ -932,7 +955,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
     NOTE NOT COMPATIBLE WITH MULTIPLE KL MODES AT PRESENT
     """
     #read in or make data frame
-    df = get_cuts_df(cuts_dfname)
+    df = get_df(cuts_dfname)
 
     fakestr = '_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
     klipstr =  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) +'hp'+str(highpass)#+'_KL'+str(KLlist[0])
@@ -1046,7 +1069,7 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
                      label=str(cut) + ' cut', linestyle=linesty, color=cm.plasma(j))
         floor = np.log10(np.nanmin(contrasts[:,:,0:last_idx])) - 0.2
         plt.yscale("log")
-        plt.title(data_str[:-1] + outstr+' KL '+str(kl))
+        plt.title(data_str + outstr+' KL '+str(kl))
         plt.xlim(0, outer_asec)
         plt.ylim(10 ** floor, contrasts[i,klctr, :].max() + 0.5)
         plt.xlabel("distance in arcseconds")
@@ -1062,7 +1085,7 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
                     plt.plot((bd, bd), (0, 1), '--', color='grey')
         plt.legend(loc='upper right', fontsize='x-small')
         # write out in data directory
-        plt.savefig(outputdir + data_str[:-1] + outstr + '_KL'+str(kl)+'_contrastsbycut.jpg')
+        plt.savefig(outputdir + data_str + outstr + '_KL'+str(kl)+'_contrastsbycut.jpg')
         plt.show()
         plt.clf()
         klctr+=1
@@ -1474,7 +1497,7 @@ def add_to_pe_df(data_str, pedir, pename, kllist, weights=[1,1,0.5,0.5,0.5], pe_
 
     cut=[s for s in pedir_info if 'cut' in s]
     cut=(cut[0].split('pctcut'))[0]
-    datalist=pd.DataFrame([[data_str[:-1],objname,date,subset,wl,cut,movm_val[0],ann_val[0],IWA,str(kllist),avgSNR[0],snr_norm[ind][0], nq_snr[ind][0],stdev_norm[ind][0], nq_stdev[ind][0], spurpix[ind][0], agg[ind][0], dt_string]], columns=df_cols)
+    datalist=pd.DataFrame([[data_str,objname,date,subset,wl,cut,movm_val[0],ann_val[0],IWA,str(kllist),avgSNR[0],snr_norm[ind][0], nq_snr[ind][0],stdev_norm[ind][0], nq_stdev[ind][0], spurpix[ind][0], agg[ind][0], dt_string]], columns=df_cols)
     df = df.append(datalist)
     df.to_csv(pe_dfname, index=False)
     return(df)
@@ -1626,9 +1649,8 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
         scale = float(scale)
     
     sdicube = linecube - scale * contcube
-    prefix = data_str+ str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(
-        movm) + 'iwa' + str(IWA)+ 'hp'+str(highpass)
-    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits')
+    prefix = data_str + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA)+ 'hp'+str(highpass)
+    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=outputdir+prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits')
     return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale)
 
 

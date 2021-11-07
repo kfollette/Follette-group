@@ -88,7 +88,6 @@ def peak_cut(data_str, wl, rdx_params_dfname='rdx_params.csv', rerun=False,
     df = pandas dataframe to store output
 
     OPTIONAL INPUTS
-    imstr = name string for 3D (x,y,t) image holding data
     ghost = if set to True, will do cuts on ghost peak and write ghost and estimate of star
             peak to header
     pctcuts = a list of percentile threshholds
@@ -351,13 +350,16 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             idx=idx[0]
         print(df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]].values)
         if uniq_rdx_str in df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]].values:
-            print('and the uniq rdx str is the same. Overwriting')
+            print('and the uniq rdx str is the same.')
+            if overwrite==True:
+                print('Overwriting')
+            else:
+                print('will read in existing file')
         else:
             print('but these are new KLIP parameters. copying this line')
             dfnewrow=df.loc[idx]
             dfnewrow["uniq rdx str"]=uniq_rdx_str
             df=df.append(dfnewrow,ignore_index=True)
-        print("try", df["uniq rdx str"])
 
     else:
         print('dataset does not have a basic entry from peak_cut yet')    
@@ -367,7 +369,6 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         #needs to pull the new df now
         df = get_df(rdx_params_dfname)
         df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]]=uniq_rdx_str
-        print("except", df["uniq rdx str"])
     
     #new values and column names to store in df
     vals = (contrast, numann, movm,  ','.join(map("'{0}'".format, KLlist)), IWA, highpass, theta, clockang, iterations, ghost, uniq_rdx_str)
@@ -379,8 +380,6 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             df[cols[i]] = np.nan
             print("creating column", cols[i] )
         df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut) & (df["uniq rdx str"]==uniq_rdx_str),[cols[i]]]=vals[i]
-
-    print('add cols', df)
     
     #df["ctrst_fkpl"]=contrast
 
@@ -1009,7 +1008,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
         
         klctr=0
         for kl in KLlist:
-            #pull only throughput corrected average curve (slide 2 in ctrsts)
+            #pull only throughput corrected average curve (slice 2 in ctrsts)
             contrasts[i,klctr,:] = ctrsts[klctr,2,:]
             klctr+=1
 
@@ -1615,9 +1614,9 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
         #snmap = fits.getdata(outputdir+prefix + '_SNRMap.fits')
     #else:
     if planets != False:
-        snmap, snrs, snr_sums, snr_spurious = snr.create_map("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix), fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits', ctrlrad=ctrlrad)
+        snmap, snrs, snr_sums, snr_spurious = snr.create_map("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix), fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits', ctrlrad=ctrlrad, method='stdev')
     else: 
-        snmap = snr.create_map("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix), fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits')
+        snmap = snr.create_map("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix), fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits', method="stdev")
     #snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=prefix + '_SNRMap.fits')
     return (klcube, snmap, fwhm)
 
@@ -1650,7 +1649,7 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
     
     sdicube = linecube - scale * contcube
     prefix = data_str + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA)+ 'hp'+str(highpass)
-    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=outputdir+prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits')
+    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=outputdir+prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits', method='stdev')
     return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale)
 
 
@@ -1684,7 +1683,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     if secondscale!=False:
         secondscaleim*=IWAmask
 
-    ##NOT DONE. LABEL COORDS  NEED TO BE RELATIVE TO STAMP CENTER
+    ##COORDS RELATIVE TO STAMP CENTER
     stampcen = (stampsz - 1)/2.
     stampsz_asec = stampsz*pixscale
     nticks = np.floor(stampsz_asec/2/0.25)

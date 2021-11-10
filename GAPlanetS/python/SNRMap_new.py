@@ -322,7 +322,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
         if verbose is True:
             print("found fits file", filename)
         inp, head = read_file(filename)
-        outname = filename[:-5]+'_'+method+'_snrmap'
+        outname = filename[:-5]+'_'+method+'snrmap'
         
     #if data type is not a string, reads in python object holding data
     else:
@@ -343,6 +343,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
         # inpsm =conv.convolve(inp, gauss, preserve_nan=True)
         # inp = inpsm
         inp = klip.nan_gaussian_filter(inp, smooth)
+        outname = outname+'_sm'+str(smooth)
 
   
     #gets size of pixel value array

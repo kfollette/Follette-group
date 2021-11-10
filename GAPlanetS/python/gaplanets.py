@@ -1650,6 +1650,12 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
     
     sdicube = linecube - scale * contcube
     prefix = data_str + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA)+ 'hp'+str(highpass)
+    if kllist==[1,2,3,4,5,10,20,50,100]:
+        klstr='all'
+    else:
+        klstrlist = [str(kl) for kl in kllist]
+        klstr='_'.join(klstrlist)
+    prefix+='_kl'+klstr
     sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=outputdir+prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits')
     return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale)
 

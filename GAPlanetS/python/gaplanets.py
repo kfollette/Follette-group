@@ -442,9 +442,19 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
     thrpts = np.zeros((len(KLlist), iterations, len(thrpt_seps)))
 
+    if KLlist==[1,2,3,4,5,10,20,50,100]:
+      klstr='all'
+    else:
+      if isinstance(KLlist,int):
+        klstr='_'+str(KLlist)
+      else:
+        klstrlist = [str(kl) for kl in KLlist]
+        klstr='_'.join(klstrlist)
+    prefix+='_kl'+klstr
+
     prefix_fakes = prefix +'_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
 
-    dataset_prefix = prefix_fakes +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + 'hp'+str(highpass)
+    dataset_prefix = prefix_fakes +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + 'hp'+str(highpass) + klstr
 
     tpt_fname = outputdir + dataset_prefix + '_throughputs.fits'
 
@@ -1583,6 +1593,15 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
         pykh.addstarpeak(slicedir, debug=True, mask=True)
 
     prefix =namestr[:-6] + 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + 'hp' + str(highpass)
+    if kllist==[1,2,3,4,5,10,20,50,100]:
+      klstr='all'
+    else:
+      if isinstance(kllist,int):
+        klstr='_'+str(kllist)
+      else:
+        klstrlist = [str(kl) for kl in kllist]
+        klstr='_'.join(klstrlist)
+    prefix+='_kl'+klstr
 
     #check whether this KLIP image has already been generated
     runrdx=True
@@ -1651,11 +1670,15 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
     prefix = data_str + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA)+ 'hp'+str(highpass)
 
     if kllist==[1,2,3,4,5,10,20,50,100]:
-        klstr='all'
+      klstr='all'
     else:
+      if isinstance(kllist,int):
+        klstr='_'+str(kllist)
+      else:
         klstrlist = [str(kl) for kl in kllist]
         klstr='_'.join(klstrlist)
     prefix+='_kl'+klstr
+
     sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=outputdir+prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits', method='stdev')
 
     return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale)

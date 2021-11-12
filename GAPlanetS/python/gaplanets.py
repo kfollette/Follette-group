@@ -542,7 +542,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             # KLIP dataset with fake planets. Highpass filter here.
             parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=pfx, algo='klip', annuli=numann,
                                       subsections=1, movement=movm, numbasis=KLlist, calibrate_flux=False, mode="ADI",
-                                      highpass=highpass, save_aligned=False, time_collapse='median')
+                                      highpass=highpass, save_aligned=False, time_collapse='median', maxnumbasis=100)
 
         # reset initial theta for recovery loop
         inittheta = 75.*iter
@@ -773,7 +773,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, uniq_rdx_s
         # klip the dataset with same set of KLIP parameters as fake planets
         parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=dataset_prefix, annuli=numann, subsections=1,
                                   algo='klip', movement=movm, numbasis=KLlist, calibrate_flux=False,
-                                  mode="ADI", highpass=highpass, time_collapse='median')
+                                  mode="ADI", highpass=highpass, time_collapse='median', maxnumbasis=100)
 
         ##pull some needed info from headers
         kl_hdulist = fits.open("{out}/{pre}-KLmodes-all.fits".format(out=outputdir, pre=dataset_prefix))
@@ -1261,7 +1261,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=6, mo
     # KLIP dataset with fake planets. Highpass filter here.
     parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix_fakes+strklip, algo='klip', annuli=numann,
                               subsections=1, movement=movm, numbasis=KLlist, calibrate_flux=False, mode="ADI",
-                              highpass=highpass, save_aligned=False, time_collapse='median', verbose = False)
+                              highpass=highpass, save_aligned=False, time_collapse='median', verbose = False, maxnumbasis=100)
 
     # read in the KLIP cube that was just created
     klcube = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix_fakes+strklip))
@@ -1606,6 +1606,7 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
     #check whether this KLIP image has already been generated
     runrdx=True
     if (os.path.exists(outputdir+prefix+'-KLmodes-all.fits')) and (overwrite==False):
+        print('a file with the same name already exists')
         klcube_header = fits.getheader(outputdir+prefix+'-KLmodes-all.fits')
         #pyklip writes out each KL mode value to separate keyword
         kls = klcube_header["KLMODE*"]
@@ -1625,7 +1626,8 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
         filelist = glob.glob(slicedir + "/sliced*.fits")
         dataset = MagAO.MagAOData(filelist, highpass=False) 
         parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix, algo='klip', annuli=numann, subsections=1, movement=movm,
-                              numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=highpass, save_aligned=False, time_collapse='median')
+                              numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=highpass, save_aligned=False, time_collapse='median',
+                              maxnumbasis=100)
         klcube = fits.getdata("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix))
     
     #check whether this SNRMap has already been generated

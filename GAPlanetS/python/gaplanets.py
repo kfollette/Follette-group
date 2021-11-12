@@ -1606,7 +1606,7 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
     #check whether this KLIP image has already been generated
     runrdx=True
     if (os.path.exists(outputdir+prefix+'-KLmodes-all.fits')) and (overwrite==False):
-        print('a file with the same name already exists')
+        print('a file with the name', outputdir+prefix+'-KLmodes-all.fits', 'already exists')
         klcube_header = fits.getheader(outputdir+prefix+'-KLmodes-all.fits')
         #pyklip writes out each KL mode value to separate keyword
         kls = klcube_header["KLMODE*"]
@@ -1650,7 +1650,7 @@ def get_scale_factor(data_str, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     return (scale)
 
 
-def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
+def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv', overwrite=False):
     wls = ['Line', 'Cont']
     if params == False:
         objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
@@ -1658,8 +1658,8 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
         objname, date, cut, movm, numann, fwhm, IWA, kllist = params
 
     #print(data_str, imstring, indir, outputdir)
-    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass)
-    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass)
+    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite)
+    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite)
     
     if scale == False:
         print('pulling scale from file')

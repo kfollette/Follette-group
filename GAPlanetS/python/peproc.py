@@ -215,7 +215,7 @@ def filter_nan_gaussian_conserving(arr, sigma):
     return gauss
 
 def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, weights=[1,1,1,1,1,1,1,1], outdir='proc/', snrthresh=False,
-    oldpe=False, debug=False, smt=3, snrmeth='all',separate_planets=False, separate_kls=False, verbose=False):
+    oldpe=False, debug=False, smt=3, snrmeth='all',separate_planets=False, separate_kls=False, verbose=False, maxy=25, maxx=25):
     """
     collapses parameter explorer file and extracts the optimal parameter value
 
@@ -464,7 +464,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
                 weights[5]=0
 
             #calculate an aggregate parameter quality metric by summing the individual metrics * their weights
-            agg=np.zeros((25,25))
+            agg=np.zeros((nstepy,nstepx))
             for metricind in np.arange(len(metriclist)):
                 #only sum if non-zero (otherwise nans will carry over)
                 if weights[metricind]>0:
@@ -474,7 +474,10 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             agg_cube[k,p,:,:]=agg
 
             ##find location or peak of parameter quality metric and print info
-            ind = np.where(agg == np.nanmax(agg))
+            maxx=int(maxx)
+            maxy=int(maxy)
+            print(maxx,maxy,agg.shape)
+            ind = np.where(agg[:maxy,:maxx] == np.nanmax(agg[:maxy,:maxx]))
 
             if agg[ind[0],ind[1]].shape[0]>1:
                 print("the optimal solution for this choice of parameters/weights is not unique")

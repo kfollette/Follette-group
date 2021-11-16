@@ -1690,8 +1690,166 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
 
     return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale)
 
+def grab_planet_specs(df,dset_path):
+    """
+    Given (properly formatted) dataframe, extract locations and designations for planet(s).
+    """
+    pllabel = df[df["Path"]==dset_path]["Designation"].values
+    pllabel
+    plsep = df[df["Path"]==dset_path]["Separation (pix)"].values
+    plpa = df[df["Path"]==dset_path]["PA"].values
+    return(tuple(pllabel),tuple(plsep),tuple(plpa))
 
-def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False):
+def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5, klopt=False, weights=[1,0,1,1,0,0,1,0], kllist_coll = [10,100], overwrite=False, stampsz=75, maxy=25, lims=[-1,4], pldf=False, seppl=False, sepkl=False):
+    for obj in sorted_objs:
+        #pull from correct Drive directory
+        whichdir = df[df["Object Name"]==obj]['Which AWS'].values[0]
+        if whichdir == 1:
+            fpath_st = base_fpath+'Follette-Lab-AWS/GAPlanetS_Database/'
+        elif whichdir ==2:
+            fpath_st = base_fpath+'Follette-Lab-AWS-2/'
+
+        #pull filepath for each dataset
+        for dset in np.arange(len(df[df["Object Name"]==obj])):
+            dset_path = df[df["Object Name"]==obj]["Path"].values[dset]
+            date=dset_path.split('/')[1]
+            #check whether pes are complete
+            go=True
+
+            if df[df["Path"]==dset_path]["Done"].values[0]!='Y':
+                print('datset not fully processed')
+                go=False
+
+            if go==True:
+                full_fpath = fpath_st+dset_path
+                #optimal values from df
+                cut = int(df[df["Path"]==dset_path]["cut chosen"].values[0])
+                dq_str = str(cut)+'pctcut'
+                #pull various other inputs
+                IWA = int(df[df["Path"]==dset_path]["IWA"].values[0])
+                fwhm = int(df[df["Path"]==dset_path]["cut fwhm"].values[0])
+                contrast = float(df[df["Path"]==dset_path]["injected planet contrast"].values[0])
+                satrad = df[df["Path"]==dset_path]["saturation radius"].values[0]     
+        
+                #set ghost to true if saturated
+                if np.isnan(satrad):
+                    ghost=False
+                    satrad=np.nan        
+                else:
+                    ghost=True
+                    satrad=int(satrad)
+
+                #path to the relevant line directory
+                fpath=full_fpath+'/dq_cuts/'+wl+'_'+dq_str+'_sliced/'
+                #dataset label = string of filepath
+                data_str = dset_path.replace('/','_')
+
+                #set planet marking keywords to False by default
+                plspecs = False
+                plcand = False
+
+                #pull planet info, if given a planet specs frame
+                if isinstance(pldf, pd.DataFrame):
+                    #check whether df contains note to mark planets
+                    if df[df["Path"]==dset_path]["mark known planets"].values[0]=="Y":
+                        plspecs = grab_planet_specs(pldf,dset_path)
+                        if df[df["Path"]==dset_path]["candidate"].values[0]=="Y":
+                            plcand=False
+
+                print('STARTING', data_str)
+
+                #find optimal params according to the collapse strategy
+                #find the cont fakes klip dir with paramexplore file
+                fakepath=data_str+'fakes/'
+                fakedirfiles = glob.glob(full_fpath+'/'+fakepath+'*')
+                dirnames = [d for d in fakedirfiles if os.path.isdir(d)]
+                fakedir = [dir for dir in dirnames if dir[-4:] == 'klip']
+                if len(fakedir) > 1:
+                    print('more than one klipped fakes dir')
+                else:
+                    fakedir=fakedir[0]
+                
+                pefile = glob.glob(fakedir+'/param*.fits')
+                if len(pefile) > 1:
+                    print('more than one pefile')
+                else:
+                    pefile=pefile[0]
+                    pefname=pefile.split('_klip/')
+                    pedir=pefname[0]+'_klip/'
+                    pefname = pefname[1]
+
+                ##choices for collapse
+                wts = weights
+                wtstr = ''.join(str(val) for val in wts)
+                klstr = '_kl'+'_'.join(str(val2) for val2 in kllist_coll)
+                hpval = hpmult*fwhm    
+                hpstr = "_"+str(hpmult)+"fwhm"
+                outname = outdir+'Optimal_Vals_Coll_wts'+wtstr+klstr+'_seppl'+str(seppl)+'_sepkl'+str(sepkl)+hpstr+'.csv'
+                
+                #find peak for this set according to kl collapse mode in order to select optimal ann, movm
+                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxy=maxy)
+
+                #run metric calculation for ALL kl modes so can select optimal kl
+                kllist = [1,2,3,4,5,10,20,50,100]        
+                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxy=maxy)
+
+                #find kl mode with highest score
+                if klopt==True:
+                    pk=np.zeros((len(kllist)))
+                    for k in np.arange(len(kllist)):
+                        pk[k] = np.nanmax(agg_cube1[k,0,:maxy,:])
+                
+                    pk_ind = np.where(pk == np.nanmax(pk))
+                    kl = kllist[int(pk_ind[0])]
+                
+                    print('peak metric among', pk, 'is', pk[int(pk_ind[0])], 'for kl', kl)
+                    df.loc[df["Path"]==dset_path,"opt kl"]=kl
+                else:
+                    #otherwise, do 10 kl modes
+                    kl = 10
+
+                ann = int(anns[0][0])
+                movm = int(movms[0][0])
+                print('peak is at a', ann, 'm', movm)
+
+                #fill in in the table
+                df.loc[df["Path"]==dset_path,"opt ann"]=ann
+                df.loc[df["Path"]==dset_path,"opt movm"]=movm
+
+                if os.path.exists(outname):
+                    dfin = pd.read_csv(outname)
+                else:
+                    dfin = pd.DataFrame(columns=df.columns)
+                
+                idx = df.index[df["Path"]==dset_path].tolist()
+                dfin = dfin.append(df.loc[idx], ignore_index=True)
+                dfin.to_csv(outname, index=False)     
+                
+
+                os.chdir(full_fpath)
+                thrpt_out, zb, df2, dataset_prefix, uniq_rdx_str = compute_thrpt(data_str, wl, cut, outputdir = outdir+data_str+'/', numann=ann, movm=movm, KLlist=[kl], IWA=IWA, 
+                                                                    contrast=contrast, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
+                                                                    ghost=ghost, savefig=True, iterations=3,rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', highpass=hpval, overwrite=overwrite)
+            
+                contrast_out, df2, OWA = gmake_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, uniq_rdx_str,  outputdir=outdir+data_str+'/', 
+                                                                numann=ann, movm=movm, KLlist=[kl], IWA=IWA, rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 
+                                                                record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], savefig=True, debug=False, highpass=hpval, overwrite=overwrite)
+                
+            
+                params = [obj,date,cut,movm,ann,fwhm,IWA,kl]
+
+                linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale = run_redx(data_str,params=params, scalefile=scalefile, highpass=hpval, scale=False, overwrite=overwrite)
+                linecube, linesnr, contcube, contsnr, sdicube2, sdisnr2, prefix, scale2 = run_redx(data_str,params=params, highpass=hpval, scale=1, overwrite=overwrite)
+                indivobj_fig(linecube[0,:,:],contcube[0,:,:],sdicube[0,:,:],scale,prefix,IWA=IWA,secondscale=1,secondscaleim=sdicube2[0,:,:], title = obj + ' '+ date, stampsz=stampsz, plspecs=plspecs, plcand=plcand)
+                indivobj_fig(linesnr[0,0,:,:],contsnr[0,0,:,:],sdisnr[0,0,:,:],scale,prefix+'_SNR',IWA=IWA,secondscale=1,secondscaleim=sdisnr2[0,0,:,:],snr=True, title = obj + ' '+ date, lims=lims, stampsz=stampsz, plspecs=plspecs, plcand=plcand)
+                indivobj_fig(linesnr[0,0,:,:],contsnr[0,0,:,:],sdisnr[0,0,:,:],scale,prefix+'_SNR_sm0.5',IWA=IWA, smooth=0.5,secondscale=1,secondscaleim=sdisnr2[0,0,:,:],snr=True, title = obj + ' '+ date, lims=lims, stampsz=stampsz, plspecs=plspecs, plcand=plcand)
+                indivobj_fig(linesnr[0,0,:,:],contsnr[0,0,:,:],sdisnr[0,0,:,:],scale,prefix+'_SNR_sm1',IWA=IWA, smooth=1,secondscale=1,secondscaleim=sdisnr2[0,0,:,:],snr=True, title = obj + ' '+ date, lims=lims, stampsz=stampsz, plspecs=plspecs, plcand=plcand)
+                
+                os.chdir(thisdir)
+
+    return()
+
+def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False):
     """
     creates a three panel figure with line, continuum and SDI images
 
@@ -1761,6 +1919,19 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
         linemax = np.nanstd(lineim[low:high, low:high])*5
         minm = -1 * linemax / 2
 
+    ##if planets need to be marked, find their coordinates and define patches
+    if plspecs!=False:
+        plsep_y=[]
+        plsep_x=[]
+        pllabels=[]
+        for i in np.arange(len(plspecs[0])):
+        lb = plspecs[0][i]
+        plsep = plspecs[1][i]
+        plpa = plspecs[2][i]
+        plsep_y.append(float(plsep)*np.sin((float(plpa)+90)*np.pi/180))
+        plsep_x.append(float(plsep)*np.cos((float(plpa)+90)*np.pi/180))
+        pllabels.append(str(lb))
+
     titlestyle=dict(size=18)
 
     im1 = ax1.imshow(lineim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
@@ -1791,7 +1962,22 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
         ax4.text(0.62,0.93, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,**labelstyle)
         divider = make_axes_locatable(ax4)
         cax = divider.append_axes('right', size='5%', pad=0.05)
-        plt.colorbar(im4, cax=cax, orientation='vertical', label=cbarlabel)    
+        plt.colorbar(im4, cax=cax, orientation='vertical', label=cbarlabel)
+        axislist=(ax1,ax2,ax3,ax4)  
+    else:
+        axislist=(ax1,ax2,ax3)  
+
+    if plspecs!=False:
+        for i in np.arange(len(pllabels)):
+            if plcand==True:
+                lsty='--'
+            else:
+                lsty='-'
+            for ax in axislist:
+            circ=patches.Circle((stampcen+plsep_x[i],stampcen+plsep_y[i]),radius=4, fill=False, ec='cyan', lw=2, ls=lsty)
+            circ_label=pllabels[i]
+            ax.add_patch(circ, )
+            ax.text(stampcen+plsep_x[i]+5.5,stampcen+plsep_y[i],circ_label)
 
     if title!=False:
         plt.suptitle(title, size=22)   
@@ -1802,7 +1988,6 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     plt.show()
     plt.clf()
     return
-
 
 def contrast_klcompare(data_str, ha_ctrsts, cont_ctrsts, KLlist, IWA, zone_boundaries, outdir = 'final_ims/'):
     

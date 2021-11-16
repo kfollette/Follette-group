@@ -1975,7 +1975,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     if plspecs!=False:
         for i in np.arange(len(pllabels)):
             if plcand==True:
-                lsty='.'
+                lsty=':'
             else:
                 lsty='-'
             for ax in axislist:

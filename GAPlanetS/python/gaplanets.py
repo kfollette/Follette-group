@@ -1832,7 +1832,7 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
                                                                     contrast=contrast, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                                                                     ghost=ghost, savefig=True, iterations=3,rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', highpass=hpval, overwrite=overwrite)
             
-                contrast_out, df2, OWA = gmake_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, uniq_rdx_str,  outputdir=outdir+data_str+'/', 
+                contrast_out, df2, OWA = make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, uniq_rdx_str,  outputdir=outdir+data_str+'/', 
                                                                 numann=ann, movm=movm, KLlist=[kl], IWA=IWA, rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 
                                                                 record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], savefig=True, debug=False, highpass=hpval, overwrite=overwrite)
                 

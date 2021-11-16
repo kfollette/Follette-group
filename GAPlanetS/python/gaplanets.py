@@ -1702,6 +1702,9 @@ def grab_planet_specs(df,dset_path):
     return(tuple(pllabel),tuple(plsep),tuple(plpa))
 
 def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5, klopt=False, weights=[1,0,1,1,0,0,1,0], kllist_coll = [10,100], overwrite=False, stampsz=75, maxy=25, lims=[-1,4], pldf=False, seppl=False, sepkl=False):
+    
+    thisdir=os.getcwd()
+    
     for obj in sorted_objs:
         #pull from correct Drive directory
         whichdir = df[df["Object Name"]==obj]['Which AWS'].values[0]
@@ -1754,8 +1757,9 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
                     #check whether df contains note to mark planets
                     if df[df["Path"]==dset_path]["mark known planets"].values[0]=="Y":
                         plspecs = grab_planet_specs(pldf,dset_path)
+                        #check whether marked as candidate
                         if df[df["Path"]==dset_path]["candidate"].values[0]=="Y":
-                            plcand=False
+                            plcand=True
 
                 print('STARTING', data_str)
 
@@ -1971,14 +1975,14 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     if plspecs!=False:
         for i in np.arange(len(pllabels)):
             if plcand==True:
-                lsty='--'
+                lsty='.'
             else:
                 lsty='-'
             for ax in axislist:
                 circ=patches.Circle((stampcen+plsep_x[i],stampcen+plsep_y[i]),radius=4, fill=False, ec='cyan', lw=2, ls=lsty)
                 circ_label=pllabels[i]
                 ax.add_patch(circ, )
-                ax.text(stampcen+plsep_x[i]+5.5,stampcen+plsep_y[i],circ_label)
+                ax.text(stampcen+plsep_x[i]+5.5,stampcen+plsep_y[i],circ_label, color='white',fontsize=16)
 
     if title!=False:
         plt.suptitle(title, size=22)   

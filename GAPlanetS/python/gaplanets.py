@@ -1925,12 +1925,12 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
         plsep_x=[]
         pllabels=[]
         for i in np.arange(len(plspecs[0])):
-        lb = plspecs[0][i]
-        plsep = plspecs[1][i]
-        plpa = plspecs[2][i]
-        plsep_y.append(float(plsep)*np.sin((float(plpa)+90)*np.pi/180))
-        plsep_x.append(float(plsep)*np.cos((float(plpa)+90)*np.pi/180))
-        pllabels.append(str(lb))
+            lb = plspecs[0][i]
+            plsep = plspecs[1][i]
+            plpa = plspecs[2][i]
+            plsep_y.append(float(plsep)*np.sin((float(plpa)+90)*np.pi/180))
+            plsep_x.append(float(plsep)*np.cos((float(plpa)+90)*np.pi/180))
+            pllabels.append(str(lb))
 
     titlestyle=dict(size=18)
 
@@ -1974,10 +1974,10 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
             else:
                 lsty='-'
             for ax in axislist:
-            circ=patches.Circle((stampcen+plsep_x[i],stampcen+plsep_y[i]),radius=4, fill=False, ec='cyan', lw=2, ls=lsty)
-            circ_label=pllabels[i]
-            ax.add_patch(circ, )
-            ax.text(stampcen+plsep_x[i]+5.5,stampcen+plsep_y[i],circ_label)
+                circ=patches.Circle((stampcen+plsep_x[i],stampcen+plsep_y[i]),radius=4, fill=False, ec='cyan', lw=2, ls=lsty)
+                circ_label=pllabels[i]
+                ax.add_patch(circ, )
+                ax.text(stampcen+plsep_x[i]+5.5,stampcen+plsep_y[i],circ_label)
 
     if title!=False:
         plt.suptitle(title, size=22)   

@@ -1614,6 +1614,11 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
         im_kls = []
         for i in np.arange(len(kls)):
             im_kls.append(klcube_header["KLMODE"+str(i)])
+
+        #catch for single Kl mode cubes
+        if not isinstance(kllist, list):
+          kllist=[kllist]
+
         if im_kls == kllist:
             print('and KL modes match')
             klcube=fits.getdata(outputdir+prefix+'-KLmodes-all.fits')

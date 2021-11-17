@@ -476,7 +476,6 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             ##find location or peak of parameter quality metric and print info
             maxx=int(maxx)
             maxy=int(maxy)
-            print(maxx,maxy,agg.shape)
             ind = np.where(agg[:maxy,:maxx] == np.nanmax(agg[:maxy,:maxx]))
 
             if agg[ind[0],ind[1]].shape[0]>1:

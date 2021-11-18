@@ -341,7 +341,29 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     #read in data frame
     df = get_df(rdx_params_dfname)
 
-    uniq_rdx_str = 'ctrst'+str(contrast)+'_a'+str(numann)+'m'+str(movm)+'IWA'+str(IWA)+'hp'+str(highpass)
+    # if directory doesn't already exist, create it
+    if os.path.exists(outputdir) == False:
+        print(outputdir, 'doesn\'t exist yet')
+        os.makedirs(outputdir)
+        
+    prefix = make_prefix(data_str, wl, cut)
+
+    #set up some naming stuff
+    if KLlist==[1,2,3,4,5,10,20,50,100]:
+      klstr='all'
+    else:
+      if isinstance(KLlist,int):
+        klstr='_'+str(KLlist)
+      else:
+        klstrlist = [str(kl) for kl in KLlist]
+        klstr='_'.join(klstrlist)
+    prefix+='_kl'+klstr
+
+    prefix_fakes = prefix +'_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
+
+    dataset_prefix = prefix_fakes +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + 'hp'+str(highpass) + klstr
+
+    tpt_fname = outputdir + dataset_prefix + '_throughputs.fits'
 
     #check whether thisDQ cut has been run
     if True in (df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["nims"]].values > 0):
@@ -349,8 +371,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         idx = df.index[(df["Dataset"]==data_str) &  (df["pctcut"]==cut)].tolist()
         if len(idx)>1:
             idx=idx[0]
-        print(df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]].values)
-        if uniq_rdx_str in df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]].values:
+        if dataset_prefix in df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]].values:
             print('and the uniq rdx str is the same.')
             if overwrite==True:
                 print('Overwriting')
@@ -359,7 +380,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         else:
             print('but these are new KLIP parameters. copying this line')
             dfnewrow=df.loc[idx]
-            dfnewrow["uniq rdx str"]=uniq_rdx_str
+            dfnewrow["uniq rdx str"]=dataset_prefix
             df=df.append(dfnewrow,ignore_index=True)
 
     else:
@@ -369,10 +390,10 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
              debug=False, ghost=ghost, pctcuts=[cut])
         #needs to pull the new df now
         df = get_df(rdx_params_dfname)
-        df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]]=uniq_rdx_str
+        df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]]=dataset_prefix
     
     #new values and column names to store in df
-    vals = (contrast, numann, movm,  ','.join(map("'{0}'".format, KLlist)), IWA, highpass, theta, clockang, iterations, ghost, uniq_rdx_str)
+    vals = (contrast, numann, movm,  ','.join(map("'{0}'".format, KLlist)), IWA, highpass, theta, clockang, iterations, ghost, dataset_prefix)
     cols = ["ctrst_fkpl", "tpt ann", "tpt movm", "tpt KL", "tpt IWA", "tpt hp", "tpt theta", "tpt clockang", "tpt iters","ghost", "uniq rdx str"]
         
     #add contrast to df
@@ -380,15 +401,11 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         if cols[i] not in df:
             df[cols[i]] = np.nan
             print("creating column", cols[i] )
-        df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut) & (df["uniq rdx str"]==uniq_rdx_str),[cols[i]]]=vals[i]
+        df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut) & (df["uniq rdx str"]==dataset_prefix),[cols[i]]]=vals[i]
     
     #df["ctrst_fkpl"]=contrast
 
-    # if directory doesn't already exist, create it
-    if os.path.exists(outputdir) == False:
-        print(outputdir, 'doesn\'t exist yet')
-        os.makedirs(outputdir)
-    prefix = make_prefix(data_str, wl, cut)
+
 
     ###load data
     filelist = glob.glob('dq_cuts/'+wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
@@ -443,22 +460,6 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
     thrpts = np.zeros((len(KLlist), iterations, len(thrpt_seps)))
 
-    if KLlist==[1,2,3,4,5,10,20,50,100]:
-      klstr='all'
-    else:
-      if isinstance(KLlist,int):
-        klstr='_'+str(KLlist)
-      else:
-        klstrlist = [str(kl) for kl in KLlist]
-        klstr='_'.join(klstrlist)
-    prefix+='_kl'+klstr
-
-    prefix_fakes = prefix +'_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
-
-    dataset_prefix = prefix_fakes +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + 'hp'+str(highpass) + klstr
-
-    tpt_fname = outputdir + dataset_prefix + '_throughputs.fits'
-
     calcthrpt=True
     
     if (os.path.exists(tpt_fname)) and (overwrite == False):
@@ -488,7 +489,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         theta=75.*iter
         
         #make prefixes for output files
-        pfx=prefix_fakes + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + 'hp' + str(highpass) + '_set' + str(iter+1) 
+        pfx=prefix_fakes + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + 'hp' + str(highpass) + klstr + '_set' + str(iter+1) 
 
         #check whether fake files or throughputs with these parameters have already been calculated
         runfakes=True
@@ -671,7 +672,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
                     if colname not in df:
                         df[colname] = np.nan
                         print("creating column", colname)
-                    df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut) & (df["uniq rdx str"]==uniq_rdx_str),[colname]]=tpt
+                    df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut) & (df["uniq rdx str"]==dataset_prefix),[colname]]=tpt
                     #df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = tpt
             klctr+=1
 
@@ -698,10 +699,10 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
     df.to_csv(rdx_params_dfname, index=False)
 
-    return (thrpt_out, zone_boundaries, df, dataset_prefix, uniq_rdx_str)
+    return (thrpt_out, zone_boundaries, df, dataset_prefix)
 
 
-def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, uniq_rdx_str, outputdir = 'dq_cuts/contrastcurves/', numann=3,
+def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir = 'dq_cuts/contrastcurves/', numann=3,
                         movm=4, KLlist=[10], IWA=0, rdx_params_dfname='rdx_params.csv', record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], 
                         savefig=False, debug=False, overwrite=False, highpass=True):
     """
@@ -927,12 +928,12 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, uniq_rdx_s
         ctrst_table_vals.append(contrast)
         # if df keyword is set, recors in dataframe.
         if len(df) > 0:
-            colname = "ctrst_" + str(loc)
+            colname = "ctrst_" + str(loc) +'_KL'+str(KL)
             # if column doesn't already exist, create and fill with nans
             if colname not in df:
                 df[colname] = np.nan
                 print("creating column", colname)
-            df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut) & (df["uniq rdx str"]==uniq_rdx_str),[colname]]=contrast       
+            df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut) & (df["uniq rdx str"]==dataset_prefix),[colname]]=contrast       
             #df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = contrast
     df.to_csv(rdx_params_dfname, index=False)
 
@@ -988,7 +989,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
 
         else:
             print('computing throughputs for', cut, 'pct cut')
-            thrpt_out, zone_boundaries, df, dataset_prefix, uniq_rdx_str = compute_thrpt(data_str, wl, cut,
+            thrpt_out, zone_boundaries, df, dataset_prefix = compute_thrpt(data_str, wl, cut,
                                                                     savefig=savefig, ghost=ghost, contrast=contrast,
                                                                     record_seps=record_seps, theta=theta,
                                                                     outputdir=outputdir, clockang=clockang,
@@ -1004,7 +1005,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
         else:
             print('computing contrasts for', cut, 'pct cut')
             ctrsts, df, OWA = make_contrast_curve(data_str, wl, cut,
-                                                                 thrpt_out, namestr, uniq_rdx_str, record_seps=record_seps,
+                                                                 thrpt_out, namestr, record_seps=record_seps,
                                                                  savefig=savefig, outputdir=outputdir, overwrite=overwrite,
                                                                  ##KLIP parameters
                                                                  numann=numann, movm=movm, KLlist=KLlist, IWA=IWA, highpass=highpass,
@@ -1832,11 +1833,11 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
                 
 
                 os.chdir(full_fpath)
-                thrpt_out, zb, df2, dataset_prefix, uniq_rdx_str = compute_thrpt(data_str, wl, cut, outputdir = outdir+data_str+'/', numann=ann, movm=movm, KLlist=[kl], IWA=IWA, 
+                thrpt_out, zb, df2, dataset_prefix = compute_thrpt(data_str, wl, cut, outputdir = outdir+data_str+'/', numann=ann, movm=movm, KLlist=[kl], IWA=IWA, 
                                                                     contrast=contrast, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                                                                     ghost=ghost, savefig=True, iterations=3,rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', highpass=hpval, overwrite=overwrite)
             
-                contrast_out, df2, OWA = make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, uniq_rdx_str,  outputdir=outdir+data_str+'/', 
+                contrast_out, df2, OWA = make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix,  outputdir=outdir+data_str+'/', 
                                                                 numann=ann, movm=movm, KLlist=[kl], IWA=IWA, rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 
                                                                 record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], savefig=True, debug=False, highpass=hpval, overwrite=overwrite)
                 

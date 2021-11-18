@@ -20,7 +20,7 @@ import SNRMap_new as snr
 from importlib import reload
 from datetime import datetime
 from scipy import ndimage
-from peproc import find_best_new
+import peproc as pe
 
 def SliceCube(imfile, rotfile, indir='./', slicedir='sliced/'):
     """
@@ -1356,7 +1356,7 @@ def ctrlmask(xdim, ydim, rin, rout):
 def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.5], snrmeth='all', smt=3):
     
     snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask, nq_stdev_umask, spurpix_avg, agg, ann_val, movm_val, metric_scores = \
-        find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)
+        pe.find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)
 
     if writestr == False:
         writestr = pename[:-17]
@@ -1476,7 +1476,7 @@ def get_pe_df(dfname):
 def add_to_pe_df(data_str, pedir, pename, kllist, weights=[1,1,0.5,0.5,0.5], pe_dfname='../../optimal_params.csv'):
     df, df_cols =get_pe_df(pe_dfname)
     avgkl, stdevkl = collapsekl(pedir, pename, kllist)
-    snr_norm, nq_snr, stdev_norm, nq_stdev, spurpix, agg, ann_val, movm_val, metric_scores, avgSNR = find_best_new(pedir, pename, kllist, weights=weights)
+    snr_norm, nq_snr, stdev_norm, nq_stdev, spurpix, agg, ann_val, movm_val, metric_scores, avgSNR = pe.find_best_new(pedir, pename, kllist, weights=weights)
     ind=np.where(agg == np.nanmax(agg))
     data_split=re.split('_',data_str)
     objname = data_split[0]
@@ -1793,11 +1793,11 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
                 outname = outdir+'Optimal_Vals_Coll_wts'+wtstr+klstr+'_seppl'+str(seppl)+'_sepkl'+str(sepkl)+hpstr+'.csv'
                 
                 #find peak for this set according to kl collapse mode in order to select optimal ann, movm
-                cube, agg_cube, anns, movms, scores, mfname = find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxy=maxy)
+                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxy=maxy)
 
                 #run metric calculation for ALL kl modes so can select optimal kl
                 kllist = [1,2,3,4,5,10,20,50,100]        
-                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxy=maxy)
+                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxy=maxy)
 
                 #find kl mode with highest score
                 if klopt==True:

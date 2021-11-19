@@ -101,10 +101,10 @@ def addstarpeak(dir, debug=False, mask=False, ghost=False, wl='Line'):
     # write out list of peaks one directory up so KLIP doesn't try to pull it
     if ghost == True:
         fits.writeto(dir + '../' + str(wl) + 'ghostpeaks.fits', np.array(peaks), overwrite=True)
-        fits.writeto(dir + '../' + str(wl) + 'fwhmlist.fits', np.array(fwhmlist), overwrite=True)
+        fits.writeto(dir + '../' + str(wl) + 'ghostfwhmlist.fits', np.array(fwhmlist), overwrite=True)
     else:
         fits.writeto(dir + '../' + str(wl) + 'starpeaks.fits', np.array(peaks), overwrite=True)
-        fits.writeto(dir + '../' + str(wl) + 'fwhmlist.fits', np.array(fwhmlist), overwrite=True)
+        fits.writeto(dir + '../' + str(wl) + 'starfwhmlist.fits', np.array(fwhmlist), overwrite=True)
 
     if debug == True:
         print('standard deviation of difference between fit peak and max pixel is: ', np.std(diff))

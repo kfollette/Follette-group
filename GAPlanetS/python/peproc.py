@@ -93,120 +93,6 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, writefi
     for k in np.arange(4,9):
         pecube[k,:,:,:,:,:]*=msk
    
-<<<<<<< HEAD
-	#create directory to save in if doesn't yet exist
-	if not os.path.exists(outdir):
-		os.makedirs(outdir)
-
-
-	#collapse in planet dimension or extract 
-	#mean preserves nans so all planets have to be recovered
-	#separates planets
-	if separate==True: 
-		writename = writestr+'_pl'
-		for i in np.arange(dims[2]):
-			fits.writeto(outdir+writename+str(i+1)+'.fits', pecube[:,:,i,:,:,:], pehead, overwrite=True)
-	
-	#collapses planet dimension
-	else: 
-		writename = writestr+'_planetcollapse.fits'
-		#quick hack for old PEs where planet dimension was 6th
-		if oldpe==True:
-			pecube=np.mean(pecube,axis=5)
-		else:
-			pecube=np.mean(pecube,axis=3)
-	
-	fits.writeto(outdir+writename, pecube, pehead, overwrite=True)
-			
-	return (pecube, writename)
-
-def collapsekl(pename, kllist, pedir='./', outdir='proc/', snrmeth='stdev', writestr=False):
-	"""
-	Reads in a parameter explorer file and collapses it in the KLmode dimension (axis 3)
-
-	REQUIRED INPUTS:
-	pename: 	name of paramexplore file
-	kllist: 	list of KL modes you want to collapse over
-
-	OPTIONAL INPUTS:
-	pedir: 		directory holding parameter explorer file
-	snrmeth: 	one of two ways of computing SNR - possibilities are stdev and absmed (for median absolute value),
-				and 'all' to average the two
-	writestr: 	filename prefix for saved file (suffixes are _avgkl and _stdevkl). 
-				If not specified, preserves name of parameter explorer
-
-	RETURNS:
-	avgkl:  	array containing averages over the specified KL modes
-	stdevkl: 	array containing standard deviations over the specified KL modes
-	"""
-
-	if writestr == False:
-		writestr = pename[:-20]
-
-	# read in image and header
-	klcube_raw = fits.getdata(pedir + pename)
-	head = fits.getheader(pedir + pename)
-
-	#pull only the SNR map slice with the matching snrmeth value
-	if snrmeth == "absmed":
-		slice = 1
-	if snrmeth == "stdev":
-		slice = 0  
-	dims = klcube_raw.shape
-
-	#if only 1 metric
-	if snrmeth != 'all':
-		#for single method cubes, slices are SNR peak, avg SNR, total >thresh pixels, >thresh pixels inside CR
-		print('keeping only', snrmeth, 'maps')
-		klcube_trimmed=klcube_raw[slice::2,:,:,:,:]
-
-		#if snrmeth = absmed, grab contrast slice too
-		if slice==1:
-			dmns = np.array(klcube_trimmed.shape)
-			dmns[0]+=1
-			klcube_plusone = np.zeros(dmns)
-			klcube_plusone[0:-1,:,:,:,:]=klcube_trimmed
-			#fill last one with contrast cube dimension, which is not dependent on snr method
-			klcube_plusone[-1,:,:,:,:]=klcube_raw[-1,:,:,:,:]
-			klcube_trimmed = klcube_plusone
-
-		klkeep = np.zeros([5, dims[3], dims[4], len(kllist)])
-	else:
-		klkeep = np.zeros([9, dims[3], dims[4], len(kllist)])
-		
-	# pull KL modes of parameter explorer from the header
-	allkl = list(map(int, head['KLMODES'][1:-1].split(",")))
-
-	# find only the KL slices in the list of modes to be collapsed and make an array
-	i = 0;
-	j = 0;
-	keepind = []
-	for kl in allkl:
-		if kl in kllist:
-			keepind.append(i)
-			print('keeping kl', kl, "with index", i)
-			klkeep[:, :, :, j] = klcube_trimmed[:, 0, i, :, :]
-			j += 1
-		i += 1
-
-	# replacing -250 (value when planet too close to annulus) with 0 for ease of display
-	klkeep[klkeep == -1000] = np.nan
-
-	# make mean and stdev arrays
-	# preserve nans so non-recoveries are removed
-	avgkl = np.mean(klkeep, axis=3)
-	stdevkl = np.std(klkeep, axis=3)
-	sumkl = np.sum(klkeep, axis=3)
-
-	# update header to reflect KL modes used
-	head["KLMODES"] = str(kllist)
-
-	# write arrays
-	fits.writeto(outdir+writestr + '_avgkl.fits', avgkl, head, overwrite=True)
-	fits.writeto(outdir+writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
-	fits.writeto(outdir+writestr + '_sumkl.fits', sumkl, head, overwrite=True)
-	return (avgkl, stdevkl, sumkl)
-=======
     #create directory to save in if doesn't yet exist
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -300,7 +186,6 @@ def trimkl(pename, kllist, pedir='./', outdir='proc/', writestr=False, hdr=False
 
     #return trimmed cubes
     return (klkeep, head, writename)
->>>>>>> pedev
 
 
 def filter_nan_gaussian_conserving(arr, sigma):

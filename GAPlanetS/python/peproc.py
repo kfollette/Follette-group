@@ -610,7 +610,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
         head = fits.getheader(pedir+flist[i])
         file = fits.getdata(pedir+flist[i])
         nplanets = file.shape[3]
-        print(file.shape, nplanets)
+        #print(file.shape, nplanets)
 
         #if header keyword set, pull other KLIP values from header
         if header == True:
@@ -723,7 +723,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode=
 
                     #pull output image 
                     klim = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outdir, pre=prefix+strklip[kl][pl]))
-                    print(klim.shape)
+                    #print(klim.shape)
                     if kl==0 and pl==0:
                         klcube = np.zeros([nkldim, npldim, klim.shape[0],klim.shape[1],klim.shape[2]])
                     klcube[kl,pl,:,:,:]=klim

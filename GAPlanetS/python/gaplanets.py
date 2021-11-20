@@ -365,24 +365,53 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
     tpt_fname = outputdir + dataset_prefix + '_throughputs.fits'
 
+    # to be added to baseline info
+    cols = ["ctrst_fkpl", "tpt ann", "tpt movm", "tpt KL", "tpt IWA", "tpt hp", "tpt theta", "tpt clockang", "tpt iters","ghost", "uniq rdx str"]
+
     #check whether thisDQ cut has been run
     if True in (df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["nims"]].values > 0):
-        print('dataset has a basic entry already')
+        #find locations where this is true
         idx = df.index[(df["Dataset"]==data_str) &  (df["pctcut"]==cut)].tolist()
-        if len(idx)>1:
-            idx=idx[0]
-        if dataset_prefix in df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]].values:
-            print('and the uniq rdx str is the same.')
-            if overwrite==True:
-                print('Overwriting')
-            else:
-                print('will read in existing file')
-        else:
-            print('but these are new KLIP parameters. copying this line')
-            dfnewrow=df.loc[idx]
-            dfnewrow["uniq rdx str"]=dataset_prefix
-            df=df.append(dfnewrow,ignore_index=True)
+        print('this dataset and cut has ', len(idx), 'entries already')
 
+        ##are any of them filled in? 
+        thesedata_strs = df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]].values
+        uniq_str_list=[]
+        for s in thesedata_strs:
+            if isinstance(s,str):
+                uniq_str_list.append(s)
+
+        #if just blank entries (just peak cut data exists)
+        if len(uniq_str_list)<1:
+            print("But no thrpt/contrast data filled in yet. Filling in.")
+            #add the uniq rdx str to the existing line
+            df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]]=dataset_prefix
+
+        #if at least one string entry exists
+        else:
+            #check whether this reduction is the same   
+            if dataset_prefix in thesedata_strs:
+                print('and the uniq rdx str is the same.')
+                if overwrite==True:
+                    print('Overwriting')
+                else:
+                    print('will read in existing file')
+            #if not the same
+            else:
+                print('but these are new parameters. copying to a new line')
+                #if more than one entry, just copy the first occurrence 
+                if len(idx)>1:
+                    idx=idx[0]
+                dfnewrow=df.loc[idx]
+                #clear old values in copied row
+                for c in cols:
+                    dfnewrow[c]=np.nan
+                #fill in this new str
+                dfnewrow["uniq rdx str"]=dataset_prefix
+                #add to df
+                df=df.append(dfnewrow,ignore_index=True)
+
+    #if this cut has not yet been run for this wl
     else:
         print('dataset does not have a basic entry from peak_cut yet')    
         #if hasn't been run, run this peak cut
@@ -1697,7 +1726,6 @@ def grab_planet_specs(df,dset_path):
     Given (properly formatted) dataframe, extract locations and designations for planet(s).
     """
     pllabel = df[df["Path"]==dset_path]["Designation"].values
-    pllabel
     plsep = df[df["Path"]==dset_path]["Separation (pix)"].values
     plpa = df[df["Path"]==dset_path]["PA"].values
     return(tuple(pllabel),tuple(plsep),tuple(plpa))

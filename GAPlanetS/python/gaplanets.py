@@ -1107,16 +1107,18 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
                 linesty = '--'
             plt.plot(contrast_seps * platescale, contrasts[i,klctr, :],
                      label=str(cut) + ' cut', linestyle=linesty, color=cm.plasma(j))
-        floor = np.log10(np.nanmin(contrasts[:,:,0:last_idx])) - 0.2
+        cfloor = np.log10(np.nanmin(contrasts[:,:,0:last_idx])) - 0.2
+        cmax=np.nanmax(contrasts[i,klctr, :])+0.5
         plt.yscale("log")
         plt.title(data_str + outstr+' KL '+str(kl))
         plt.xlim(0, outer_asec)
-        plt.ylim(10 ** floor, contrasts[i,klctr, :].max() + 0.5)
+        print(cfloor,cmax)
+        plt.ylim(10 ** cfloor, cmax)
         plt.xlabel("distance in arcseconds")
         plt.ylabel("contrast")
         if IWA > 0:
-            plt.plot((IWA * platescale, IWA * platescale), (1e-5, contrasts[i,klctr, :].max() + 0.5), 'k-', label='IWA')
-        plt.plot((ctrl_rad, ctrl_rad),(0,contrasts[i,klctr, :].max() + 0.5),'m--', label="control radius")
+            plt.plot((IWA * platescale, IWA * platescale), (1e-5, cmax), 'k-', label='IWA')
+        plt.plot((ctrl_rad, ctrl_rad),(0, cmax),'m--', label="control radius")
         for bd in np.multiply(zone_boundaries,platescale):
             if bd < outer_asec:
                 if bd == zone_boundaries[0]*platescale:

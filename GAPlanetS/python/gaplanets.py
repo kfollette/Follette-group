@@ -301,7 +301,7 @@ def get_control_rad():
     return(ctrlrad)
 
 def make_prefix(data_str, wl, cut):
-    prefix = data_str + wl + '_' + str(cut) + 'pctcut'
+    prefix = data_str + '_' + wl + '_' + str(cut) + 'pctcut'
     return(prefix)
 
 def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numann=3, movm=4, KLlist=[10], IWA=0,
@@ -353,15 +353,16 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
       klstr='all'
     else:
       if isinstance(KLlist,int):
-        klstr='_'+str(KLlist)
+        klstr=str(KLlist)
       else:
         klstrlist = [str(kl) for kl in KLlist]
         klstr='_'.join(klstrlist)
-    prefix+='_kl'+klstr
 
-    prefix_fakes = prefix +'_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
+    dataset_prefix = prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + 'hp'+str(highpass) + '_kl'+klstr
 
-    dataset_prefix = prefix_fakes +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + 'hp'+str(highpass) + klstr
+    prefix_fakes = '_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
+
+    dataset_prefix+=prefix_fakes
 
     tpt_fname = outputdir + dataset_prefix + '_throughputs.fits'
 

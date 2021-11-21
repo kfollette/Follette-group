@@ -428,72 +428,12 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]]=dataset_prefix
     
     #new values and column names to store in df
-    vals = (contrast, numann, movm,  ','.join(map("'{0}'".format, KLlist)), IWA, highpass, theta, clockang, iterations, ghost, dataset_prefix)
-    cols = ["ctrst_fkpl", "tpt ann", "tpt movm", "tpt KL", "tpt IWA", "tpt hp", "tpt theta", "tpt clockang", "tpt iters","ghost", "uniq rdx str"]
-        
+    vals = (contrast, numann, movm,  ','.join(map("'{0}'".format, KLlist)), IWA, highpass, theta, clockang, iterations, ghost, dataset_prefix)        
     #add contrast to df
     for i in np.arange((len(cols))):
-        if cols[i] not in df:
-            df[cols[i]] = np.nan
-            print("creating column", cols[i] )
         df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut) & (df["uniq rdx str"]==dataset_prefix),[cols[i]]]=vals[i]
     
     #df["ctrst_fkpl"]=contrast
-
-
-
-    ###load data
-    filelist = glob.glob('dq_cuts/'+wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
-
-    # sorts file list so it's sequential
-    filelist.sort(key=lambda f: int(''.join(filter(str.isdigit, f))))
-
-    ### pull the values of the star peak from the headers
-    starpeak = []
-    for i in np.arange(len(filelist)):
-        head = fits.getheader(filelist[i])
-        starpeak.append(head["STARPEAK"])
-
-    #pull fwhm of 0pctcut for consistent spacings
-    fwhm=head["0PCTFWHM"]
-
-    # import the dataset. Wait to highpass filter until the KLIP call in the next cell
-    dataset = MagAO.MagAOData(filelist, highpass=False)
-    # set IWA
-    dataset.IWA = IWA
-
-    # divide by starpeak values again to get input images in contrast units
-    for i in np.arange(0, len(starpeak)):
-        dataset.input[i, :, :] /= starpeak[i]
-
-    # compute number of planets to inject
-    first = IWA + fwhm
-    n_planets = (dataset.input.shape[1] / 2. - first) / fwhm
-    n_planets = int(n_planets)
-    n_planets -= 1
-    if debug == True:
-        print('I will inject ', n_planets, 'planets')
-
-    # calculates separations (in pixels) where planets will be injected
-    thrpt_seps = []
-    sep = first
-    for i in np.arange(n_planets):
-        thrpt_seps.append(sep)
-        sep += fwhm
-
-    if debug == True:
-        print("injecting planets at the following radii:", thrpt_seps)
-
-    size = dataset.input.shape
-    nims = size[0]
-    xcen = int((size[1] - 1) / 2)
-    ycen = int((size[2] - 1) / 2)
-
-    #save a version of the input dataset without any fakes
-    dataset_copy = np.copy(dataset.input)
-    imsz = dataset.input.shape[1]
-
-    thrpts = np.zeros((len(KLlist), iterations, len(thrpt_seps)))
 
     calcthrpt=True
     
@@ -505,6 +445,9 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         #check whether KL modes same
         thrpt_header = fits.getheader(tpt_fname)
         file_kl = list(map(int, thrpt_header['KLMODES'].split(","))) 
+        IWA=thrpt_header['IWA']
+        zone_boundaries_h = thrpt_header['ZONEBDRY'].split(',')
+        zone_boundaries = [int(bdry) for bdry in zone_boundaries_h]
         
         if file_kl == KLlist:
             print("KLmodes match. reading in values.")
@@ -517,83 +460,135 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             print("KL modes are", file_kl, "for file and", KLlist, "in function call")
             calcthrpt = True
 
-    # full sequence of planet injection, recovery and throughput calculation as many times as the iterations keyword, with
-    # starting planet locations clocked by 75 degrees each cycle
-    for iter in np.arange(iterations):
-        #clock starting planet location by 75deg each cycle
-        theta=75.*iter
-        
-        #make prefixes for output files
-        pfx=prefix_fakes + '_a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA) + 'hp' + str(highpass) + klstr + '_set' + str(iter+1) 
+    if calcthrpt==True:
 
-        #check whether fake files or throughputs with these parameters have already been calculated
-        runfakes=True
+        ###load data
+        filelist = glob.glob('dq_cuts/'+wl + '_' + str(cut) + 'pctcut_sliced' + "/sliced*.fits")
 
-        if (os.path.exists(outputdir+pfx+'-KLmodes-all.fits')) and (overwrite==False):
-            print("file with prefix", pfx, "already exists")
-            #check whether KL modes same
-            fakes_header = fits.getheader(outputdir+pfx+'-KLmodes-all.fits')
-            #pyklip writes out each KL mode value to separate keyword
-            kls = fakes_header["KLMODE*"]
-            #make a list and populate it with KL mode values
-            fake_kls = []
-            for i in np.arange(len(kls)):
-                fake_kls.append(fakes_header["KLMODE"+str(i)])
-            if fake_kls == KLlist:
-                print('and KL modes match')
-                runfakes=False
-            else:
-                print('but KL modes don\'t match. Regenerating.')
-                runfakes = True
+        # sorts file list so it's sequential
+        filelist.sort(key=lambda f: int(''.join(filter(str.isdigit, f))))
 
-        #special case where pipeline broke in between the two steps - needs whole cube in memory to do throughput calc.
-        if runfakes == False and calcthrpt == True:
-            runfakes = True
-            print("but I can't find a throughput file so I am regenerating it.")
+        ### pull the values of the star peak from the headers
+        starpeak = []
+        for i in np.arange(len(filelist)):
+            head = fits.getheader(filelist[i])
+            starpeak.append(head["STARPEAK"])
 
-        if runfakes==True:
+        #pull fwhm of 0pctcut for consistent spacings
+        fwhm=head["0PCTFWHM"]
 
-            #pull the clean input data every time
-            dataset.input = np.copy(dataset_copy)
+        # import the dataset. Wait to highpass filter until the KLIP call in the next cell
+        dataset = MagAO.MagAOData(filelist, highpass=False)
+        # set IWA
+        dataset.IWA = IWA
 
-            # replace any nans in image with zeros (edges, padded) for fake injection
-            dataset.input[np.isnan(dataset.input) == True] = 0.
+        # divide by starpeak values again to get input images in contrast units
+        for i in np.arange(0, len(starpeak)):
+            dataset.input[i, :, :] /= starpeak[i]
 
-            #create copy of dataset.input * contrast for injection
-            if ghost==False:
-                to_inject = contrast * dataset.input
+        # compute number of planets to inject
+        first = IWA + fwhm
+        n_planets = (dataset.input.shape[1] / 2. - IWA) / fwhm
+        #stay away from very outer part of image
+        n_planets = int(n_planets)-2
+        if debug == True:
+            print('I will inject ', n_planets, 'planets')
+
+        # calculates separations (in pixels) where planets will be injected
+        thrpt_seps = []
+        sep = first
+        for i in np.arange(n_planets):
+            thrpt_seps.append(sep)
+            sep += fwhm
+
+        if debug == True:
+            print("injecting planets at the following radii:", thrpt_seps)
+
+        size = dataset.input.shape
+        nims = size[0]
+        xcen = int((size[1] - 1) / 2)
+        ycen = int((size[2] - 1) / 2)
+
+        #save a version of the input dataset without any fakes
+        dataset_copy = np.copy(dataset.input)
+        imsz = dataset.input.shape[1]
+
+        thrpts = np.zeros((len(KLlist), iterations, len(thrpt_seps)))
+
+        # full sequence of planet injection, recovery and throughput calculation as many times as the iterations keyword, with
+        # starting planet locations clocked by 75 degrees each cycle
+        for iter in np.arange(iterations):
+            #clock starting planet location by 75deg each cycle
+            theta=75.*iter
             
-            #inject planets in raw images
-            for sep in thrpt_seps:
-                if ghost == True:
-                    fakes.inject_planet(dataset.input, dataset.centers, np.repeat(contrast, nims)[0], dataset.wcs, sep, theta,
-                                    fwhm=fwhm)
+            #make prefixes for output files
+            pfx=dataset_prefix + '_set' + str(iter+1) 
+
+            #check whether fake files or throughputs with these parameters have already been calculated
+            runfakes=True
+
+            if (os.path.exists(outputdir+pfx+'-KLmodes-all.fits')) and (overwrite==False):
+                print("file with prefix", pfx, "already exists")
+                #check whether KL modes same
+                fakes_header = fits.getheader(outputdir+pfx+'-KLmodes-all.fits')
+                #pyklip writes out each KL mode value to separate keyword
+                kls = fakes_header["KLMODE*"]
+                #make a list and populate it with KL mode values
+                fake_kls = []
+                for i in np.arange(len(kls)):
+                    fake_kls.append(fakes_header["KLMODE"+str(i)])
+                if fake_kls == KLlist:
+                    print('and KL modes match')
+                    runfakes=False
                 else:
-                    fakes.inject_planet(dataset.input, dataset.centers, to_inject, dataset.wcs, sep, theta, fwhm=fwhm,
-                                    stampsize=imsz)  # , thetas=thetas)
-                theta += clockang
+                    print('but KL modes don\'t match. Regenerating.')
+                    runfakes = True
 
-            # put NaNs back
-            dataset.input[np.isnan(dataset_copy) == True] = np.nan
+            #special case where pipeline broke in between the two steps - needs whole cube in memory to do throughput calc.
+            if runfakes == False and calcthrpt == True:
+                runfakes = True
+                print("but I can't find a throughput file so I am regenerating it.")
 
-            # KLIP dataset with fake planets. Highpass filter here.
-            parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=pfx, algo='klip', annuli=numann,
-                                      subsections=1, movement=movm, numbasis=KLlist, calibrate_flux=False, mode="ADI",
-                                      highpass=highpass, save_aligned=False, time_collapse='median', maxnumbasis=100)
+            if runfakes==True:
 
-        # reset initial theta for recovery loop
-        inittheta = 75.*iter
+                #pull the clean input data every time
+                dataset.input = np.copy(dataset_copy)
 
-        # create a list that will store throughputs for this iteration
-        thrpt_list = np.zeros((len(KLlist),len(thrpt_seps)))
+                # replace any nans in image with zeros (edges, padded) for fake injection
+                dataset.input[np.isnan(dataset.input) == True] = 0.
+
+                #create copy of dataset.input * contrast for injection
+                if ghost==False:
+                    to_inject = contrast * dataset.input
+                
+                #inject planets in raw images
+                for sep in thrpt_seps:
+                    if ghost == True:
+                        fakes.inject_planet(dataset.input, dataset.centers, np.repeat(contrast, nims)[0], dataset.wcs, sep, theta, fwhm=fwhm)
+                    else:
+                        fakes.inject_planet(dataset.input, dataset.centers, to_inject, dataset.wcs, sep, theta, fwhm=fwhm,
+                                        stampsize=imsz)  # , thetas=thetas)
+                    theta += clockang
+
+                # put NaNs back
+                dataset.input[np.isnan(dataset_copy) == True] = np.nan
+
+                # KLIP dataset with fake planets. Highpass filter here.
+                parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=pfx, algo='klip', annuli=numann,
+                                          subsections=1, movement=movm, numbasis=KLlist, calibrate_flux=False, mode="ADI",
+                                          highpass=highpass, save_aligned=False, time_collapse='median', maxnumbasis=100)
+
+            # reset initial theta for recovery loop
+            inittheta = 75.*iter
+
+            # create a list that will store throughputs for this iteration
+            thrpt_list = np.zeros((len(KLlist),len(thrpt_seps)))
 
 
-        #calculate a few fixed quantities
-        annspacing = (imsz / 2. - IWA) / numann
-        zone_boundaries_p = np.arange(1, numann) * annspacing + IWA
-        zone_boundaries = [int(bdry) for bdry in zone_boundaries_p]
-
-        if calcthrpt==True:
+            #calculate a few fixed quantities
+            annspacing = (imsz / 2. - IWA) / numann
+            zone_boundaries_p = np.arange(1, numann) * annspacing + IWA
+            zone_boundaries = [int(bdry) for bdry in zone_boundaries_p]
 
             nimages = dataset.output.shape[1]
             fake_fluxes = np.zeros((n_planets, nimages))
@@ -695,6 +690,10 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             # loop through locations, find throughput and record
             for loc in record_seps:
                 # interpolate over throughputs to find value at loc
+                if calcthrpt==True:
+                    imsz=dataset.input.shape[1]
+                else:
+                    imsz=int(thrpt_header["IMSZ"])
                 if loc < dataset.input.shape[1]/2*platescale:
                     tpt = np.interp(loc / platescale, thrpt_seps, thrpt_avgs[klctr,:])
                 else:
@@ -716,23 +715,27 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     thrpt_out[:,1,:]=thrpt_avgs
     thrpt_out[:,2:,:]=thrpts
 
-    head["NPLANET"]=n_planets
-    head["CTRST"]=contrast
-    head["ITERS"]=iterations
-    head["PASTART"]=0
-    head["CLOCKANG"]=clockang
-    head["KLMODES"]=str(KLlist)[1:-1]
-    head["NUMANN"]=numann
-    head["MOVM"]=movm
-    head["IWA"]=IWA
-    head["ZONEBDRY"]=str(zone_boundaries)[1:-1]
-    head["ROW1"]="separations (pix)"
-    head["ROW2"]="average throughput"
-    head["OTHROWS"]="individual throughputs"
-                
-    fits.writeto(tpt_fname, thrpt_out, header=head, overwrite=True)
+    #if this is the first time generating it, write out
+    if calcthrpt==True:
 
-    df.to_csv(rdx_params_dfname, index=False)
+        head["NPLANET"]=n_planets
+        head["CTRST"]=contrast
+        head["ITERS"]=iterations
+        head["PASTART"]=0
+        head["CLOCKANG"]=clockang
+        head["KLMODES"]=str(KLlist)[1:-1]
+        head["NUMANN"]=numann
+        head["MOVM"]=movm
+        head["IWA"]=IWA
+        head["ZONEBDRY"]=str(zone_boundaries)[1:-1]
+        head["ROW1"]="separations (pix)"
+        head["ROW2"]="average throughput"
+        head["OTHROWS"]="individual throughputs"
+        head["IMSZ"]=dataset.input.shape[1]
+                    
+        fits.writeto(tpt_fname, thrpt_out, header=head, overwrite=True)
+
+        df.to_csv(rdx_params_dfname, index=False)
 
     return (thrpt_out, zone_boundaries, df, dataset_prefix)
 
@@ -820,16 +823,25 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
     #read in fwhm
     dataset_fwhm = klheader["0PCTFWHM"]
 
+    #set up some naming stuff
+    if KLlist==[1,2,3,4,5,10,20,50,100]:
+      klstr='all'
+    else:
+      if isinstance(KLlist,int):
+        klstr=str(KLlist)
+      else:
+        klstrlist = [str(kl) for kl in KLlist]
+        klstr='_'.join(klstrlist)
+
     #raw contrast is independent of fake injection so simpler name string
     rawc_prefix = make_prefix(data_str, wl, cut)
-    rawc_prefix += '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + 'hp' + str(highpass)
+    rawc_prefix += '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + 'hp' + str(highpass)+'_kl'+klstr
 
     #set OWA
     klim = klcube[0, :, :]
-    if klim.shape[1]/2 <= 140:
-        OWA = klim.shape[1]/2
-    else:
-        OWA = 140  # a little beyond 1" is the furthest out we will go for computing contrast. Can change if needed.
+
+    #thrpt doesn't work for planets near the edge. truncating to match those seps
+    OWA = klim.shape[1]/2-2*int(fwhm)
 
     #check whether has already been computed
     if (os.path.exists(outputdir+rawc_prefix+'_rawcontrast.fits')) and (overwrite==False):
@@ -846,7 +858,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
         #loop over KL modes
         for KL in KLlist:
 
-            contrast_seps, contrast = klip.meas_contrast(klcube[klctr,:,:], IWA, OWA, dataset_fwhm,
+            contrast_seps, contrast = klip.meas_contrast(klcube[klctr,:,:], IWA, OWA, dataset_fwhm*2,
                                                      center=dataset_center, low_pass_filter=False)
             if klctr == 0:
                 contrast_out=np.zeros((len(KLlist), 3+iterations, len(contrast_seps)))
@@ -998,14 +1010,14 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
     IWA = inner working angle
 
     written by Kate Follette June 2019
-    NOTE NOT COMPATIBLE WITH MULTIPLE KL MODES AT PRESENT
+    2020 - modified to accommodate multiple KL modes
     """
     #read in or make data frame
     df = get_df(rdx_params_dfname)
 
     fakestr = '_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
     klipstr =  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) +'hp'+str(highpass)#+'_KL'+str(KLlist[0])
-    outstr = fakestr + klipstr
+    outstr = klipstr + fakestr
 
     i=0
 

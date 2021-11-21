@@ -375,12 +375,17 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         idx = df.index[(df["Dataset"]==data_str) &  (df["pctcut"]==cut)].tolist()
         print('this dataset and cut has ', len(idx), 'entries already')
 
+        #if only peakcut columns exist, add the relevant new ones
+        if "uniq rdx str" not in df.columns:
+            for c in cols:
+                df[c]=np.nan
+                
         ##are any of them filled in? 
         thesedata_strs = df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]].values
         uniq_str_list=[]
         for s in thesedata_strs:
-            if isinstance(s,str):
-                uniq_str_list.append(s)
+            if isinstance(s[0],str):
+                uniq_str_list.append(s[0])
 
         #if just blank entries (just peak cut data exists)
         if len(uniq_str_list)<1:
@@ -391,7 +396,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         #if at least one string entry exists
         else:
             #check whether this reduction is the same   
-            if dataset_prefix in thesedata_strs:
+            if dataset_prefix in uniq_str_list:
                 print('and the uniq rdx str is the same.')
                 if overwrite==True:
                     print('Overwriting')

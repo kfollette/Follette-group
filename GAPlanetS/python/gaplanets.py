@@ -842,6 +842,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
 
     #thrpt doesn't work for planets near the edge. truncating to match those seps
     OWA = klim.shape[1]/2-2*int(fwhm)
+    OWA = klim.shape[1]/2-2*int(dataset_fwhm)
 
     #check whether has already been computed
     if (os.path.exists(outputdir+rawc_prefix+'_rawcontrast.fits')) and (overwrite==False):

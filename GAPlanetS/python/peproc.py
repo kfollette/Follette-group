@@ -22,6 +22,7 @@ import threading
 import itertools as it
 import progressbar
 from time import sleep
+from datetime import date
 
 
 def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, writefiles=True, snrthresh=False, oldpe=False, separate_planets=False):
@@ -1105,7 +1106,7 @@ def save_pe_dict(d, dwritename, doutdir='./dicts/'):
     pickle.dump(d,open(doutdir+dwritename+".p","wb"))
 
 
-def pull_dsets(false_dir, real_dir, out_dir, namestr='*',exceptstr = False):
+def pull_dsets(false_dir, real_dir, out_dir, namestr='*',exceptstr = False, dateorder=True):
   """
   Pull all the real planet H-alpha parameter explorers and look for continuum false planet matches.
 
@@ -1126,6 +1127,24 @@ def pull_dsets(false_dir, real_dir, out_dir, namestr='*',exceptstr = False):
   os.chdir(false_dir)
   falselist = glob.glob('paramexplore*'+namestr+'*.fits')
   os.chdir(thisdir)
+
+  #put reallist in date order, as this will be the processing/display order
+  if dateorder==True:
+    monthstrs = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    t=[]
+    for i in np.arange(len(reallist)):
+        print(reallist[i])
+        linefname = reallist[i].split('_')
+        line_date = linefname[2]
+        monthstr = [s for s in monthstrs if s in line_date]
+        monthno = [i for i in np.arange(1,13) if monthstrs[i-1] in line_date]
+        year = int('20'+line_date[-2:])
+        day = line_date.split(monthstr[0])[0]
+        print(line_date, '= day:', day, ' month:', monthno[0], ' year:', year)
+        t.append(date(year=year, month=int(monthno[0]), day=int(day)))
+
+    #now sort
+    reallist = [x for _, x in sorted(zip(t, reallist))]
 
   dset_stringlist=[]  
   rlist = []
@@ -1725,7 +1744,7 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
         plt.show()
     return(wts, kls)
 
-def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*', exceptstr=False, wts=[1,0,1,0,0,0,1,1], kls=[1,2,3,4,5,10,20,50,100], datestr=False, sepkl=False, seppl=False, snt=False, dtn=False, makeplot=True, writefits=False, keylist=False, maxx=25, maxy=25):
+def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*', exceptstr=False, wts=[1,0,1,0,0,0,1,1], kls=[1,2,3,4,5,10,20,50,100], datestr=False, sepkl=False, seppl=False, snt=False, makeplot=True, writefits=False, maxx=25, maxy=25):
 
     #find all completed pe combos
     dset_stringlist, reallist, falselist = pull_dsets(false_dir, real_dir, out_dir, namestr=namestr, exceptstr=exceptstr)
@@ -1747,9 +1766,9 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
         line_klip_params = linefname[-2]
 
         coll_string = line_obj+'_'+line_date+'_wts'+''.join([str(x) for x in wts])+'_kls'+''.join([str(x) for x in kls])+'_sepkl'+str(sepkl)+'_snthresh'+str(snt)
-        if keylist!=False and i>0:
-            if coll_string in keylist:
-                return(dtn)
+        #if keylist!=False and i>0:
+            #if coll_string in keylist:
+                #return(dtn)
 
         match=False
         #look for matching continuum

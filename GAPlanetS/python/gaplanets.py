@@ -694,7 +694,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
                     imsz=dataset.input.shape[1]
                 else:
                     imsz=int(thrpt_header["IMSZ"])
-                if loc < dataset.input.shape[1]/2*platescale:
+                if loc < imsz*platescale:
                     tpt = np.interp(loc / platescale, thrpt_seps, thrpt_avgs[klctr,:])
                 else:
                     tpt = np.nan
@@ -841,7 +841,6 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
     klim = klcube[0, :, :]
 
     #thrpt doesn't work for planets near the edge. truncating to match those seps
-    OWA = klim.shape[1]/2-2*int(fwhm)
     OWA = klim.shape[1]/2-2*int(dataset_fwhm)
 
     #check whether has already been computed

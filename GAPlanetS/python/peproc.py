@@ -1338,7 +1338,7 @@ def split_by_completeness(false_dir, real_dir, out_dir, namestr='*', pklstr='*',
     for dset in dset_stringlist:
         dictlist = glob.glob(out_dir+dset+pklstr+'.p')
         if len(dictlist)>0:
-            print('match exists already for', dset, ', namely:', dtname)
+            print('match exists already for', dset, ', namely:', dictlist)
             dset_done.append(dset_stringlist[i])
             rlist_done.append(rlist[i])
             flist_done.append(flist[i])
@@ -1424,16 +1424,17 @@ def compile_keys(out_dir, done, pklstr):
 
         for key in keys:
             keys_compiled.append(key)
-
-        if len(np.unique(current_keys)) != len(current_keys):
-            print('why arent the keys unique?')
-        else:
-            print('dataset', dictname, 'has', len(current_keys), 'unique keys')
-      
+        
         dset_nkeys.append(len(keys_compiled))
 
         if len(keys_compiled)>=len(current_keys):
             current_keys = keys_compiled
+        
+        if len(np.unique(current_keys)) != len(current_keys):
+            print('why arent the keys unique?')
+        else:
+            print('dataset', dictname, 'has', len(keys_compiled), 'unique keys')
+      
     print('total keys:', np.sum(dset_nkeys))
     print('max keys per dataset:', len(current_keys))
     return(current_keys)
@@ -1689,15 +1690,19 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
     mean_sums, mean_stds, mean_meds, mean_mdiffs = masterlists
     sumcut, stdcut, medcut, diffcut = cutoffs
 
+    wtslist = []
+    klslist = []
     #loop through all metric combos meeting criteria
     for i in np.arange(len(bestlist)):
         
         wtstr, klstr, mean_sum, mean_std, mean_med, mean_mdiff = bestlist[i]
 
         wts = [int(i) for i in wtstr]
+        wtslist.append(wts)
         kl_binaries = [int(k) for k in klstr]
         kllist = np.array([1,2,3,4,5,10,20,50,100])*kl_binaries
         kls = [int(kl) for kl in kllist if int(kl) > 0] 
+        klslist.append(kls)
 
         f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10,8))
 
@@ -1718,7 +1723,7 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
         ax2.set_xlabel(r'Avg. $\sigma$ of DQ$_{HR}$-DQ$_{CF}$')
         y2 = ax2.get_ylim()
         ax2.plot((mean_std,mean_std),(0,y2[1]), color='r')
-        ax2.set_xlim(0.15,0.4)
+        ax2.set_xlim(0.1,0.4)
 
         n,b1,patches = ax3.hist(mean_meds, range=(0.01,0.1),bins=40,density=True, lw=3, histtype='step')
         n,b1,patches = ax3.hist(mean_meds, range=(0.01,0.1),bins=40,density=True, lw=3, alpha=0)
@@ -1742,7 +1747,7 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
         plt.suptitle('Weights: '+str(wts)+', KLs: '+str(kls))
         plt.savefig('wts'+wtstr+'_kls'+klstr+'_metricselect_hists.png')
         plt.show()
-    return(wts, kls)
+    return(wtslist, klslist)
 
 def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*', exceptstr=False, wts=[1,0,1,0,0,0,1,1], kls=[1,2,3,4,5,10,20,50,100], datestr=False, sepkl=False, seppl=False, snt=False, makeplot=True, writefits=False, maxx=25, maxy=25):
 
@@ -1934,6 +1939,6 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
 
         plt.savefig(out_dir+coll_string+'_realvfalse.png')
 
-    return(dtn)
+    return()
 
 

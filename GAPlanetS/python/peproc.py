@@ -1095,3 +1095,818 @@ def save_pe_dict(d, dwritename, doutdir='./dicts/'):
     if not os.path.exists(doutdir):
         os.makedirs(outdir)
     pickle.dump(d,open(doutdir+dwritename+".p","wb"))
+
+
+def pull_dsets(false_dir, real_dir, out_dir, namestr='*',exceptstr = False):
+  """
+  Pull all the real planet H-alpha parameter explorers and look for continuum false planet matches.
+
+  Required Input:
+  Directories for false planets, real planets, and output
+
+  Optional Inputs:
+  namestr = a string (e.g. objname) that all paramexplores you want compiled have
+
+  Outputs:
+  list of dataset names (objname_date)
+  list of real planet pe filenames
+  list of false planet pe filenames
+  """
+  thisdir = os.getcwd()
+  os.chdir(real_dir)
+  reallist = glob.glob('paramexplore*'+namestr+'*.fits')
+  os.chdir(false_dir)
+  falselist = glob.glob('paramexplore*'+namestr+'*.fits')
+  os.chdir(thisdir)
+
+  dset_stringlist=[]  
+  rlist = []
+  flist = []
+  #extract info and find matches 
+  for i in np.arange(len(reallist)):
+    linefname = reallist[i].split('_')
+    #extract object name, date, wl, cut
+    line_obj = linefname[1]
+    line_date = linefname[2]
+    line_wl = linefname[3]
+    line_cut = linefname[4]
+    line_klip_params = linefname[-2]
+    line_hpval = linefname[-1].split('.')[0]
+
+    match=False
+    #look for matching continuum
+    for j in np.arange(len(falselist)):
+      contfname = falselist[j].split('_')
+      cont_obj = contfname[1]
+      cont_date = contfname[2]
+      cont_wl = contfname[3]
+      cont_cut = contfname[4]
+      cont_klip_params = contfname[-2]
+      cont_hpval = contfname[-1].split('.')[0]
+      if line_obj == cont_obj:
+        if line_date == cont_date:
+          if (line_wl == 'Line') and (cont_wl=='Cont'):
+            if line_cut == cont_cut:
+              if line_klip_params == cont_klip_params:
+                if line_hpval == cont_hpval:
+                  match=True
+                  falseind=j
+                  dset_str = line_obj+'_'+line_date
+                  if str(exceptstr) not in dset_str:
+                      dset_stringlist.append(dset_str)
+                      rlist.append(reallist[i])
+                      flist.append(falselist[j])
+
+  return(dset_stringlist, rlist, flist)
+
+
+def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pklstr='*', overwrite=False):
+  """
+  process one dataset at a time, generating all possible klcombo, parametercombo pairs and save normalized difference
+  stats and images in a dictionary
+
+  INPUTS:
+  dset_string: the unique OBJNAME_DATE string for the dataset
+  realpe:  the filename of the real planet H-alpha pe matching that string
+  falsepe: the filename of the false planet Continuum pe matching both 
+  """
+  outfname = out_dir+dset_string+pklstr+'.p'
+  if os.path.exists(outfname):
+    print('pickle file' + outfname + 'already exists.')
+    if overwrite==True:
+        print('but overwrite is true. Rerunning.')
+    else:
+        return()
+
+  print('processing', dset_string)
+
+  sepkl=True
+  snt=False
+  
+  i=0
+  skip=0
+  skip2=0
+  dtn={}
+  dtn2={}
+  
+  kllist = [1,2,3,4,5,10,20,50,100]
+  #how many unique combos for each object?
+  klpossible = it.product((np.nan,1), repeat=9)
+
+  bar = progressbar.ProgressBar(maxval=52, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+  barctr=0
+  bar.start()
+
+  for klcombo in klpossible:
+    if np.nansum(klcombo)>=1:
+      j=0
+      klchoice = np.multiply(kllist,list(klcombo))
+      kls = [int(kl) for kl in klchoice if (np.isnan(kl)==False)]
+      
+      metricpossible = it.product((0,1), repeat=6)
+      
+      for mcombo in metricpossible:
+
+        if np.nansum(mcombo)>=1:
+          go=True
+          
+          #will break on false pos only (degenerate)
+          if (np.sum(mcombo)==1) and (mcombo[4]==1):
+            skip+=1
+            go = False
+
+          #stdev across kl modes has no meaning if nkl !>1 skip all metrics
+          #elif (np.nansum(klcombo)<3) and (np.sum(mcombo[4:6])>=1):
+            #skip+=1
+            #go = False
+
+          else:
+
+            if go==True:
+
+              try:
+                fake_metric_cube, fake_agg_cube, fake_ann_val, fake_movm_val, fake_metric_scores, fake_metric_fname = find_best_new(falsepe, kls, pedir=false_dir, writestr=False, writefiles=False, weights=list(mcombo), outdir=false_dir+'proc/', 
+                                                                                                                                            oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=False, separate_kls=sepkl, snrthresh=snt)
+                real_metric_cube, real_agg_cube, real_ann_val, real_movm_val, real_metric_scores, real_metric_fname = find_best_new(realpe, kls, pedir=real_dir, writestr=False, writefiles=False, weights=list(mcombo), outdir=real_dir+'proc/', 
+                                                                                                                                            oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=False, separate_kls=sepkl, snrthresh=snt) 
+                go=True  
+
+              except:
+                go=False
+                skip2+=1 
+
+            if go==True:
+              fake_cube = fake_metric_cube
+              real_cube = real_metric_cube
+
+              ##NORMALIZE TO 90th pctile AND SUBTRACT 10th pctile for each KL mode
+              sig_diff=np.zeros((len(kls)))*np.nan
+              sig_diff_wt=np.zeros((len(kls)))*np.nan
+
+              for kl in np.arange(len(kls)):
+                fake_cube[-1,:,kl,:,:,:]=fake_cube[-1,:,kl,:,:,:]-np.nanpercentile(fake_cube[-1,:,kl,:,:,:],10)
+                real_cube[-1,:,kl,:,:,:]=real_cube[-1,:,kl,:,:,:]-np.nanpercentile(real_cube[-1,:,kl,:,:,:],10)
+                        
+                #normalize to max
+                fake_cube[-1,:,kl,:,:,:]=fake_cube[-1,:,kl,:,:,:]/np.nanpercentile(fake_cube[-1,:,kl,:,:,:],90)
+                real_cube[-1,:,kl,:,:,:]=real_cube[-1,:,kl,:,:,:]/np.nanpercentile(real_cube[-1,:,kl,:,:,:],90)
+                                  
+                diff = fake_cube-real_cube
+                #weight it by the normalized aggregate metric (downweights low SNR regions)
+                diff_wt = diff*fake_cube[-1,:,kl,:,:,:]
+
+                #differences in metric score for real planet at fake planet peak
+                sig_diff[kl] = diff[-1,0,kl,0,int(fake_ann_val[kl][0]-1),int(fake_movm_val[kl][0])]
+                sig_diff_wt[kl] = diff_wt[-1,0,kl,0,int(fake_ann_val[kl][0]-1),int(fake_movm_val[kl][0])]
+                
+              #kl x ann x movm grids of aggregate param qual metric 
+              diff_wt_agg = diff_wt[-1,0,:,0,:,:]  
+              diff_agg = diff[-1,0,:,0,:,:]
+
+              #avg metric score diffs across KL mode
+              sig_diff_avg = np.nanmean(sig_diff)
+              sig_diff_wt_avg = np.nanmean(sig_diff_wt)
+
+              #difference in metric score at fake planet peak
+              coll_string = dset_string+'_wts'+''.join([str(x) for x in mcombo])+'_kls'+''.join([str(x) if str(x)=='1' else '0' for x in list(klcombo)])+'_sepkl'+str(sepkl)+'_snthresh'+str(snt)
+              dtn[coll_string]=(np.nansum(diff_wt_agg), np.nanstd(diff_wt_agg), np.nanmedian(diff_wt_agg), sig_diff_wt_avg)
+              dtn2[coll_string]=(np.nansum(diff_agg), np.nanstd(diff_agg), np.nanmedian(diff_agg), sig_diff_avg) 
+              
+              j+=1
+        else:
+          #print('skipping zero sum!', mcombo)
+          continue
+
+      if i%10==0:
+        barctr+=1
+        bar.update(barctr)
+        sleep(0.5)
+      i+=1
+      #print('klcombo', i, '/511 done')
+    else:
+      print('skipped kl')
+      continue
+
+  bar.finish()
+  print('skipped', skip)
+  print('no unique soln', skip2)
+  print("dumping dict for dataset", dset_string, 'with', i, 'klcombos and', j, 'metric combos')
+  pickle.dump(dtn,open(out_dir+dset_string+pklstr+'wt.p','wb'))
+  pickle.dump(dtn2,open(out_dir+dset_string+pklstr+'.p','wb'))
+  
+  return(dtn,dtn2)
+
+def split_by_completeness(false_dir, real_dir, out_dir, namestr='*', pklstr='*', exceptstr=False):
+
+    dset_stringlist, rlist, flist = pull_dsets(false_dir, real_dir, out_dir, namestr=namestr, exceptstr=exceptstr)
+
+    ##process only the ones that have not yet been run
+    i=0
+    new_dsetlist=[]
+    new_rlist=[]
+    new_flist=[]
+    dset_done=[]
+    rlist_done=[]
+    flist_done=[]
+    for dset in dset_stringlist:
+        dictlist = glob.glob(out_dir+dset+pklstr+'.p')
+        if len(dictlist)>0:
+            print('match exists already for', dset, ', namely:', dtname)
+            dset_done.append(dset_stringlist[i])
+            rlist_done.append(rlist[i])
+            flist_done.append(flist[i])
+        else:
+            new_dsetlist.append(dset_stringlist[i])
+            new_rlist.append(rlist[i])
+            new_flist.append(flist[i])
+        i+=1
+
+    toproc = (new_dsetlist, new_rlist, new_flist)
+    done = (dset_done, rlist_done, flist_done)
+
+    return(toproc, done)
+
+def batch_dset_proc(dset_stringlist, toproc, false_dir, real_dir, out_dir,  pklstr='*', overwrite=False, parallel=False):
+
+    dsetlist, rlist, flist = toproc
+
+    if parallel==True:
+        threadlist = []
+        for k in np.arange(len(dsetlist)):
+            t = threading.Thread(target=proc_one_dset,args=(dsetlist[k],rlist[k],flist[k],false_dir, real_dir, out_dir,  pklstr, overwrite))
+            threadlist.append(t)
+            t.start()
+        
+        for tr in threadlist:
+            tr.join()
+            print("Finished")
+    else:
+        for i in np.arange(len(dset_stringlist)):
+            print(i)
+            proc_one_dset(dsetlist[i],rlist[i],flist[i], false_dir, real_dir, out_dir,  pklstr=pklstr, overwrite=overwrite)
+    return()
+
+def compile_keys(out_dir, done, pklstr):
+
+    dset_done, rlist_done, flist_done = done
+
+    #sanity check - number of dictionary keys is consistent with the number of unique combos 
+    i=0
+    
+    #how many unique combos for each object?
+    klpossible = it.product((np.nan,1), repeat=9)
+    skip=0
+    k=0
+    
+    for klcombo in klpossible:
+      if np.nansum(klcombo)>=1:
+        j=0
+        metricpossible = it.product((0,1), repeat=6)
+        for mcombo in metricpossible:
+          if np.sum(mcombo)>=1:
+            test = list(mcombo)
+            #will break on false pos only (degenerate)
+            if (np.sum(mcombo)==1) and (test[4]==1):
+              skip+=1
+            #stdev has no meaning if nkl !>2 skip all metrics weighting this
+            #elif (np.nansum(klcombo)<2) and (np.sum(test[4:6])>=1):
+              #skip+=1         
+            else:
+              if np.sum(mcombo)==0:
+                print('WTF')
+              i+=1
+              j+=1
+          else:
+            continue
+        k+=1
+    print('skipped', skip)
+    print('total possible combos:', i)
+    print('total metric combos:', j)
+    print('total kl combos:', k)
+
+    #now make a list of all keys in all dicts
+    dset_nkeys =[]
+    current_keys = []
+    
+    for dictname in dset_done:
+        print(dictname)
+        d = pickle.load( open( out_dir+dictname+pklstr+'.p', "rb" ) )
+      
+        keys = d.keys()
+        keys_compiled = []
+
+        for key in keys:
+            keys_compiled.append(key)
+
+        if len(np.unique(current_keys)) != len(current_keys):
+            print('why arent the keys unique?')
+        else:
+            print('dataset', dictname, 'has', len(current_keys), 'unique keys')
+      
+        dset_nkeys.append(len(keys_compiled))
+
+        if len(keys_compiled)>=len(current_keys):
+            current_keys = keys_compiled
+    print('total keys:', np.sum(dset_nkeys))
+    print('max keys per dataset:', len(current_keys))
+    return(current_keys)
+
+def compute_bulk_diagnostics(current_keys, pklstr, done, out_dir):
+
+    dset_done, rlist_done, flist_done = done
+
+    #compare across combos
+    #set up empty arrays to fill
+    #dimensions are: 0) keys per dataset, 1) datasets, number of metrics, number of kls
+    #for collapsing by kl or metric
+    wt_sum_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    sum_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    wt_std_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    std_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    wt_med_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    med_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    wt_mdiff_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    mdiff_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+
+
+    p=0 #dataset counter
+    k=0 #key counter
+    #loop through 
+    refkeys=[]
+    for pname in dset_done:
+      d = pickle.load( open( out_dir + pname + pklstr + 'wt.p', "rb" ) )
+      d2 = pickle.load( open( out_dir + pname + pklstr + '.p', "rb" ) )
+      keys = d.keys()
+
+      ##loop over possible klcombo, mcombo pairs
+      skip=0
+      for key in keys:
+        key_split  = key.split('_')
+        #pull out parameter weights
+        key_wts = key_split[2].split('wts')
+        wt_list = [int(x) if int(x)==1 else np.nan for x in key_wts[1]]
+
+        #pull out kllist
+        key_kls = key_split[3].split('kls')
+        kl_list = [int(x) if int(x)==1 else np.nan for x in key_kls[1]]
+
+        #fill in sum, stdev and mean values for difference maps (weighted and unweighted)       
+        #np.outer of the wt_list and kl_list is a nmetric x nkl grid of nans and 1s
+        #so sum/std/mean will be repeated for every combo of metric/kl for which it's "on" 
+        #add only if the weights and kl modes match
+        
+        #check same
+        wt_sum_matrix[k,:,:]=np.outer(wt_list,kl_list)*(d[key][0])
+        sum_matrix[k,:,:]=np.outer(wt_list,kl_list)*(d2[key][0])
+        wt_std_matrix[k,:,:]=np.outer(wt_list,kl_list)*(d[key][1])
+        std_matrix[k,:,:]=np.outer(wt_list,kl_list)*(d2[key][1])
+        wt_med_matrix[k,:,:]=np.outer(wt_list,kl_list)*(d[key][2])
+        med_matrix[k,:,:]=np.outer(wt_list,kl_list)*(d2[key][2])
+        wt_mdiff_matrix[k,:,:]=np.outer(wt_list,kl_list)*(d[key][-1])
+        mdiff_matrix[k,:,:]=np.outer(wt_list,kl_list)*(d2[key][-1])
+        k+=1
+      p+=1
+
+      wt_diagnostics = (wt_sum_matrix, wt_std_matrix, wt_med_matrix, wt_mdiff_matrix)
+      diagnostics = (sum_matrix, std_matrix, med_matrix, mdiff_matrix)
+      print("skipped",skip)
+
+    return(wt_diagnostics,diagnostics)
+
+
+def diaghists_bykl(diagnostics):
+
+    sum_matrix, std_matrix, med_matrix, mdiff_matrix = diagnostics
+
+    ##plot histograms for the different kl modes individually
+    kls = [1,2,3,4,5,10,20,50,100]
+    for i in np.arange(9):
+        f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(16.,3))
+        #np.ravel to tally in 1D
+        thissum = np.ravel(sum_matrix[:,:,i])
+        ax1.hist(thissum,bins=50)
+        ax1.set_xlim(-100,500)
+        ax1.set_title('Sum of weighted differences \n KL = '+ str(kls[i]) + ' mean:{:.2f} std:{:.2f}'.format(np.nanmean(thissum),np.nanstd(thissum)) )
+        thisstd = np.ravel(std_matrix[:,:,i])
+        ax2.hist(thisstd,bins=100)
+        ax2.set_xlim(0,1)
+        ax2.set_title('Stdev of weighted differences \n KL = '+ str(kls[i]) + ' mean:{:.2f} std:{:.2f}'.format(np.nanmean(thisstd),np.nanstd(thisstd)) )
+        thismed = np.ravel(med_matrix[:,:,i])
+        ax3.hist(thismed,bins=50)
+        ax3.set_xlim(-0.1,0.3)
+        ax3.set_title('Median of weighted differences \n KL = '+ str(kls[i]) + ' mean:{:.2f} std:{:.2f}'.format(np.nanmean(thismed),np.nanstd(thismed)) )
+        
+        thismdiff = np.ravel(mdiff_matrix[:,:,i])
+        ax4.hist(thismdiff,bins=50)
+        ax4.set_xlim(-0.1,1)
+        ax4.set_title('Diff. of metrics at cont peak \n KL = '+ str(kls[i]) + ' mean:{:.2f} std:{:.2f}'.format(np.nanmean(thismdiff),np.nanstd(thismdiff)) )
+    plt.show()
+
+def diaghists_bymetric(diagnostics):
+
+    sum_matrix, std_matrix, med_matrix, mdiff_matrix = diagnostics
+
+    ##plot histograms for the different metrics individually
+    ms = ['Peak SNR','NQ peak SNR','Avg SNR','NQ avg SNR','stdev across KL','NQ stdev', 'spur pix', 'contrast']
+
+    for i in np.arange(6):
+        f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(16.,3))
+        #np.ravel to tally in 1D
+        thissum = np.ravel(sum_matrix[:,i,:])
+        ax1.hist(thissum,bins=50)
+        ax1.set_xlim(-100,500)
+        ax1.set_title('Sum of weighted differences \n '+ str(ms[i]) + ' mean:{:.2f} std:{:.2f}'.format(np.nanmean(thissum),np.nanstd(thissum)) )
+        thisstd = np.ravel(std_matrix[:,i,:])
+        ax2.hist(thisstd,bins=100)
+        ax2.set_xlim(0,1)
+        ax2.set_title('Stdev of weighted differences \n '+ str(ms[i]) + ' mean:{:.2f} std:{:.2f}'.format(np.nanmean(thisstd),np.nanstd(thisstd)) )
+        thismed = np.ravel(med_matrix[:,i,:])
+        ax3.hist(thismed,bins=50)
+        ax3.set_xlim(-0.1,0.3)
+        ax3.set_title('Median of weighted differences \n '+ str(ms[i]) + ' mean:{:.2f} std:{:.2f}'.format(np.nanmean(thismed),np.nanstd(thismed)) )
+        thismdiff = np.ravel(mdiff_matrix[:,i,:])
+        ax4.hist(thismdiff,bins=50)
+        ax4.set_xlim(-0.1,1)
+        ax4.set_title('Diff. of metrics at cont peak \n '+ str(ms[i]) + ' mean:{:.2f} std:{:.2f}'.format(np.nanmean(thismdiff),np.nanstd(thismdiff)) )
+        plt.show()
+
+def compute_dset_diagnostics(current_keys, done, pklstr, out_dir):
+    
+    dset_done, rlist_done, flist_done = done
+
+    #set up empty arrays to fill
+    #dimensions are: 0) keys per dataset, 1) datasets
+
+    #for analyzing by dataset
+    wt_sum_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
+    sum_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
+    wt_std_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
+    std_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
+    wt_med_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
+    med_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
+
+    wt_mdiff_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
+    mdiff_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
+
+    p=0 #dataset counter
+    #loop through 
+    refkeys=[]
+    for pname in dset_done:
+        d = pickle.load( open( out_dir + pname + pklstr + 'wt.p', "rb" ) )
+        d2 = pickle.load( open( out_dir + pname + pklstr + '.p', "rb" ) )
+        keys = d.keys()
+        k=0 #reset key counter
+
+        ##loop over possible klcombo, mcombo pairs
+        skip=0
+        for key in keys:
+            key_split  = key.split('_')
+            #pull out parameter weights
+            key_wts = key_split[2].split('wts')
+            wt_list = [int(x) if int(x)==1 else np.nan for x in key_wts[1]]
+
+            #pull out kllist
+            key_kls = key_split[3].split('kls')
+            kl_list = [int(x) if int(x)==1 else np.nan for x in key_kls[1]]
+            
+            uniqname = str(key_wts[1])+str(key_kls[1])
+            if p==0:
+                refkeys.append(uniqname)
+
+            #fill in sum, stdev and mean values for difference maps (weighted and unweighted)       
+            #np.outer of the wt_list and kl_list is a nmetric x nkl grid of nans and 1s
+            #so sum/std/mean will be repeated for every combo of metric/kl for which it's "on" 
+            #add only if the weights and kl modes match
+            
+            #check same
+            if uniqname==refkeys[k]:
+                #also in list form
+                wt_sum_list[k,p]=(d[key][0])
+                sum_list[k,p]=(d2[key][0])
+                wt_std_list[k,p]=(d[key][1])
+                std_list[k,p]=(d2[key][1])
+                wt_med_list[k,p]=(d[key][2])
+                med_list[k,p]=(d2[key][2])
+                wt_mdiff_list[k,p]=(d[key][-1])
+                mdiff_list[k,p]=(d2[key][-1])
+        
+            #if not same, find the right place to put it
+            else:
+                if uniqname in refkeys:
+                    refind = [i for i in range(len(refkeys)) if refkeys[i] == uniqname]
+                    wt_sum_list[refind[0],p]=(d[key][0])
+                    sum_list[refind[0],p]=(d2[key][0])
+                    wt_std_list[refind[0],p]=(d[key][1])
+                    std_list[refind[0],p]=(d2[key][1])
+                    wt_med_list[refind[0],p]=(d[key][2])
+                    med_list[refind[0],p]=(d2[key][2])  
+                    wt_mdiff_list[refind[0],p]=(d[key][-1])
+                    mdiff_list[refind[0],p]=(d2[key][-1])       
+                else:
+                    skip+=1
+
+            k+=1
+        p+=1
+
+    wt_diaglists = (wt_sum_list, wt_std_list, wt_med_list, wt_mdiff_list)
+    diaglists = (sum_list, std_list, med_list, mdiff_list)
+    print("skipped", skip)
+    return(wt_diaglists, diaglists, refkeys)
+
+def avg_diag_across_dsets(diaglists, refkeys):
+
+    sum_list, std_list, med_list, mdiff_list = diaglists
+    #loop ofer all possible combos
+    mean_sum = []
+    mean_std = []
+    mean_med = []
+    mean_mdiff = []
+    for i in np.arange(len(refkeys)):
+      mean_sum.append(np.nanmean(sum_list[i,:]))
+      mean_std.append(np.nanmean(std_list[i,:]))
+      mean_med.append(np.nanmean(med_list[i,:]))
+      mean_mdiff.append(np.nanmean(mdiff_list[i,:]))
+
+    masterlists = (mean_sum, mean_std, mean_med, mean_mdiff)
+    return(masterlists)
+
+def find_best_diag(masterlists, cutoffpct, refkeys):
+
+    mean_sum, mean_std, mean_med, mean_mdiff = masterlists
+
+    sumcut = np.percentile(np.abs(mean_sum),cutoffpct)
+    stdcut = np.percentile(mean_std,cutoffpct)
+    medcut = np.percentile(np.abs(mean_med),cutoffpct)
+    diffcut = np.percentile(np.abs(mean_mdiff), cutoffpct)
+
+    cutoffs = (sumcut, stdcut, medcut, diffcut)
+    bestlist=[]
+    for i in np.arange(len(refkeys)):
+      if np.abs(mean_sum[i]) < sumcut:
+        if mean_std[i] < stdcut:
+          if np.abs(mean_med[i]) < medcut:
+            if np.abs(mean_mdiff[i]) < diffcut:
+              print(refkeys[i][:6], refkeys[i][6:], mean_sum[i],mean_std[i],mean_med[i],mean_mdiff[i])
+              bestlist.append((refkeys[i][:6], refkeys[i][6:],mean_sum[i],mean_std[i],mean_med[i],mean_mdiff[i]))
+
+    return(bestlist, cutoffs)
+
+def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
+
+    wt_diaglists, diaglists, refkeys = compute_dset_diagnostics(current_keys, done, pklstr, out_dir)
+    if wt==True:
+        diaglists = wt_diaglists
+    masterlists = avg_diag_across_dsets(diaglists, refkeys)
+    bestlist, cutoffs = find_best_diag(masterlists, cutoffpct, refkeys)
+
+    mean_sums, mean_stds, mean_meds, mean_mdiffs = masterlists
+    sumcut, stdcut, medcut, diffcut = cutoffs
+
+    #loop through all metric combos meeting criteria
+    for i in np.arange(len(bestlist)):
+        
+        wtstr, klstr, mean_sum, mean_std, mean_med, mean_mdiff = bestlist[i]
+
+        wts = [int(i) for i in wtstr]
+        kl_binaries = [int(k) for k in klstr]
+        kllist = np.array([1,2,3,4,5,10,20,50,100])*kl_binaries
+        kls = [int(kl) for kl in kllist if int(kl) > 0] 
+
+        f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10,8))
+
+        n, b1, patches = ax1.hist(mean_sums, range=(0,250), bins=40,density=True, histtype='step', lw=3)
+        n, b1, patches = ax1.hist(mean_sums, range=(0,250), bins=40,density=True, alpha=0)
+        last = np.where(b1<sumcut)[0][-1]
+        plt.setp(patches[:last+1], 'facecolor', 'b', 'alpha', 0.2) 
+        ax1.set_xlabel('Avg. Sum of DQ$_{HR}$-DQ$_{CF}$')
+        yl = ax1.get_ylim()
+        ax1.plot((mean_sum,mean_sum),(0,yl[1]), color='r')
+        ax1.set_xlim(0,250)
+        ax1.set_ylabel("Density")
+
+        n, b1, patches = ax2.hist(mean_stds, range = (0.15,0.4), bins=40,density=True, lw=3, histtype='step')
+        n, b1, patches = ax2.hist(mean_stds, range = (0.15,0.4), bins=40,density=True, alpha=0)
+        last = np.where(b1<stdcut)[0][-1]
+        plt.setp(patches[:last+1], 'facecolor', 'b', 'alpha', 0.2) 
+        ax2.set_xlabel(r'Avg. $\sigma$ of DQ$_{HR}$-DQ$_{CF}$')
+        y2 = ax2.get_ylim()
+        ax2.plot((mean_std,mean_std),(0,y2[1]), color='r')
+        ax2.set_xlim(0.15,0.4)
+
+        n,b1,patches = ax3.hist(mean_meds, range=(0.01,0.1),bins=40,density=True, lw=3, histtype='step')
+        n,b1,patches = ax3.hist(mean_meds, range=(0.01,0.1),bins=40,density=True, lw=3, alpha=0)
+        last = np.where(b1<medcut)[0][-1]
+        plt.setp(patches[:last+1], 'facecolor', 'b', 'alpha', 0.2) 
+        ax3.set_xlabel(r'Avg. Median of DQ$_{HR}$-DQ$_{CF}$')
+        y3 = ax3.get_ylim()
+        ax3.plot((mean_med,mean_med),(0,y3[1]), color='r')
+        ax3.set_xlim(0.01,0.1)
+        ax3.set_ylabel("Density")
+
+        n, b1, patches = ax4.hist(mean_mdiffs, range =(-0.25,0.9), bins=40,density=True, lw=3, histtype='step')
+        n, b1, patches = ax4.hist(mean_mdiffs, range =(-0.25,0.9), bins=40,density=True, lw=3, alpha=0)
+        last = np.where(np.abs(b1)<diffcut)[0][-1]
+        first = np.where(np.abs(b1)<diffcut)[0][0]
+        plt.setp(patches[first-1:last+1], 'facecolor', 'b', 'alpha', 0.2) 
+        ax4.set_xlabel(r'Avg. DQ$_{HR}$-DQ$_{CF}$ at Continuum Peak')
+        y4 = ax4.get_ylim()
+        ax4.plot((mean_mdiff,mean_mdiff),(0,y4[1]), color='r')
+
+        plt.suptitle('Weights: '+str(wts)+', KLs: '+str(kls))
+        plt.savefig('wts'+wtstr+'_kls'+klstr+'_metricselect_hists.png')
+        plt.show()
+    return(wts, kls)
+
+def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*', exceptstr=False, wts=[1,0,1,0,0,0,1,1], kls=[1,2,3,4,5,10,20,50,100], datestr=False, sepkl=False, seppl=False, snt=False, dtn=False, makeplot=True, writefits=False, keylist=False, maxx=25, maxy=25):
+
+    #find all completed pe combos
+    dset_stringlist, reallist, falselist = pull_dsets(false_dir, real_dir, out_dir, namestr=namestr, exceptstr=exceptstr)
+
+    f = plt.figure(figsize=(14.9,4*len(dset_stringlist)))
+    plt.axis('off')
+    nrows = 4*len(dset_stringlist)+1
+    outer = gridspec.GridSpec(nrows, 1, wspace=0., hspace=0.)
+
+    #print(reallist,falselist)
+    #extract info and find matches 
+    for i in np.arange(len(reallist)):
+        linefname = reallist[i].split('_')
+        #extract object name, date, wl, cut
+        line_obj = linefname[1]
+        line_date = linefname[2]
+        line_wl = linefname[3]
+        line_cut = linefname[4]
+        line_klip_params = linefname[-2]
+
+        coll_string = line_obj+'_'+line_date+'_wts'+''.join([str(x) for x in wts])+'_kls'+''.join([str(x) for x in kls])+'_sepkl'+str(sepkl)+'_snthresh'+str(snt)
+        if keylist!=False and i>0:
+            if coll_string in keylist:
+                return(dtn)
+
+        match=False
+        #look for matching continuum
+
+        for j in np.arange(len(falselist)):
+            contfname = falselist[j].split('_')
+            cont_obj = contfname[1]
+            cont_date = contfname[2]
+            cont_wl = contfname[3]
+            cont_cut = contfname[4]
+            cont_klip_params = contfname[-2]
+            if line_obj == cont_obj:
+                if line_date == cont_date:
+                    if (line_wl == 'Line') and (cont_wl=='Cont'):
+                        if line_cut == cont_cut:
+                            if line_klip_params == cont_klip_params:
+                                match=True
+                                falseind=j
+
+
+        #compute the aggregate parameter quality metric for the real and fake data
+        if match==True:
+            fake_metric_cube, fake_agg_cube, fake_ann_val, fake_movm_val, fake_metric_scores, fake_metric_fname = find_best_new(falselist[falseind], kls, pedir=false_dir, writestr=False, writefiles=False, weights=wts, outdir=false_dir+'proc/', 
+                                                                                                                                oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt, maxx=maxx, maxy=maxy)
+            real_metric_cube, real_agg_cube, real_ann_val, real_movm_val, real_metric_scores, real_metric_fname = find_best_new(reallist[i], kls, pedir=real_dir, writestr=False, writefiles=False, weights=wts, outdir=real_dir+'proc/', 
+                                                                                                                                oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt, maxx=maxx, maxy=maxy)
+            ##NORMALIZE TO MAX AND SUBTRACT MIN
+            fake_cube = fake_metric_cube
+            real_cube = real_metric_cube
+
+            #normalize the agg slices for each KL mode
+            if sepkl==False:
+                kls_forloop=['avg']
+            else:
+                kls_forloop=kls
+            for kl in np.arange(len(kls_forloop)):
+            
+                fake_cube[-1,:,kl,:,:,:]=fake_cube[-1,:,kl,:,:,:]-np.nanpercentile(fake_cube[-1,:,kl,:,:,:],10)
+                real_cube[-1,:,kl,:,:,:]=real_cube[-1,:,kl,:,:,:]-np.nanpercentile(real_cube[-1,:,kl,:,:,:],10)
+
+                #normalize to max
+                fake_cube[-1,:,kl,:,:,:]=fake_cube[-1,:,kl,:,:,:]/np.nanpercentile(fake_cube[-1,:,kl,:,:,:],90)
+                real_cube[-1,:,kl,:,:,:]=real_cube[-1,:,kl,:,:,:]/np.nanpercentile(real_cube[-1,:,kl,:,:,:],90)
+             
+            diff = fake_cube-real_cube
+            diff_wt = diff*fake_cube[-1,:,:,:,:,:]
+            diff_agg = diff[-1,0,0,0,:,:]
+            diff_wt_agg = diff_wt[-1,0,0,0,:,:]
+
+            if writefits==True:
+                #write out difference cube
+                fits.writeto(out_dir+coll_string+'_diff.fits', diff, overwrite=True)
+
+            if makeplot==True:
+
+                #now make weighted plots
+                inner = gridspec.GridSpecFromSubplotSpec(1, 4, subplot_spec=outer[i*4:i*4+4], wspace=0, hspace=0)
+                ax1 = plt.Subplot(f, inner[0])
+                ax2 = plt.Subplot(f, inner[1])
+                ax3 = plt.Subplot(f, inner[2])
+                ax4 = plt.Subplot(f, inner[3])
+                
+                f1 = ax1.imshow(fake_cube[-1,0,0,0,:,:], cmap='magma', vmax=0, vmin=1, origin='lower left', alpha=1)
+                if i==0:
+                    ax1.set_title('Cont. False Planet ADQ (ADQ$_{CF}$)')
+                ax1.set_xlabel('movement')
+                ax1.set_ylabel('annuli')
+                #ax1.set_facecolor("white")
+                f.colorbar(f1, ax=ax1, shrink=0.75, pad=-0.2, alpha=0)#, label='Relative Parameter Quality')
+                if datestr!=False:
+                    ax1.text(-7,4, line_obj + ' ' + str(datestr[i]), rotation=90, fontsize=14)
+                else:
+                    ax1.text(-7,4, line_obj + ' ' + line_date, rotation=90, fontsize=14)
+                if i<4:
+                    ax1.axes.get_xaxis().set_visible(False)
+
+                ind = np.where(fake_cube[-1,0,0,0,:,:] == np.nanmax(fake_cube[-1,0,0,0,:maxy,:maxx]))
+                label_text = 'a' + str(int(fake_ann_val[0][0])) + 'm' + str(int(fake_movm_val[0][0]))
+                rect = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='k', facecolor='none')
+                ax1.add_patch(rect)
+                ax1.text(ind[1][0] + 0.75, ind[0][0]-0.5, label_text, color='black')
+
+                f.add_subplot(ax1)
+
+                f2 = ax2.imshow(real_cube[-1,0,0,0,:,:], cmap='magma', vmax=0, vmin=1, origin='lower left')
+                if i==0:
+                    ax2.set_title(r'H$\alpha$ Real Object DQ (ADQ$_{HR}$)')
+                if i==4:
+                    ax2.set_xlabel('movement')
+
+                f.colorbar(f2, ax=ax2, shrink=0.75, pad=-0.2,  label='Relative Parameter Quality')
+                ind2 = np.where(real_cube[-1,0,0,0,:,:] == np.nanmax(real_cube[-1,0,0,0,:maxy,:maxx]))
+                label_text2 = 'a' + str(int(real_ann_val[0][0])) + 'm' + str(int(real_movm_val[0][0]))
+                rect2 = patches.Rectangle((ind2[1][0] - 0.5, ind2[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
+                ax2.add_patch(rect2)
+                if i in [1,3,4]:
+                    ax2.text(ind2[1][0] + 0.75, ind2[0][0]-0.5, label_text2, color='red')
+                else:
+                    ax2.text(ind2[1][0] - 2.5, ind2[0][0]+1, label_text2, color='red')
+                rect4 = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='k', facecolor='none')
+                ax2.add_patch(rect4)
+                ax2.text(ind[1][0] + 0.75, ind[0][0]-0.5, label_text, color='black')
+
+                if i<4:
+                    ax2.axes.xaxis.set_ticks([])
+                    ax2.axes.yaxis.set_ticks([])
+                else:
+                    ax2.axes.get_yaxis().set_visible(False)
+
+                f.add_subplot(ax2)
+
+                f3 = ax3.imshow(diff_wt_agg, cmap='coolwarm', vmin=-0.3, vmax=0.3, origin='lower left')
+                if i==0:
+                    ax3.set_title('Parameter Quality Difference')
+                if i==4:
+                    ax3.set_xlabel('movement')
+                #ax3.set_ylabel('annuli')
+                f.colorbar(f3, ax=ax3, shrink=0.75, pad=-0.2)#, label = r'(ADQ$_{CF}$ - DQ$_{HR}$)$\times$ADQ$_{CF}$')
+                rect3 = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='k', facecolor='none')
+                ax3.add_patch(rect3)
+                ax3.text(ind[1][0] + 0.75, ind[0][0]-0.5, label_text, color='black')
+                if i<4:
+                    ax3.axes.xaxis.set_ticks([])
+                    ax3.axes.yaxis.set_ticks([])
+                else:
+                    ax3.axes.yaxis.set_ticks([])
+                    ax3.axes.get_yaxis().set_visible(False)
+
+                f.add_subplot(ax3)
+
+                ax4.hist(diff_wt_agg.flatten(), range=(-0.5,0.5), color='k',  label='all',histtype='step', bins=20, density=True)
+                if i==0:
+                    ax4.set_title('Norm. Diff. Values')
+                ax4.set_xlabel('ADQ$_{CF}$ - DQ$_{HR}$')
+                ax4.set_ylabel('density')
+                ax4.yaxis.set_label_position("right")
+                ax4.yaxis.tick_right()
+                ymax = ax4.get_ylim()
+                ax4.yaxis.set_ticks(np.arange(1,ymax[1]))
+                if i<4:
+                    ax4.axes.xaxis.set_ticks([])
+                    ax4.axes.get_xaxis().set_visible(False)
+                ax4.set_xlim(-0.5,0.5)
+                box = ax4.get_position()
+                box.x0 = box.x0 + 0.008
+                box.x1 = box.x1 
+                ax4.set_position(box)
+                ax4.set_aspect(1.05/ax4.get_data_ratio(), adjustable='box')
+                plt.legend()
+
+                f.add_subplot(ax4)
+
+    if makeplot==True:
+        lastrow = gridspec.GridSpecFromSubplotSpec(1, 100, subplot_spec=outer[-1], wspace=0, hspace=0)
+        ax7 = plt.Subplot(f, lastrow[3:50])
+        ax8 = plt.Subplot(f, lastrow[55:75])
+
+        #colorbars along the bottom
+        f.colorbar(f1, ax=ax7, fraction=0.35, orientation='horizontal', label='Relative Parameter Quality')
+        f.colorbar(f3, ax=ax8,  fraction=0.35, orientation='horizontal', label = r'(ADQ$_{CF}$ - DQ$_{HR}$)$\times$ADQ$_{CF}$', aspect=10)
+
+        size = f.get_size_inches()
+
+        plt.savefig(out_dir+coll_string+'_realvfalse.png')
+
+    return(dtn)
+
+

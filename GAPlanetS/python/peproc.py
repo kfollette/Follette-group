@@ -8,6 +8,7 @@ import re
 from scipy import ndimage
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patches as patches
+import matplotlib.gridspec as gridspec
 import glob
 import pyklip.klip as klip
 import pyklip.instruments.MagAO as MagAO
@@ -17,6 +18,10 @@ import os
 import pdb
 import pickle
 import textwrap
+import threading
+import itertools as it
+import progressbar
+from time import sleep
 
 
 def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, writefiles=True, snrthresh=False, oldpe=False, separate_planets=False):
@@ -262,7 +267,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
     if separate_kls==False:
         if verbose==True:
             print("COLLAPSING IN KL DIMENSION")
-        stdevkl = np.std(kltrim, axis=2, keepdims=True)
+        #stdevkl = np.std(kltrim, axis=2, keepdims=True)
         #sumkl = np.sum(kltrim, axis=2, keepdims=True)
         #overwrite kltrim with average
         kltrim= np.mean(kltrim, axis=2, keepdims=True)
@@ -274,7 +279,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
 
         # write arrays
         fits.writeto(outdir+ writestr + '_avgkl.fits', kltrim, head, overwrite=True)
-        fits.writeto(outdir+ writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
+        #fits.writeto(outdir+ writestr + '_stdevkl.fits', stdevkl, head, overwrite=True)
         #fits.writeto(outdir+writestr + '_sumkl.fits', sumkl, head, overwrite=True)
 
     ##EXTRACT SNR SLICES
@@ -317,12 +322,12 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
     if len(kllist)>1 and separate_kls==False:
         klloop = 1
         kllist=[kllist]
-        stdev_valid=True
+        #stdev_valid=True
     else:
         if verbose==True: 
             print("EXTRACTING SLICES FOR KL MODES", kllist, 'SEPARATELY')
         klloop = len(kllist)
-        stdev_valid=False
+        #stdev_valid=False
 
     #set up cubes for planet, kl loop
 
@@ -342,14 +347,14 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
 
     #sets up arrays for filling
     nq_snr = np.zeros([nstepy, nstepx])
-    nq_stdev = np.zeros([nstepy, nstepx])
+    #nq_stdev = np.zeros([nstepy, nstepx])
     agg_cube=np.zeros([klloop,npldim,nstepy,nstepx])
     agg=np.zeros([nstepy,nstepx])
     ann_val = np.zeros([klloop,npldim])
     movm_val = np.zeros([klloop,npldim])
     ##Note - hard coded for 1 subsection. 
-    metric_cube = np.zeros([9, 1, klloop, npldim, nstepy, nstepx])
-    qual_cube = np.zeros([10, 1, klloop, npldim, nstepy, nstepx])
+    metric_cube = np.zeros([7, 1, klloop, npldim, nstepy, nstepx])
+    qual_cube = np.zeros([6, 1, klloop, npldim, nstepy, nstepx])
 
     for p in np.arange(npldim):
 
@@ -375,19 +380,19 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             snr_norm = (kltrim_snr[0,0,k,p,:,:]-np.nanmin(kltrim_snr[0,0,k,p,:,:]))/ np.nanmax(kltrim_snr[0,0,k,p,:,:])
             snr_norm_umask = (kltrim_snr[1,0,k,p,:,:]-np.nanmin(kltrim_snr[1,0,k,p,:,:])) / np.nanmax(kltrim_snr[1,0,k,p,:,:])
 
-            if stdev_valid==True:
+            #if stdev_valid==True:
                 #normalize standard deviations across KL modes. Low values = good
                 # divide by SNR so is Stdev in SNR as fraction of SNR itself
-                stdev_norm_cube = stdevkl[0:2,0,k,p,:,:] / kltrim_snr[0:2,0,k,p,:,:]
+                #stdev_norm_cube = stdevkl[0:2,0,k,p,:,:] / kltrim_snr[0:2,0,k,p,:,:]
                 #first slice is peak
-                stdev_norm = 1 - ((stdev_norm_cube[0,:,:]-np.nanmin(stdev_norm_cube[0,:,:]))/np.nanmax(stdev_norm_cube[0,:,:]))
+                #stdev_norm = 1 - ((stdev_norm_cube[0,:,:]-np.nanmin(stdev_norm_cube[0,:,:]))/np.nanmax(stdev_norm_cube[0,:,:]))
                 #second slice is under mask
-                stdev_norm_umask = 1 - ((stdev_norm_cube[1,:,:]-np.nanmin(stdev_norm_cube[1,:,:]))/np.nanmax(stdev_norm_cube[1,:,:]))
+                #stdev_norm_umask = 1 - ((stdev_norm_cube[1,:,:]-np.nanmin(stdev_norm_cube[1,:,:]))/np.nanmax(stdev_norm_cube[1,:,:]))
 
             #if extracting separately, fill these arrays with nans 
-            else:
-                stdev_norm = np.zeros([nstepy,nstepx])*np.nan
-                stdev_norm_umask = np.zeros([nstepy,nstepx])*np.nan
+            #else:
+                #stdev_norm = np.zeros([nstepy,nstepx])*np.nan
+                #stdev_norm_umask = np.zeros([nstepy,nstepx])*np.nan
 
             #spurious pixels metrics - pulling slice 3 (in between IWA and CR only)
             spurpix = kltrim_snr[3,0,k,p,:,:]
@@ -408,28 +413,28 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             #compute neighbor quality metrics by smoothing with Gaussian
             sig=smt
             nq_snr = filter_nan_gaussian_conserving(snr_norm,sig)
-            nq_stdev = filter_nan_gaussian_conserving(stdev_norm,sig)
+            #nq_stdev = filter_nan_gaussian_conserving(stdev_norm,sig)
             nq_snr_umask = filter_nan_gaussian_conserving(snr_norm_umask,sig)
-            nq_stdev_umask = filter_nan_gaussian_conserving(stdev_norm_umask,sig)
+            #nq_stdev_umask = filter_nan_gaussian_conserving(stdev_norm_umask,sig)
 
             #normalizes neighbor quality
             nq_snr /= np.nanmax(nq_snr)
-            nq_stdev /= np.nanmax(nq_stdev)
+            #nq_stdev /= np.nanmax(nq_stdev)
             nq_snr_umask /= np.nanmax(nq_snr_umask)
-            nq_stdev_umask /= np.nanmax(nq_stdev_umask)
+            #nq_stdev_umask /= np.nanmax(nq_stdev_umask)
 
             if debug==True:
                 #make a cube of all these metrics for sanity checking
                 qual_cube[0,:,k,p,:,:]=snr_norm
                 qual_cube[1,:,k,p,:,:]=snr_norm_umask
-                qual_cube[2,:,k,p,:,:]=stdev_norm
-                qual_cube[3,:,k,p,:,:]=stdev_norm_umask
-                qual_cube[4,:,k,p,:,:]=spurpix
-                qual_cube[5,:,k,p,:,:]=nq_snr
-                qual_cube[6,:,k,p,:,:]=nq_snr_umask
-                qual_cube[7,:,k,p,:,:]=nq_stdev
-                qual_cube[8,:,k,p,:,:]=nq_stdev_umask
-                qual_cube[9,:,k,p,:,:]=contrast
+                #qual_cube[2,:,k,p,:,:]=stdev_norm
+                #qual_cube[3,:,k,p,:,:]=stdev_norm_umask
+                qual_cube[2,:,k,p,:,:]=spurpix
+                qual_cube[3,:,k,p,:,:]=nq_snr
+                qual_cube[4,:,k,p,:,:]=nq_snr_umask
+                #qual_cube[7,:,k,p,:,:]=nq_stdev
+                #qual_cube[8,:,k,p,:,:]=nq_stdev_umask
+                qual_cube[5,:,k,p,:,:]=contrast
 
             #average under mask and peak pixel estimates
             #snr_norm_combo = (snr_norm_avg + snr_norm_avg_umask) / 2.
@@ -444,8 +449,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             metric_cube[3,:,k,p,:,:]= nq_snr_umask
 
             #going to use the under mask values for the final answer - probably more stable
-            metric_cube[4,:,k,p,:,:]= stdev_norm_umask
-            metric_cube[5,:,k,p,:,:]= nq_stdev_umask
+            #metric_cube[4,:,k,p,:,:]= stdev_norm_umask
+            #metric_cube[5,:,k,p,:,:]= nq_stdev_umask
 
             #spurious pixel metric = 1 if no spurious pixels and 0 if max number for this dataset
             if np.nanmax(spurpix)>0:
@@ -453,15 +458,16 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             else: #edge case - no spurious pixels in any image
                 spurpix_norm= 1+spurpix
              
-            metric_cube[6,:,k,p,:,:]= spurpix_norm
-            metric_cube[7,:,k,p,:,:]= contrast 
+            metric_cube[4,:,k,p,:,:]= spurpix_norm
+            metric_cube[5,:,k,p,:,:]= contrast 
 
-            metriclist = (snr_norm, nq_snr, snr_norm_umask, nq_snr_umask, stdev_norm_umask, nq_stdev_umask, spurpix_norm, contrast)
+            metriclist = (snr_norm, nq_snr, snr_norm_umask, nq_snr_umask, spurpix_norm, contrast)
+            #metriclist = (snr_norm, nq_snr, snr_norm_umask, nq_snr_umask, stdev_norm_umask, nq_stdev_umask, spurpix_norm, contrast)
             
             #make sure weights for stdev slices are 0 if only 1 kl mode or extracting separately
-            if stdev_valid==False:
-                weights[4]=0
-                weights[5]=0
+            #if stdev_valid==False:
+                #weights[4]=0
+                #weights[5]=0
 
             #calculate an aggregate parameter quality metric by summing the individual metrics * their weights
             agg=np.zeros((nstepy,nstepx))
@@ -470,7 +476,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
                 if weights[metricind]>0:
                     agg+=weights[metricind]*metriclist[metricind]
 
-            metric_cube[8,:,k,p,:,:]=agg
+            metric_cube[6,:,k,p,:,:]=agg
             agg_cube[k,p,:,:]=agg
 
             ##find location or peak of parameter quality metric and print info
@@ -483,8 +489,10 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
                 return()
 
             #extract metric scores for this location    
-            metric_scores = [snr_norm[ind][0], nq_snr[ind][0], snr_norm_umask[ind][0], nq_stdev_umask[ind][0], \
-            stdev_norm_umask[ind][0], nq_stdev_umask[ind][0], spurpix_norm[ind][0], contrast[ind][0], agg[ind][0]]
+            #metric_scores = [snr_norm[ind][0], nq_snr[ind][0], snr_norm_umask[ind][0], nq_snr_umask[ind][0], \
+            #stdev_norm_umask[ind][0], nq_stdev_umask[ind][0], spurpix_norm[ind][0], contrast[ind][0], agg[ind][0]]
+            metric_scores = [snr_norm[ind][0], nq_snr[ind][0], snr_norm_umask[ind][0], nq_snr_umask[ind][0], spurpix_norm[ind][0], contrast[ind][0], agg[ind][0]]
+
 
             #translate to annuli and movement values
             ann_val[k,p]= ymin + ind[0][0] * ystep
@@ -766,13 +774,13 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
     ax2 = fig.add_subplot(gs[0,1])
     ax3 = fig.add_subplot(gs[1,0])
     ax4 = fig.add_subplot(gs[1,1])
-    ax5 = fig.add_subplot(gs[0,2])
-    ax6 = fig.add_subplot(gs[0,3])
+    #ax5 = fig.add_subplot(gs[0,2])
+    #ax6 = fig.add_subplot(gs[0,3])
     ax7 = fig.add_subplot(gs[1,2])
     ax8 = fig.add_subplot(gs[1,3])
     ax9 = fig.add_subplot(gs[:,4:])
 
-    plt.setp((ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9), xticks=np.arange(0, nstepx + 1, 2), xticklabels=np.arange(xmin, xmax + 1, 2),
+    plt.setp((ax1, ax2, ax3, ax4, ax7, ax8, ax9), xticks=np.arange(0, nstepx + 1, 2), xticklabels=np.arange(xmin, xmax + 1, 2),
                  yticks=np.arange(0, nstepy + 1, 2), yticklabels=np.arange(ymin, ymax + 1, 2))
 
     #if extracted kl or planets separately, make figs separately
@@ -815,21 +823,21 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
             plt.colorbar(im4, cax=cax, orientation='vertical')
 
             
-            im5 = ax5.imshow(metric_cube[4,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-            ax5.set_xlabel("movement parameter")
-            ax5.set_ylabel("annuli parameter")
-            ax5.set_title("Stdev Across KL: Weight = "+str(weights[4]))
-            divider = make_axes_locatable(ax5)
-            cax = divider.append_axes('right', size='5%', pad=0.05)
-            plt.colorbar(im5, cax=cax, orientation='vertical')
+            #im5 = ax5.imshow(metric_cube[4,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+            #ax5.set_xlabel("movement parameter")
+            #ax5.set_ylabel("annuli parameter")
+            #ax5.set_title("Stdev Across KL: Weight = "+str(weights[4]))
+            #divider = make_axes_locatable(ax5)
+            #cax = divider.append_axes('right', size='5%', pad=0.05)
+            #plt.colorbar(im5, cax=cax, orientation='vertical')
 
-            im6 = ax6.imshow(metric_cube[5,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-            ax6.set_xlabel("movement parameter")
-            ax6.set_ylabel("annuli parameter")
-            ax6.set_title("Stdev Neighbor Quality: Weight = "+str(weights[5]))
-            divider = make_axes_locatable(ax6)
-            cax = divider.append_axes('right', size='5%', pad=0.05)
-            plt.colorbar(im6, cax=cax, orientation='vertical')
+            #im6 = ax6.imshow(metric_cube[5,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+            #ax6.set_xlabel("movement parameter")
+            #ax6.set_ylabel("annuli parameter")
+            #ax6.set_title("Stdev Neighbor Quality: Weight = "+str(weights[5]))
+            #divider = make_axes_locatable(ax6)
+            #cax = divider.append_axes('right', size='5%', pad=0.05)
+            #plt.colorbar(im6, cax=cax, orientation='vertical')
 
             im7 = ax7.imshow(metric_cube[6,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
             ax7.set_xlabel("movement parameter")

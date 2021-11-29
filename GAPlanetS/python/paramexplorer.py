@@ -318,8 +318,8 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                     fname  = str(path_to_files) + "_klip/" + outfile_name + klipstr+ suff + '-KLmodes-all.fits'
 
                     if pickup==True:
-                        if np.sum(tmpfile[:,scount,:,:,acount,mcount])!=0:
-                            PECube[:,scount,:,:,acount,mcount]=mpfile[:,scount,:,:,acount,mcount]
+                        if np.sum(pe_past[:,scount,:,:,acount,mcount])!=0:
+                            PECube[:,scount,:,:,acount,mcount]=pe_past[:,scount,:,:,acount,mcount]
                             skip = True
 
                     if skip!=True:

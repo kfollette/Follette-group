@@ -745,10 +745,12 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1], mode='Lin
                         d["pe{0}haklipim".format(i+1)]=klcube
     return(d)
 
-def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=False, weights=[1,1,1,1,1,1,1,1], snrmeth='all', smt=3):
+def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=False, weights=[1,1,1,1,1,1], 
+    snrmeth='stdev', smt=3, separate_planets=False, separate_kls=False):
     
     metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = find_best_new(pename, kllist, pedir=pedir, 
-        outdir=outdir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)
+        outdir=outdir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt, separate_planets=separate_planets, 
+        separate_kls=separate_kls)
 
     if writestr == False:
         writestr = pename[:-17]
@@ -756,7 +758,7 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
     namelist = pename.split('_')
     params = [s for s in namelist if s[0] == 'a']
     params = params[0]
-    params = re.split('a|-|x|m|s|iwa', params)
+    params = re.split('a|-|x|m|s|iwa|hp', params)
     ymin = int(params[1])
     ymax = int(params[2])
     ystep = int(params[3])

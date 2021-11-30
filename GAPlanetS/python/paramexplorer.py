@@ -25,7 +25,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     movement_stop, FWHM, ra, pa, wid, annuli_inc=1, movement_inc=1, subsections_start=False, subsections_stop=False, subsections_inc=False,  
     smooth=False, input_contrast=False, time_collapse='median', highpass = True, owa=False,
     saveSNR = True, singleAnn = False, boundary=False, verbose = False, snrsmt = False,
-    calibrate_flux=False, pickup=False):
+    calibrate_flux=False, pickup=True):
 
     #default is 1 subsection
     if subsections_start == False:
@@ -236,8 +236,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     tmpfile = str(path_to_files) + "_klip/" + "tmp.fits"
 
     #if restarting from PE that was interrupted
-    if pickup ==True:
-        #read in file
+    if (pickup ==True) and (os.path.exists(tmpfile)):
         pe_past = fits.getdata(tmpfile)
     else:
         pe_past = np.zeros(PECube.shape)

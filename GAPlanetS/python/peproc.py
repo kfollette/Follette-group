@@ -220,7 +220,7 @@ def filter_nan_gaussian_conserving(arr, sigma):
 
     return gauss
 
-def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, weights=[1,1,1,1,1,1,1,1], outdir='proc/', snrthresh=False,
+def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, weights=[1,1,1,1,1,1], outdir='proc/', snrthresh=False,
     oldpe=False, debug=False, smt=3, snrmeth='all',separate_planets=False, separate_kls=False, verbose=False, maxy=25, maxx=25):
     """
     collapses parameter explorer file and extracts the optimal parameter value
@@ -521,7 +521,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
     return metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname
 
 
-def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1,1,1], mode='Line', 
+def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1], mode='Line', 
                 snrmeth='stdev', snrthresh=False, outdir='proc/', xname='', 
                 datadir='../', header=True, smt=3, savefig=True,
                 hpval=None, collmode=None, owa=None, oldpe=False, calflux=False, 
@@ -770,16 +770,16 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
     fig_ydim = nstepy
 
     fig = plt.figure(figsize=(fig_ydim,fig_xdim))
-    gs = fig.add_gridspec(2, 6)
+    gs = fig.add_gridspec(2, 4) # ,6)
     ax1 = fig.add_subplot(gs[0,0])
     ax2 = fig.add_subplot(gs[0,1])
     ax3 = fig.add_subplot(gs[1,0])
     ax4 = fig.add_subplot(gs[1,1])
     #ax5 = fig.add_subplot(gs[0,2])
     #ax6 = fig.add_subplot(gs[0,3])
-    ax7 = fig.add_subplot(gs[1,2])
-    ax8 = fig.add_subplot(gs[1,3])
-    ax9 = fig.add_subplot(gs[:,4:])
+    ax7 = fig.add_subplot(gs[0,2])
+    ax8 = fig.add_subplot(gs[1,2])
+    ax9 = fig.add_subplot(gs[:,3:])
 
     plt.setp((ax1, ax2, ax3, ax4, ax7, ax8, ax9), xticks=np.arange(0, nstepx + 1, 2), xticklabels=np.arange(xmin, xmax + 1, 2),
                  yticks=np.arange(0, nstepy + 1, 2), yticklabels=np.arange(ymin, ymax + 1, 2))
@@ -840,19 +840,19 @@ def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=Fal
             #cax = divider.append_axes('right', size='5%', pad=0.05)
             #plt.colorbar(im6, cax=cax, orientation='vertical')
 
-            im7 = ax7.imshow(metric_cube[6,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+            im7 = ax7.imshow(metric_cube[4,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
             ax7.set_xlabel("movement parameter")
             ax7.set_ylabel("annuli parameter")
-            ax7.set_title("Spurious Pixels: Weight = "+str(weights[6]))
+            ax7.set_title("Spurious Pixels: Weight = "+str(weights[4]))
             divider = make_axes_locatable(ax7)
             cax = divider.append_axes('right', size='5%', pad=0.05)
             plt.colorbar(im7, cax=cax, orientation='vertical')
 
 
-            im8 = ax8.imshow(metric_cube[7,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+            im8 = ax8.imshow(metric_cube[5,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
             ax8.set_xlabel("movement parameter")
             ax8.set_ylabel("annuli parameter")
-            ax8.set_title("Contrast: Weight = "+str(weights[7]))
+            ax8.set_title("Contrast: Weight = "+str(weights[5]))
             divider = make_axes_locatable(ax8)
             cax = divider.append_axes('right', size='5%', pad=0.05)
             plt.colorbar(im8, cax=cax, orientation='vertical')
@@ -1749,7 +1749,7 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
         plt.show()
     return(wtslist, klslist)
 
-def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*', exceptstr=False, wts=[1,0,1,0,0,0,1,1], kls=[1,2,3,4,5,10,20,50,100], datestr=False, sepkl=False, seppl=False, snt=False, makeplot=True, writefits=False, maxx=25, maxy=25):
+def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*', exceptstr=False, wts=[1,1,1,1,1,1], kls=[1,2,3,4,5,10,20,50,100], datestr=False, sepkl=False, seppl=False, snt=False, makeplot=True, writefits=False, maxx=25, maxy=25):
 
     #find all completed pe combos
     dset_stringlist, reallist, falselist = pull_dsets(false_dir, real_dir, out_dir, namestr=namestr, exceptstr=exceptstr)

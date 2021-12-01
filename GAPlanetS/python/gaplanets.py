@@ -21,6 +21,9 @@ from importlib import reload
 from datetime import datetime
 from scipy import ndimage
 import peproc as pe
+import matplotlib.gridspec as gridspec
+import datetime as dt
+import matplotlib.pylab as pl
 
 def SliceCube(imfile, rotfile, indir='./', slicedir='sliced/'):
     """
@@ -1830,11 +1833,72 @@ def grab_planet_specs(df,dset_path):
     plpa = df[df["Path"]==dset_path]["PA"].values
     return(tuple(pllabel),tuple(plsep),tuple(plpa))
 
-def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5, klopt=False, weights=[1,0,1,1,0,0,1,0], kllist_coll = [10,100], overwrite=False, stampsz=75, maxy=25, lims=[-1,4], pldf=False, seppl=False, sepkl=False):
+def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5, 
+    klopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, stampsz=75, maxy=25, 
+    lims=[-1,4], pldf=False, seppl=False, sepkl=False, smt=1):
     
     thisdir=os.getcwd()
+
+    ##turn keywords into unique string
+    wts = weights
+    wtstr = ''.join(str(val) for val in wts)
+    klstr = '_kl'+'_'.join(str(val2) for val2 in kllist_coll)   
+    hpstr = "_"+str(hpmult)+"fwhm"
+    theseparams ='wts'+wtstr+klstr+'_seppl'+str(seppl)+'_sepkl'+str(sepkl)+hpstr
+    outname = outdir+'Optimal_Vals_Coll_'+theseparams+'.csv'
     
+    n_dsets = []
+    #count how many total datasets
     for obj in sorted_objs:
+        n_dsets.append(len(df[df["Object Name"]==obj]))
+
+    total_dsets = np.sum(n_dsets)
+    colors = pl.cm.magma(np.linspace(0,1,total_dsets))
+
+    #make megafigure object
+    #one for ims
+    f1 = plt.figure(figsize=(15,total_dsets*6))
+    #plt.axis('off')
+    nrows = total_dsets
+    outer = f1.add_gridspec(nrows, 1, wspace=0., hspace=0.)
+    
+    #and one for snrmaps
+    f2 = plt.figure(figsize=(15,total_dsets*6))
+    outer2 = f2.add_gridspec(nrows, 1, wspace=0., hspace=0.)
+
+    #and one for contrasts
+    #f3 = plt.figure()
+    #f3, cax1 = plt.subplots(1,1)
+
+    #set up megafigs
+    i=0 #plot counter
+
+    for obj in sorted_objs:
+        n_dset=(len(df[df["Object Name"]==obj]))
+        
+        #list of paths for theis object
+        dpaths=[]
+        for dset in np.arange(n_dset):
+            dpaths.append(df[df["Object Name"]==obj]["Path"].values[dset])
+        
+        #put in date order
+        monthstrs = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        t=[]
+        for j in np.arange(n_dset):
+            linefname = dpaths[j].split('/')
+            line_date = linefname[1]
+            if '_' in line_date:
+                line_date = line_date.split('_')[0]
+            monthstr = [s for s in monthstrs if s in line_date]
+            monthno = [m for m in np.arange(1,13) if monthstrs[m-1] in line_date]
+            year = int('20'+line_date[-2:])
+            day = line_date.split(monthstr[0])[0]
+            #print(line_date, '= day:', day, ' month:', monthno[0], ' year:', year)
+            t.append(dt.date(year=year, month=int(monthno[0]), day=int(day)))
+
+        #now sort
+        sorted_dpaths = [x for _, x in sorted(zip(t, dpaths))]
+
         #pull from correct Drive directory
         whichdir = df[df["Object Name"]==obj]['Which AWS'].values[0]
         if whichdir == 1:
@@ -1842,9 +1906,9 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
         elif whichdir ==2:
             fpath_st = base_fpath+'Follette-Lab-AWS-2/'
 
-        #pull filepath for each dataset
-        for dset in np.arange(len(df[df["Object Name"]==obj])):
-            dset_path = df[df["Object Name"]==obj]["Path"].values[dset]
+        #pull info for each dataset
+        for j in np.arange(n_dset):
+            dset_path = sorted_dpaths[j]
             date=dset_path.split('/')[1]
             #check whether pes are complete
             go=True
@@ -1894,7 +1958,7 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
 
                 #find optimal params according to the collapse strategy
                 #find the cont fakes klip dir with paramexplore file
-                fakepath=data_str+'fakes/'
+                fakepath=data_str+'fakes_redo/'
                 fakedirfiles = glob.glob(full_fpath+'/'+fakepath+'*')
                 dirnames = [d for d in fakedirfiles if os.path.isdir(d)]
                 fakedir = [dir for dir in dirnames if dir[-4:] == 'klip']
@@ -1912,19 +1976,14 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
                     pedir=pefname[0]+'_klip/'
                     pefname = pefname[1]
 
-                ##choices for collapse
-                wts = weights
-                wtstr = ''.join(str(val) for val in wts)
-                klstr = '_kl'+'_'.join(str(val2) for val2 in kllist_coll)
+                #set hpval based on this dset's fwhm
                 hpval = hpmult*fwhm    
-                hpstr = "_"+str(hpmult)+"fwhm"
-                outname = outdir+'Optimal_Vals_Coll_wts'+wtstr+klstr+'_seppl'+str(seppl)+'_sepkl'+str(sepkl)+hpstr+'.csv'
-                
+                 
                 #find peak for this set according to kl collapse mode in order to select optimal ann, movm
                 cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxy=maxy)
 
                 #run metric calculation for ALL kl modes so can select optimal kl
-                kllist = [1,2,3,4,5,10,20,50,100]        
+                kllist = [1,2,3,4,5,10,20,50,100]     
                 cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxy=maxy)
 
                 #find kl mode with highest score
@@ -1970,20 +2029,51 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
                                                                 record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], savefig=True, debug=False, highpass=hpval, overwrite=overwrite)
                 
             
+                #add contrast to figure
+                klipstr=' a'+str(ann)+'m'+str(movm)+'kl'+str(kl)
+                lbl = data_str + klipstr
+                ccurve_seps = contrast_out[0,0,:]
+                ccurve_ctrst = contrast_out[0,2,:]
+                print('i is', i)
+                #cax1.plot(ccurve_seps, ccurve_ctrst, label=lbl, color=colors[i])
+
                 params = [obj,date,cut,movm,ann,fwhm,IWA,kl]
 
                 linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale = run_redx(data_str,params=params, scalefile=scalefile, highpass=hpval, scale=False, overwrite=overwrite)
                 linecube, linesnr, contcube, contsnr, sdicube2, sdisnr2, prefix, scale2 = run_redx(data_str,params=params, highpass=hpval, scale=1, overwrite=overwrite)
-                indivobj_fig(linecube[0,:,:],contcube[0,:,:],sdicube[0,:,:],scale,prefix,IWA=IWA,secondscale=1,secondscaleim=sdicube2[0,:,:], title = obj + ' '+ date, stampsz=stampsz, plspecs=plspecs, plcand=plcand)
-                indivobj_fig(linesnr[0,0,:,:],contsnr[0,0,:,:],sdisnr[0,0,:,:],scale,prefix+'_SNR',IWA=IWA,secondscale=1,secondscaleim=sdisnr2[0,0,:,:],snr=True, title = obj + ' '+ date, lims=lims, stampsz=stampsz, plspecs=plspecs, plcand=plcand)
-                indivobj_fig(linesnr[0,0,:,:],contsnr[0,0,:,:],sdisnr[0,0,:,:],scale,prefix+'_SNR_sm0.5',IWA=IWA, smooth=0.5,secondscale=1,secondscaleim=sdisnr2[0,0,:,:],snr=True, title = obj + ' '+ date, lims=lims, stampsz=stampsz, plspecs=plspecs, plcand=plcand)
-                indivobj_fig(linesnr[0,0,:,:],contsnr[0,0,:,:],sdisnr[0,0,:,:],scale,prefix+'_SNR_sm1',IWA=IWA, smooth=1,secondscale=1,secondscaleim=sdisnr2[0,0,:,:],snr=True, title = obj + ' '+ date, lims=lims, stampsz=stampsz, plspecs=plspecs, plcand=plcand)
                 
+                #set up subfig
+                inner = outer[i:i+1].subgridspec(1, 4, wspace=0, hspace=0)
+                ax1 = plt.Subplot(f1, inner[0,0])
+                ax2 = plt.Subplot(f1, inner[0,1])
+                ax3 = plt.Subplot(f1, inner[0,2])  
+                ax4 = plt.Subplot(f1, inner[0,3])  
+                axs = (ax1, ax2, ax3, ax4)
+                indivobj_fig(linecube[0,:,:],contcube[0,:,:],sdicube[0,:,:],scale,prefix,IWA=IWA,secondscale=1,secondscaleim=sdicube2[0,:,:], title = obj + ' '+ date, stampsz=stampsz, plspecs=plspecs, plcand=plcand, ax=axs)
+
+                inner2 = outer2[i:i+1].subgridspec(1, 4, wspace=0, hspace=0)
+                sax1 = plt.Subplot(f2, inner2[0,0])
+                sax2 = plt.Subplot(f2, inner2[0,1])
+                sax3 = plt.Subplot(f2, inner2[0,2])  
+                sax4 = plt.Subplot(f2, inner2[0,3])  
+                saxs = (sax1, sax2, sax3, sax4)
+
+                indivobj_fig(linesnr[0,0,:,:],contsnr[0,0,:,:],sdisnr[0,0,:,:],scale,prefix+'_SNR_sm1',IWA=IWA, smooth=smt,secondscale=1,secondscaleim=sdisnr2[0,0,:,:],snr=True, title = obj + ' '+ date, lims=lims, stampsz=stampsz, plspecs=plspecs, plcand=plcand, ax=saxs)
+              
                 os.chdir(thisdir)
+                i+=1
+    #cax1.legend()
+
+    fnamestr = '_'.join(sorted_objs)
+    plt.savefig(f1, outdir+fnamestr+theseparams+'ims.png')
+    plt.savefig(f2, outdir+fnamestr+theseparams+'snrmaps_sm'+str(smt)+'.png')
+    plt.savefig(outdir+fnamestr+theseparams+'contrasts.png')
+    plt.show(f1)
+    plt.show(f2)
 
     return()
 
-def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False):
+def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, returnfig=False, ax=None):
     """
     creates a three panel figure with line, continuum and SDI images
 
@@ -1992,16 +2082,15 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
 
     """
 
-    if secondscale!=False:
-        
-        f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, sharey=True)
-        f.set_figwidth(24)
-        f.set_figheight(6)
+    ax=ax or plt.gca()
+
+    if secondscale==True:
+        nplots = 4
     else:
-        f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
-        f.set_figwidth(18)
-        f.set_figheight(6)
-    
+        nplots = 3
+
+    f, ax = plt.subplots(1, nplots, sharey=True)
+
     pixscale = 0.0078513
     imsz = lineim.shape[1]
 
@@ -2035,9 +2124,9 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
 
     # set up tick labels according to parameter ranges
     if secondscale!=False:
-        plt.setp((ax1, ax2, ax3, ax4), xticks=ticks, xticklabels=ticklabels_str, yticks=ticks, yticklabels=ticklabels_str)
+        plt.setp(ax, xticks=ticks, xticklabels=ticklabels_str, yticks=ticks, yticklabels=ticklabels_str)
     else:
-        plt.setp((ax1, ax2, ax3), xticks=ticks, xticklabels=ticklabels_str, yticks=ticks, yticklabels=ticklabels_str)
+        plt.setp(ax, xticks=ticks, xticklabels=ticklabels_str, yticks=ticks, yticklabels=ticklabels_str)
 
 
     if snr==True:
@@ -2068,12 +2157,14 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
 
     titlestyle=dict(size=18)
 
+    ax1 = ax[0]
     im1 = ax1.imshow(lineim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     ax1.set_title(r'KLIP-ed H$\alpha$ Image', **titlestyle)
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     plt.colorbar(im1, cax=cax, orientation='vertical', label=cbarlabel)
 
+    ax2 = ax[1]
     im2 = ax2.imshow(contim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     ax2.set_title(r'KLIP-ed Continuum Image',**titlestyle)
     divider = make_axes_locatable(ax2)
@@ -2083,6 +2174,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
 
     labelstyle = dict(size=16, color='white', weight='bold')
 
+    ax3 = ax[2]
     im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     ax3.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
     ax3.text(0.62,0.93, 'scale='+'{:.2f}'.format(scale), transform=ax3.transAxes,**labelstyle)
@@ -2091,27 +2183,27 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     plt.colorbar(im3, cax=cax, orientation='vertical', label=cbarlabel)
 
     if secondscale!=False:
+        ax4 = ax[3]
         im4 = ax4.imshow(secondscaleim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
         ax4.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
         ax4.text(0.62,0.93, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,**labelstyle)
         divider = make_axes_locatable(ax4)
         cax = divider.append_axes('right', size='5%', pad=0.05)
         plt.colorbar(im4, cax=cax, orientation='vertical', label=cbarlabel)
-        axislist=(ax1,ax2,ax3,ax4)  
-    else:
-        axislist=(ax1,ax2,ax3)  
 
+    #add planet markers
     if plspecs!=False:
         for i in np.arange(len(pllabels)):
+            #if candidate, make it a dashed line
             if plcand==True:
                 lsty=':'
             else:
                 lsty='-'
-            for ax in axislist:
+            for a in ax:
                 circ=patches.Circle((stampcen+plsep_x[i],stampcen+plsep_y[i]),radius=4, fill=False, ec='cyan', lw=2, ls=lsty)
                 circ_label=pllabels[i]
-                ax.add_patch(circ, )
-                ax.text(stampcen+plsep_x[i]+5.5,stampcen+plsep_y[i],circ_label, color='white',fontsize=16)
+                a.add_patch(circ, )
+                a.text(stampcen+plsep_x[i]+5.5,stampcen+plsep_y[i],circ_label, color='white',fontsize=16)
 
     if title!=False:
         plt.suptitle(title, size=22)   
@@ -2119,9 +2211,12 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     plt.tight_layout() 
 
     plt.savefig(outputdir+prefix+'.png')
-    plt.show()
-    plt.clf()
-    return
+    if returnfig==True:
+        return(ax)
+    else:
+        plt.show()
+        plt.clf()
+        return()
 
 def contrast_klcompare(data_str, ha_ctrsts, cont_ctrsts, KLlist, IWA, zone_boundaries, outdir = 'final_ims/'):
     

@@ -1482,7 +1482,7 @@ def ctrlmask(xdim, ydim, rin, rout):
     new[(arr >= rin) & (arr <= rout)] = np.nan
     return(new)
 
-def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,0.5,0.5,0.5], snrmeth='all', smt=3):
+def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1], snrmeth='all', smt=3):
     
     snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask, nq_stdev_umask, spurpix_avg, agg, ann_val, movm_val, metric_scores = \
         pe.find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)
@@ -1602,7 +1602,7 @@ def get_pe_df(dfname):
             df[name] = []
     return(df, df_cols)
 
-def add_to_pe_df(data_str, pedir, pename, kllist, weights=[1,1,0.5,0.5,0.5], pe_dfname='../../optimal_params.csv'):
+def add_to_pe_df(data_str, pedir, pename, kllist, weights=[1,1,1,1,1,1], pe_dfname='../../optimal_params.csv'):
     df, df_cols =get_pe_df(pe_dfname)
     avgkl, stdevkl = collapsekl(pedir, pename, kllist)
     snr_norm, nq_snr, stdev_norm, nq_stdev, spurpix, agg, ann_val, movm_val, metric_scores, avgSNR = pe.find_best_new(pedir, pename, kllist, weights=weights)

@@ -987,8 +987,10 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
             if colname not in df:
                 df[colname] = np.nan
                 print("creating column", colname)
+
             df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut) & (df["uniq rdx str"]==dataset_prefix),[colname]]=contrast       
             #df[colname].loc[(df.Dataset == data_str) & (df.pctcut == cut)] = contrast
+    
     df.to_csv(rdx_params_dfname, index=False)
 
     return (contrast_out, df, OWA)
@@ -1067,6 +1069,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
 
         # compile contrasts for all cuts into array
         contrast_seps = ctrsts[0,0,:]
+
         #note assumes here just one kl mode in slice with index 0
         if cut == 0:
             # create a blank array to store contrast curves
@@ -1082,6 +1085,45 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
         i += 1
 
     return (contrast_seps, contrasts, zone_boundaries, IWA, df, KLlist, outstr)
+
+def split_objstr(objstr, fakestr=False):
+
+    #prefix = data_str + '_' + wl + '_' + str(cut) + 'pctcut'
+
+    #dataset_prefix = prefix +  '_a' + str(numann) + 'm' + str(movm) + 'iwa'+str(IWA) + 'hp'+str(highpass) + klstr
+
+    #prefix_fakes = '_initPA'+str(theta)+'_CA'+str(clockang)+'_ctrst'+str(contrast)+'_'+str(iterations)+'FAKES'
+
+    #dataset_prefix+=prefix_fakes
+
+    print(objstr)
+    #klsplit = objstr.split('kl')
+    #klmodelist = klsplit[-1].split('_')
+    #kllist = []
+    #for k in kllist:
+        #try:
+            #kllist.append(int(k))
+        #except:
+            #print('end of kl mode string')
+
+    klipstr = re.split('_a|m|iwa|hp|_', objstr)
+
+    ann = klipstr[1]
+    movm = klipstr[2]
+    iwa = klipstr[3]
+    hp = klipstr[4]
+
+    if fakestr==True:
+        fakestr = objstr.split('_initPA')
+        fakestr_list = re.split('_CA|_ctrst|_|FAKES',fakestr[1])
+        pa = fakestr_list[0]
+        ca = fakestr_list[1]
+        ctrst = fakestr_list[2]
+        numit = fakestr_list[3]
+        fakelist=(pa,ca,ctrst,numit)
+    else:
+        fakelist=()
+    return(ann, movm, iwa, hp, fakelist)
 
 
 def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLlist, outstr, outputdir = 'dq_cuts/contrastcurves/', outer=50, IWA=0,
@@ -1118,11 +1160,20 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
         if dist<outer:
             last_idx+=1
 
+    if 'FAKES' in outstr:
+        fakestr=True
+    else:
+        fakestr=False
+
+    ann, movm, iwa, hpstr, fakelist = split_objstr(outstr, fakestr=fakestr)
+
+    text_kwargs = dict(ha='center', va='center', fontsize=28, color='C1')
+
     klctr=0
     for kl in KLlist:
 
         # plt.style.use('seaborn-colorblind')
-        plt.figure(figsize=(7,4), dpi=750)
+        f, ax1 = plt.subplots(figsize=(7,4), dpi=750)
         for i in np.arange(len(pctcuts)):
             cut = pctcuts[i]
             j = i / len(pctcuts)
@@ -1130,28 +1181,47 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
                 linesty = '-'
             else:
                 linesty = '--'
-            plt.plot(contrast_seps * platescale, contrasts[i,klctr, :],
+            ax1.plot(contrast_seps * platescale, contrasts[i,klctr, :],
                      label=str(cut) + ' cut', linestyle=linesty, color=cm.plasma(j))
         cfloor = np.log10(np.nanmin(contrasts[:,:,0:last_idx])) - 0.2
         cmax=np.nanmax(contrasts[i,klctr, :])+0.5
         plt.yscale("log")
-        plt.title(data_str + outstr+' KL '+str(kl))
+        plt.title(data_str.replace('_',' '))
         plt.xlim(0, outer_asec)
-        print(cfloor,cmax)
         plt.ylim(10 ** cfloor, cmax)
         plt.xlabel("distance in arcseconds")
         plt.ylabel("contrast")
+
+        ax2 = ax1.twinx()    
         if IWA > 0:
-            plt.plot((IWA * platescale, IWA * platescale), (1e-5, cmax), 'k-', label='IWA')
-        plt.plot((ctrl_rad, ctrl_rad),(0, cmax),'m--', label="control radius")
+            ax2.plot((IWA * platescale, IWA * platescale), (1e-5, cmax), 'k-', label='IWA')
+        ax2.plot((ctrl_rad, ctrl_rad),(0, cmax),'m--', label="control radius")
         for bd in np.multiply(zone_boundaries,platescale):
             if bd < outer_asec:
                 if bd == zone_boundaries[0]*platescale:
-                    plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
+                    ax2.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
                 else:
-                    plt.plot((bd, bd), (0, 1), '--', color='grey')
-        plt.legend(loc='upper right', fontsize='x-small')
-        # write out in data directory
+                    ax2.plot((bd, bd), (0, 1), '--', color='grey')
+        ax2.get_yaxis().set_visible(False)
+        
+        #separate legend for cut lines and IWA/CR/ZB
+        ax1.legend(loc='lower left', fontsize='x-small')
+        ax2.legend(loc='upper right', fontsize='x-small')
+
+        #add some text with reduction parameters
+        
+        text_block = r'\textbf{KLIP Parameters:} \n' + 'annuli = ' + ann + '\nmovement = ' + movm
+        text_block+= '\nIWA = ' + iwa + '\nhighpass = ' + hpstr + ' pix'
+        if len(fakelist)>1:
+            pa, ca, ctrst, numit = fakelist
+            text_block+= '\n\n'+r'\textbf{False Planet Parameters}: \n'
+            text_block+= 'initial PA = ' + pa + '\nclock angle =' + ca + '\nn iterations =' + numit 
+            text_block+= '\ncontrast = '+ ctrst
+
+        print(cmax, cfloor, ((cmax-cfloor)/2))
+        ax1.text(outer_asec*0.8, 0.01, text_block, multialignment="left",size=6)
+
+        # write out 
         plt.savefig(outputdir + data_str + outstr + '_KL'+str(kl)+'_contrastsbycut.jpg')
         plt.show()
         plt.clf()

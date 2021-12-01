@@ -441,14 +441,18 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         print("throughput file", tpt_fname, "already exists.")
         calcthrpt=False
         thrpt_cube = fits.getdata(tpt_fname)
-
         #check whether KL modes same
         thrpt_header = fits.getheader(tpt_fname)
         file_kl = list(map(int, thrpt_header['KLMODES'].split(","))) 
         IWA=thrpt_header['IWA']
-        zone_boundaries_h = thrpt_header['ZONEBDRY'].split(',')
-        zone_boundaries = [int(bdry) for bdry in zone_boundaries_h]
-        
+        if numann !=1:
+            zone_boundaries_h = thrpt_header['ZONEBDRY'].split(',')
+            zone_boundaries = [int(bdry) for bdry in zone_boundaries_h]
+        #for ann=1 zone boundary is OWA
+        else:
+            sep_spacing = thrpt_cube[0,0,-1] - thrpt_cube[0,0,-2]
+            zone_boundaries = thrpt_seps = [thrpt_cube[0,0,-1]+sep_spacing]
+            
         if file_kl == KLlist:
             print("KLmodes match. reading in values.")
             #seps are same for all KL modes. Just pull from first.

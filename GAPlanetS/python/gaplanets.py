@@ -746,7 +746,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
 def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir = 'dq_cuts/contrastcurves/', numann=3,
                         movm=4, KLlist=[10], IWA=0, rdx_params_dfname='rdx_params.csv', record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], 
-                        savefig=False, debug=False, overwrite=False, highpass=True):
+                        savefig=False, debug=False, overwrite=False, highpass=True, maxsep=1.5):
     """
     PURPOSE
     calculates raw contrast by running KLIP on images and then corrects for throughput
@@ -884,12 +884,13 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
                 plt.plot(contrast_seps * platescale, contrast, 'bo')
                 plt.yscale("log")
                 plt.ylim(np.nanmin(contrast), 1e-1)
-                plt.xlim(0, platescale * OWA)
+                plt.xlim(0, maxsep)
                 plt.xlabel("distance in arcseconds")
                 plt.ylabel("contrast")
                 if IWA > 0:
                     plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
                 plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
+                
                 for bd in zone_boundaries * platescale:
                     if bd < OWA * platescale:
                         if bd == zone_boundaries[0]*platescale:
@@ -946,15 +947,17 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
                 plt.ylim(np.nanmin(contrast), 1e-1)
                 plt.xlabel("distance in arcseconds")
                 plt.ylabel("contrast")
+                plt.xlim(0,maxsep)
                 if IWA > 0:
                     plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
                 plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
-                for bd in zone_boundaries * platescale:
-                    if bd < OWA * platescale:
-                        if bd == zone_boundaries[0]*platescale:
-                            plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
-                        else:
-                            plt.plot((bd, bd), (0, 1), '--', color='grey')
+                if numann!=1:
+                    for bd in zone_boundaries * platescale:
+                        if bd < OWA * platescale:
+                            if bd == zone_boundaries[0]*platescale:
+                                plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
+                            else:
+                                plt.plot((bd, bd), (0, 1), '--', color='grey')
                 plt.legend()
                 plt.title(rawc_prefix + " KL"+str(KL)+" Corrected Contrast")
                 plt.savefig(outputdir + dataset_prefix + "_KL"+str(KL)+ '_contrastcurve.jpg')

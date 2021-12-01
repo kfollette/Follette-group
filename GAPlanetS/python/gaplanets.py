@@ -1186,7 +1186,7 @@ def clean_fakes(keepstr, fakesdir):
 
 def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=6, movm=1, KLlist=[1,2,3,4,5,10,20,50,100],
                  contrasts=[1e-2,1e-2,1e-2], seps=[10, 10, 10], thetas=[0, 120, 240], debug=False,
-                 ghost=False, mask=[3, 15], slicefakes=True,ctrlrad=30, highpass=True):
+                 ghost=False, mask=[3, 15], slicefakes=True,ctrlrad=30, highpass=True, meansnr=False):
     """
     PURPOSE
     Injects false planets at specified locations, runs through KLIP, calculates throughput and
@@ -1205,6 +1205,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=6, mo
     numann, movm, KLlist = the usual klip annuli, movement and KL mode parameters
     debug = if set to True, prints some sanity checks about injected planet locations, etc.
     ghost = when set to True, will inject scaled copy of ghost as fake planet
+    meansnr = return average SNR of positive pixels under planet mask instead of peak pixel
 
     OUTPUT
     separations where planets were injected = separations in pixels where throughputs were computed
@@ -1377,6 +1378,8 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=6, mo
         for pl in np.arange(n_planets):
             print("average average under mask SNR across KL modes for planet", str(pl+1), 'is', np.nanmean(snr_sums[1,:,pl]), 'and median is', np.nanmedian(snr_sums[1,:,pl]))
 
+    if meansnr==True:
+        snrs = snr_sums
     return (dataset.input, dataset.prihdrs, prefix_fakes, snrs)
 
 

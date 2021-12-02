@@ -24,6 +24,7 @@ import peproc as pe
 import matplotlib.gridspec as gridspec
 import datetime as dt
 import matplotlib.pylab as pl
+import pickle
 
 def SliceCube(imfile, rotfile, indir='./', slicedir='sliced/'):
     """
@@ -1833,9 +1834,9 @@ def grab_planet_specs(df,dset_path):
     plpa = df[df["Path"]==dset_path]["PA"].values
     return(tuple(pllabel),tuple(plsep),tuple(plpa))
 
-def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5, 
-    klopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, stampsz=75, maxy=25, 
-    lims=[-1,4], pldf=False, seppl=False, sepkl=False, smt=1):
+def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5, 
+    klopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxy=25, 
+    pldf=False, seppl=False, sepkl=False, smt=1):
     
     thisdir=os.getcwd()
 
@@ -1852,25 +1853,10 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
     for obj in sorted_objs:
         n_dsets.append(len(df[df["Object Name"]==obj]))
 
-    total_dsets = np.sum(n_dsets)
-    colors = pl.cm.magma(np.linspace(0,1,total_dsets))
+    totaldsets = np.sum(n_dsets)
 
-    #make megafigure object
-    #one for ims
-    f1 = plt.figure(figsize=(15,total_dsets*6))
-    #plt.axis('off')
-    nrows = total_dsets
-    outer = f1.add_gridspec(nrows, 1, wspace=0., hspace=0.)
-    
-    #and one for snrmaps
-    f2 = plt.figure(figsize=(15,total_dsets*6))
-    outer2 = f2.add_gridspec(nrows, 1, wspace=0., hspace=0.)
-
-    #and one for contrasts
-    #f3 = plt.figure()
-    #f3, cax1 = plt.subplots(1,1)
-
-    #set up megafigs
+    dofds={}
+    #dset counter
     i=0 #plot counter
 
     for obj in sorted_objs:
@@ -1908,6 +1894,8 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
 
         #pull info for each dataset
         for j in np.arange(n_dset):
+            #by dataset dictionary
+            d = {}
             dset_path = sorted_dpaths[j]
             date=dset_path.split('/')[1]
             #check whether pes are complete
@@ -1926,7 +1914,17 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
                 IWA = int(df[df["Path"]==dset_path]["IWA"].values[0])
                 fwhm = int(df[df["Path"]==dset_path]["cut fwhm"].values[0])
                 contrast = float(df[df["Path"]==dset_path]["injected planet contrast"].values[0])
-                satrad = df[df["Path"]==dset_path]["saturation radius"].values[0]     
+                satrad = df[df["Path"]==dset_path]["saturation radius"].values[0]
+                whichbin = df[df["Path"]==dset_path]["bin"].values[0]
+                if np.isfinite(whichbin):
+                    if int(whichbin)==1:
+                        ctrlrad=30
+                    else:
+                        ctrlrad=15
+                else:
+                    ctrlrad = np.nan
+
+                d["IWA"]=IWA
         
                 #set ghost to true if saturated
                 if np.isnan(satrad):
@@ -1940,19 +1938,6 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
                 fpath=full_fpath+'/dq_cuts/'+wl+'_'+dq_str+'_sliced/'
                 #dataset label = string of filepath
                 data_str = dset_path.replace('/','_')
-
-                #set planet marking keywords to False by default
-                plspecs = False
-                plcand = False
-
-                #pull planet info, if given a planet specs frame
-                if isinstance(pldf, pd.DataFrame):
-                    #check whether df contains note to mark planets
-                    if df[df["Path"]==dset_path]["mark known planets"].values[0]=="Y":
-                        plspecs = grab_planet_specs(pldf,dset_path)
-                        #check whether marked as candidate
-                        if df[df["Path"]==dset_path]["candidate"].values[0]=="Y":
-                            plcand=True
 
                 print('STARTING', data_str)
 
@@ -1982,28 +1967,29 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
                 #find peak for this set according to kl collapse mode in order to select optimal ann, movm
                 cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxy=maxy)
 
+                ann = int(anns[0][0])
+                movm = int(movms[0][0])
+                print('peak is at a', ann, 'm', movm)
+
                 #run metric calculation for ALL kl modes so can select optimal kl
                 kllist = [1,2,3,4,5,10,20,50,100]     
                 cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxy=maxy)
 
-                #find kl mode with highest score
+                #find kl mode with highest score at ann, movm
                 if klopt==True:
                     pk=np.zeros((len(kllist)))
                     for k in np.arange(len(kllist)):
-                        pk[k] = np.nanmax(agg_cube1[k,0,:maxy,:])
+                        #subtract 1 from ann to index from 0. note assumes step size is 1
+                        pk[k] = np.nanmax(agg_cube1[k,0,ann-1,movm])
                 
                     pk_ind = np.where(pk == np.nanmax(pk))
                     kl = kllist[int(pk_ind[0])]
                 
-                    print('peak metric among', pk, 'is', pk[int(pk_ind[0])], 'for kl', kl)
+                    print('peak metric for this ann, movm combo among', pk, 'is', pk[int(pk_ind[0])], 'for kl', kl)
                     df.loc[df["Path"]==dset_path,"opt kl"]=kl
                 else:
                     #otherwise, do 10 kl modes
                     kl = 10
-
-                ann = int(anns[0][0])
-                movm = int(movms[0][0])
-                print('peak is at a', ann, 'm', movm)
 
                 #fill in in the table
                 df.loc[df["Path"]==dset_path,"opt ann"]=ann
@@ -2017,8 +2003,8 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
                 idx = df.index[df["Path"]==dset_path].tolist()
                 dfin = dfin.append(df.loc[idx], ignore_index=True)
                 dfin.to_csv(outname, index=False)     
-                
 
+                #compute contrast curve
                 os.chdir(full_fpath)
                 thrpt_out, zb, df2, dataset_prefix = compute_thrpt(data_str, wl, cut, outputdir = outdir+data_str+'/', numann=ann, movm=movm, KLlist=[kl], IWA=IWA, 
                                                                     contrast=contrast, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
@@ -2029,49 +2015,131 @@ def make_figs(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive
                                                                 record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], savefig=True, debug=False, highpass=hpval, overwrite=overwrite)
                 
             
-                #add contrast to figure
                 klipstr=' a'+str(ann)+'m'+str(movm)+'kl'+str(kl)
-                lbl = data_str + klipstr
+                ccurve_lbl = data_str + klipstr
                 ccurve_seps = contrast_out[0,0,:]
                 ccurve_ctrst = contrast_out[0,2,:]
-                print('i is', i)
-                #cax1.plot(ccurve_seps, ccurve_ctrst, label=lbl, color=colors[i])
+
+                #make a dictionary with all these things
 
                 params = [obj,date,cut,movm,ann,fwhm,IWA,kl]
-
+                date_obj = t[j]
+                ##generate images
                 linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale = run_redx(data_str,params=params, scalefile=scalefile, highpass=hpval, scale=False, overwrite=overwrite)
                 linecube, linesnr, contcube, contsnr, sdicube2, sdisnr2, prefix, scale2 = run_redx(data_str,params=params, highpass=hpval, scale=1, overwrite=overwrite)
                 
-                #set up subfig
-                inner = outer[i:i+1].subgridspec(1, 4, wspace=0, hspace=0)
-                ax1 = plt.Subplot(f1, inner[0,0])
-                ax2 = plt.Subplot(f1, inner[0,1])
-                ax3 = plt.Subplot(f1, inner[0,2])  
-                ax4 = plt.Subplot(f1, inner[0,3])  
-                axs = (ax1, ax2, ax3, ax4)
-                indivobj_fig(linecube[0,:,:],contcube[0,:,:],sdicube[0,:,:],scale,prefix,IWA=IWA,secondscale=1,secondscaleim=sdicube2[0,:,:], title = obj + ' '+ date, stampsz=stampsz, plspecs=plspecs, plcand=plcand, ax=axs)
+                #set planet marking keywords to False by default
+                plspecs = False
+                plcand = False
 
-                inner2 = outer2[i:i+1].subgridspec(1, 4, wspace=0, hspace=0)
-                sax1 = plt.Subplot(f2, inner2[0,0])
-                sax2 = plt.Subplot(f2, inner2[0,1])
-                sax3 = plt.Subplot(f2, inner2[0,2])  
-                sax4 = plt.Subplot(f2, inner2[0,3])  
-                saxs = (sax1, sax2, sax3, sax4)
+                ##compile a bunch of stuff for plotting, labeling, etc.
 
-                indivobj_fig(linesnr[0,0,:,:],contsnr[0,0,:,:],sdisnr[0,0,:,:],scale,prefix+'_SNR_sm1',IWA=IWA, smooth=smt,secondscale=1,secondscaleim=sdisnr2[0,0,:,:],snr=True, title = obj + ' '+ date, lims=lims, stampsz=stampsz, plspecs=plspecs, plcand=plcand, ax=saxs)
-              
+                #pull planet info, if given a planet specs frame
+                if isinstance(pldf, pd.DataFrame):
+                    #check whether df contains note to mark planets
+                    if df[df["Path"]==dset_path]["mark known planets"].values[0]=="Y":
+                        plspecs = grab_planet_specs(pldf,dset_path)
+                        #check whether marked as candidate
+                        if df[df["Path"]==dset_path]["candidate"].values[0]=="Y":
+                            plcand=True
+
+                dict_keys = ['prefix', 'full_fpath', 'dset_path', 'satrad', 'ctrlrad', 'scale', 
+                'ccurve_seps', 'ccurve_ctrst', 'ccurve_lbl',
+                'linecube', 'contcube', 'sdicube', 'sdicube2', 'linesnr', 'contsnr', 'sdisnr', 'sdisnr2', 
+                'obj', 'date', 'date_obj', 'plspecs', 'plcand',
+                'cut', 'movm', 'ann', 'fwhm', 'IWA', 'kl', 'hpval']
+
+                for k in dict_keys:
+                    d[k]=locals()[k]
+
                 os.chdir(thisdir)
+                #add dict for this dataset to dict of dicts
+                dofds[data_str]=d
                 i+=1
-    #cax1.legend()
+    objlist = '_'.join(sorted_objs)
+    master_keys = ["theseparams","totaldsets","objlist","outdir"]
+    for ky in master_keys:
+        dofds[ky]=locals()[ky]
 
-    fnamestr = '_'.join(sorted_objs)
-    plt.savefig(f1, outdir+fnamestr+theseparams+'ims.png')
-    plt.savefig(f2, outdir+fnamestr+theseparams+'snrmaps_sm'+str(smt)+'.png')
-    plt.savefig(outdir+fnamestr+theseparams+'contrasts.png')
-    plt.show(f1)
-    plt.show(f2)
+    dictname = outdir+objlist+'_'+theseparams+'.p'
+    pickle.dump(dofds,open(dictname,"wb"))
 
+    return(dictname, dofds)
+
+def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
+    """
+
+    """
+    #if d is string, open it
+    if isinstance(d, str):
+        d = pickle.load( open(d, "rb" ) )
+
+    totaldsets = d["totaldsets"]
+    f1 = plt.figure(figsize=(15,totaldsets*6))
+    outer = f1.add_gridspec(totaldsets,1,wspace=0,hspace=0)
+
+    dkeys = list(d.keys())
+    dset_strs = []
+    for key in dkeys:
+        if '_' in key:
+            dset_strs.append(key)
+
+    for i in np.arange((totaldsets)):
+        thisd = d[dset_strs[i]]
+        inner = outer[i:i+1,0].subgridspec(1, 4, wspace=0, hspace=0)
+        ax1 = plt.Subplot(f1, inner[0,0])
+        ax2 = plt.Subplot(f1, inner[0,1])
+        ax3 = plt.Subplot(f1, inner[0,2])  
+        ax4 = plt.Subplot(f1, inner[0,3])  
+        axs=(ax1,ax2,ax3,ax4)
+        datestr = thisd["date_obj"].strftime("%b %d %Y")
+        
+        if snr==True:
+            if smt!=False:
+                smtstr='sm'+str(smt)
+            else:
+                smtstr=''
+            indivobj_fig(thisd["linesnr"][0,:,:],thisd["contsnr"][0,:,:],thisd["sdisnr"][0,:,:], thisd["scale"],thisd["prefix"]+'_SNR_'+smtstr,IWA=thisd["IWA"], smooth=smt, secondscale=1,secondscaleim=thisd["sdisnr2"][0,0,:,:],snr=True, title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], ax=axs)
+        else:
+            indivobj_fig(thisd["linecube"][0,:,:],thisd["contcube"][0,:,:],thisd["sdicube"][0,:,:], thisd["scale"],thisd["prefix"],IWA=thisd["IWA"], secondscale=1,secondscaleim=thisd["sdicube2"][0,:,:], title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], ax=axs)
+
+    plt.savefig(d["outdir"]+d["objlist"]+d["theseparams"])
+
+    return (f1)
+
+def plotdict_ctrst(d, maxsep=1):
+    """
+
+    """
+    #if d is string, open it
+    if d.isinstance(str):
+        d = pickle.load( open(d, "rb" ) )
+
+    totaldsets = d["totaldsets"]
+
+    colors = pl.cm.magma(np.linspace(0,1,totaldsets))
+    platescale = 0.0078513
+
+    f,ax = plt.subplots(1)
+    dkeys = d.keys()
+    dset_strs = []
+    for key in dkeys:
+        if key!="totaldsets":
+            dset_strs.append(key)
+
+    for i in np.arange((totaldsets)):
+        thisd = d[key[i]]
+        ax.plot(thisd["ccurve_seps"]*platescale, thisd["ccurve_ctrst"], label = thisd["ccurve_lbl"], color=colors[i])
+
+    plt.yscale("log")
+    plt.xlim(0, maxsep)
+    plt.yscale("log")
+    plt.xlabel("distance in arcseconds")
+    plt.ylabel("contrast")
+
+    ax.legend()
     return()
+
 
 def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, returnfig=False, ax=None):
     """

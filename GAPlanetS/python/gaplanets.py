@@ -1188,11 +1188,12 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
             ax1.plot(contrast_seps * platescale, contrasts[i,klctr, :],
                      label=str(cut) + ' cut', linestyle=linesty, color=cm.plasma(j))
         cfloor = np.log10(np.nanmin(contrasts[:,:,0:last_idx])) - 0.2
+        print(cfloor)
         cmax=np.nanmax(contrasts[i,klctr, :])+0.5
         plt.yscale("log")
         plt.title(data_str.replace('_',' '))
         plt.xlim(0, outer_asec)
-        plt.ylim(10 ** cfloor, cmax)
+        #plt.ylim(10 ** cfloor, cmax)
         plt.xlabel("distance in arcseconds")
         plt.ylabel("contrast")
 
@@ -2075,8 +2076,9 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
         d = pickle.load( open(d, "rb" ) )
 
     totaldsets = d["totaldsets"]
-    f1 = plt.figure(figsize=(15,totaldsets*6))
-    outer = f1.add_gridspec(totaldsets,1,wspace=0,hspace=0)
+    f1 = plt.figure(figsize=(15.4,totaldsets*4))
+    plt.axis('off')
+    outer = gridspec.GridSpec(totaldsets, 1, wspace=0, hspace=0)
 
     dkeys = list(d.keys())
     dset_strs = []
@@ -2086,12 +2088,7 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
 
     for i in np.arange((totaldsets)):
         thisd = d[dset_strs[i]]
-        inner = outer[i:i+1,0].subgridspec(1, 4, wspace=0, hspace=0)
-        ax1 = plt.Subplot(f1, inner[0,0])
-        ax2 = plt.Subplot(f1, inner[0,1])
-        ax3 = plt.Subplot(f1, inner[0,2])  
-        ax4 = plt.Subplot(f1, inner[0,3])  
-        axs=(ax1,ax2,ax3,ax4)
+        inner = outer[i:i+1].subgridspec(1, 4, wspace=0, hspace=0)
         datestr = thisd["date_obj"].strftime("%b %d %Y")
         
         if snr==True:
@@ -2099,13 +2096,13 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
                 smtstr='sm'+str(smt)
             else:
                 smtstr=''
-            indivobj_fig(thisd["linesnr"][0,:,:],thisd["contsnr"][0,:,:],thisd["sdisnr"][0,:,:], thisd["scale"],thisd["prefix"]+'_SNR_'+smtstr,IWA=thisd["IWA"], smooth=smt, secondscale=1,secondscaleim=thisd["sdisnr2"][0,0,:,:],snr=True, title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], ax=axs)
+            indivobj_fig(thisd["linesnr"][0,0,:,:],thisd["contsnr"][0,0,:,:],thisd["sdisnr"][0,0,:,:], thisd["scale"],thisd["prefix"]+'_SNR_'+smtstr,IWA=thisd["IWA"], smooth=smt, secondscale=1,secondscaleim=thisd["sdisnr2"][0,0,:,:],snr=True, title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], returnfig=True, ax=(f1, inner, i, totaldsets))
         else:
-            indivobj_fig(thisd["linecube"][0,:,:],thisd["contcube"][0,:,:],thisd["sdicube"][0,:,:], thisd["scale"],thisd["prefix"],IWA=thisd["IWA"], secondscale=1,secondscaleim=thisd["sdicube2"][0,:,:], title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], ax=axs)
+            indivobj_fig(thisd["linecube"][0,:,:],thisd["contcube"][0,:,:],thisd["sdicube"][0,:,:], thisd["scale"],thisd["prefix"],IWA=thisd["IWA"], secondscale=1,secondscaleim=thisd["sdicube2"][0,:,:], title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], returnfig=True, ax=(f1,inner, i, totaldsets))
 
-    plt.savefig(d["outdir"]+d["objlist"]+d["theseparams"])
+    plt.savefig(str(d["outdir"])+str(d["objlist"])+str(d["theseparams"])+'.png')
 
-    return (f1)
+    return ()
 
 def plotdict_ctrst(d, maxsep=1):
     """
@@ -2149,15 +2146,24 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     lims = tuple in the form (min, max) to set colorbar limits
 
     """
+    if ax==False:
+        f, (ax1,ax2,ax3,ax4) = plt.subplots(1, nplots, sharey=True)
+        num=0
+        totaldsets=1
+    else:
+        ax1 = plt.Subplot(ax[0], ax[1][0])
+        ax2 = plt.Subplot(ax[0], ax[1][1])
+        ax3 = plt.Subplot(ax[0], ax[1][2])  
+        ax4 = plt.Subplot(ax[0], ax[1][3])  
+        num = ax[2]
+        totaldsets = ax[3]
 
-    ax=ax or plt.gca()
+    axs = (ax1,ax2,ax3,ax4)
 
     if secondscale==True:
         nplots = 4
     else:
         nplots = 3
-
-    f, ax = plt.subplots(1, nplots, sharey=True)
 
     pixscale = 0.0078513
     imsz = lineim.shape[1]
@@ -2192,10 +2198,9 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
 
     # set up tick labels according to parameter ranges
     if secondscale!=False:
-        plt.setp(ax, xticks=ticks, xticklabels=ticklabels_str, yticks=ticks, yticklabels=ticklabels_str)
+        plt.setp(axs, xticks=ticks, xticklabels=ticklabels_str, yticks=ticks, yticklabels=ticklabels_str)
     else:
-        plt.setp(ax, xticks=ticks, xticklabels=ticklabels_str, yticks=ticks, yticklabels=ticklabels_str)
-
+        plt.setp(axs, xticks=ticks, xticklabels=ticklabels_str, yticks=ticks, yticklabels=ticklabels_str)
 
     if snr==True:
         cbarlabel = 'SNR'
@@ -2223,41 +2228,35 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
             plsep_x.append(float(plsep)*np.cos((float(plpa)+90)*np.pi/180))
             pllabels.append(str(lb))
 
-    titlestyle=dict(size=18)
+    titlestyle=dict(size=14)
 
-    ax1 = ax[0]
+    #ax1 = ax[0]
     im1 = ax1.imshow(lineim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    ax1.set_title(r'KLIP-ed H$\alpha$ Image', **titlestyle)
-    divider = make_axes_locatable(ax1)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im1, cax=cax, orientation='vertical', label=cbarlabel)
-
-    ax2 = ax[1]
     im2 = ax2.imshow(contim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    ax2.set_title(r'KLIP-ed Continuum Image',**titlestyle)
-    divider = make_axes_locatable(ax2)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im2, cax=cax, orientation='vertical', label=cbarlabel)
-    # plot metric
+    im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
+ 
+    if num==0:
+        ax1.set_title(r'KLIP-ed H$\alpha$ Image', **titlestyle)
+        ax2.set_title(r'KLIP-ed Continuum Image',**titlestyle)
+        ax3.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
+    
+    ax2.axes.get_yaxis().set_visible(False)
+    ax3.axes.get_yaxis().set_visible(False)
 
     labelstyle = dict(size=16, color='white', weight='bold')
-
-    ax3 = ax[2]
-    im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    ax3.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
     ax3.text(0.62,0.93, 'scale='+'{:.2f}'.format(scale), transform=ax3.transAxes,**labelstyle)
-    divider = make_axes_locatable(ax3)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im3, cax=cax, orientation='vertical', label=cbarlabel)
 
     if secondscale!=False:
-        ax4 = ax[3]
         im4 = ax4.imshow(secondscaleim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-        ax4.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
+        if num==0:
+            ax4.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
         ax4.text(0.62,0.93, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,**labelstyle)
+        ax4.axes.get_yaxis().set_visible(False)
         divider = make_axes_locatable(ax4)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
-        plt.colorbar(im4, cax=cax, orientation='vertical', label=cbarlabel)
+ 
+    if num!=totaldsets-1:
+        for a in axs:
+            a.axes.get_xaxis().set_visible(False)
 
     #add planet markers
     if plspecs!=False:
@@ -2267,21 +2266,32 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
                 lsty=':'
             else:
                 lsty='-'
-            for a in ax:
+            for a in axs:
                 circ=patches.Circle((stampcen+plsep_x[i],stampcen+plsep_y[i]),radius=4, fill=False, ec='cyan', lw=2, ls=lsty)
                 circ_label=pllabels[i]
                 a.add_patch(circ, )
                 a.text(stampcen+plsep_x[i]+5.5,stampcen+plsep_y[i],circ_label, color='white',fontsize=16)
 
     if title!=False:
-        plt.suptitle(title, size=22)   
+        #plt.suptitle(title, size=22) 
+        ax1.text(-25,25, title, rotation=90, fontsize=18, multialignment='center')  
+
+    if ax!=False:
+        ax[0].add_subplot(ax1)
+        ax[0].add_subplot(ax2)
+        ax[0].add_subplot(ax3)
+        ax[0].add_subplot(ax4)
+        cax = ax4.inset_axes([1.04, 0, 0.05, 1],  transform=ax4.transAxes)
+        ax[0].colorbar(im4, ax=ax4, cax=cax, orientation='vertical', label=cbarlabel)    
+    
+        #ax[0].colorbar(im4, shrink=0.5, orientation='vertical', label=cbarlabel)
 
     plt.tight_layout() 
-
-    plt.savefig(outputdir+prefix+'.png')
+    
     if returnfig==True:
-        return(ax)
+        print('done')
     else:
+        plt.savefig(outputdir+prefix+'.png')
         plt.show()
         plt.clf()
         return()

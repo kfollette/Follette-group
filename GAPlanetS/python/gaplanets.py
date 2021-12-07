@@ -1852,7 +1852,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
     n_dsets = []
     #count how many total datasets
     for obj in sorted_objs:
-        n_dsets.append(len(df[df["Object Name"]==obj]))
+        n_dsets.append(len(df[df["Object Name"]==obj][df["Done"]=='Y']))
 
     totaldsets = np.sum(n_dsets)
 
@@ -2076,9 +2076,9 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
         d = pickle.load( open(d, "rb" ) )
 
     totaldsets = d["totaldsets"]
-    f1 = plt.figure(figsize=(15.4,totaldsets*4))
+    f1 = plt.figure(figsize=(16.2,totaldsets*4.1))
     plt.axis('off')
-    outer = gridspec.GridSpec(totaldsets, 1, wspace=0, hspace=0)
+    outer = gridspec.GridSpec(totaldsets, 1, wspace=0, hspace=0.01)
 
     dkeys = list(d.keys())
     dset_strs = []
@@ -2088,7 +2088,7 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
 
     for i in np.arange((totaldsets)):
         thisd = d[dset_strs[i]]
-        inner = outer[i:i+1].subgridspec(1, 4, wspace=0, hspace=0)
+        inner = outer[i:i+1].subgridspec(1, 4, wspace=0.01, hspace=0)
         datestr = thisd["date_obj"].strftime("%b %d %Y")
         
         if snr==True:
@@ -2228,7 +2228,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
             plsep_x.append(float(plsep)*np.cos((float(plpa)+90)*np.pi/180))
             pllabels.append(str(lb))
 
-    titlestyle=dict(size=14)
+    titlestyle=dict(size=16)
 
     #ax1 = ax[0]
     im1 = ax1.imshow(lineim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
@@ -2244,13 +2244,13 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     ax3.axes.get_yaxis().set_visible(False)
 
     labelstyle = dict(size=16, color='white', weight='bold')
-    ax3.text(0.62,0.93, 'scale='+'{:.2f}'.format(scale), transform=ax3.transAxes,**labelstyle)
+    ax3.text(0.58,0.93, 'scale='+'{:.2f}'.format(scale), transform=ax3.transAxes,**labelstyle)
 
     if secondscale!=False:
         im4 = ax4.imshow(secondscaleim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
         if num==0:
             ax4.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
-        ax4.text(0.62,0.93, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,**labelstyle)
+        ax4.text(0.58,0.93, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,**labelstyle)
         ax4.axes.get_yaxis().set_visible(False)
         divider = make_axes_locatable(ax4)
  
@@ -2274,14 +2274,14 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
 
     if title!=False:
         #plt.suptitle(title, size=22) 
-        ax1.text(-25,25, title, rotation=90, fontsize=18, multialignment='center')  
+        ax1.text(-25,25, title, rotation=90, fontsize=20, weight='bold', multialignment='center')  
 
     if ax!=False:
         ax[0].add_subplot(ax1)
         ax[0].add_subplot(ax2)
         ax[0].add_subplot(ax3)
         ax[0].add_subplot(ax4)
-        cax = ax4.inset_axes([1.04, 0, 0.05, 1],  transform=ax4.transAxes)
+        cax = ax4.inset_axes([1.04, 0.05, 0.05, 0.9],  transform=ax4.transAxes)
         ax[0].colorbar(im4, ax=ax4, cax=cax, orientation='vertical', label=cbarlabel)    
     
         #ax[0].colorbar(im4, shrink=0.5, orientation='vertical', label=cbarlabel)

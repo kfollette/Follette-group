@@ -2099,7 +2099,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 i+=1
 
     if gencombo==True:
-        dofds = add_dsetcombos(dofds,dupobj,dup_dstrings)
+        dofds = add_dsetcombos(dofds,dupobj,dup_dstrings, dupyr)
         totaldsets+=(len(dupobj))
 
     objlist = '_'.join(sorted_objs)

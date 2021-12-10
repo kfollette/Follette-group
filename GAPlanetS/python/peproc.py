@@ -1135,14 +1135,14 @@ def pull_dsets(false_dir, real_dir, out_dir, namestr='*',exceptstr = False, date
     monthstrs = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     t=[]
     for i in np.arange(len(reallist)):
-        print(reallist[i])
+        #print(reallist[i])
         linefname = reallist[i].split('_')
         line_date = linefname[2]
         monthstr = [s for s in monthstrs if s in line_date]
         monthno = [i for i in np.arange(1,13) if monthstrs[i-1] in line_date]
         year = int('20'+line_date[-2:])
         day = line_date.split(monthstr[0])[0]
-        print(line_date, '= day:', day, ' month:', monthno[0], ' year:', year)
+        #print(line_date, '= day:', day, ' month:', monthno[0], ' year:', year)
         t.append(date(year=year, month=int(monthno[0]), day=int(day)))
 
     #now sort
@@ -1727,14 +1727,14 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
         ax2.plot((mean_std,mean_std),(0,y2[1]), color='r')
         ax2.set_xlim(0.1,0.4)
 
-        n,b1,patches = ax3.hist(mean_meds, range=(0.01,0.1),bins=40,density=True, lw=3, histtype='step')
-        n,b1,patches = ax3.hist(mean_meds, range=(0.01,0.1),bins=40,density=True, lw=3, alpha=0)
+        n,b1,patches = ax3.hist(mean_meds, range=(0.005,0.1),bins=40,density=True, lw=3, histtype='step')
+        n,b1,patches = ax3.hist(mean_meds, range=(0.005,0.1),bins=40,density=True, lw=3, alpha=0)
         last = np.where(b1<medcut)[0][-1]
         plt.setp(patches[:last+1], 'facecolor', 'b', 'alpha', 0.2) 
         ax3.set_xlabel(r'Avg. Median of DQ$_{HR}$-DQ$_{CF}$')
         y3 = ax3.get_ylim()
         ax3.plot((mean_med,mean_med),(0,y3[1]), color='r')
-        ax3.set_xlim(0.01,0.1)
+        ax3.set_xlim(0.005,0.1)
         ax3.set_ylabel("Density")
 
         n, b1, patches = ax4.hist(mean_mdiffs, range =(-0.25,0.9), bins=40,density=True, lw=3, histtype='step')

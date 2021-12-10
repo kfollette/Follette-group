@@ -692,7 +692,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             plt.clf()
 
             # locations to record throughputs in table
-            platescale = 0.0078513
+            platescale = 0.00795
 
             # blank array to store interpolated throughputs
             thrpt_table_vals = []
@@ -783,7 +783,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
     df = get_df(rdx_params_dfname)
 
     iterations = len(thrpt_out[0,:,0])-2
-    platescale = 0.0078513
+    platescale = 0.00795
 
     # set up directories and naming
     
@@ -1154,7 +1154,7 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
     written by Kate Follette June 2019
     """
     
-    platescale = 0.0078513
+    platescale = 0.00795
     ctrl_rad = get_control_rad()
     ctrl_rad*=platescale
 
@@ -2118,8 +2118,8 @@ def plotdict_ctrst(d, maxsep=1):
 
     totaldsets = d["totaldsets"]
 
-    colors = pl.cm.magma(np.linspace(0,1,totaldsets))
-    platescale = 0.0078513
+    colors = pl.cm.magma(np.linspace(0.1,0.9,totaldsets))
+    platescale = 0.00795
 
     f,ax = plt.subplots(1)
     dkeys = d.keys()
@@ -2309,7 +2309,7 @@ def contrast_klcompare(data_str, ha_ctrsts, cont_ctrsts, KLlist, IWA, zone_bound
     if kldim != len(KLlist):
         print("KL list is wrong shape relative to contrast files")
 
-    platescale = 0.0078513
+    platescale = 0.00795
     zone_boundaries_arcsec = [x*platescale for x in zone_boundaries]
 
     #make figure
@@ -2398,7 +2398,7 @@ def final_contrast_fig(data_str, ha_ctrsts, cont_ctrsts, IWA, zone_boundaries, o
     min_ctrst_cont = np.nanmin(cont_contrasts, axis=0)
     max_ctrst_cont = np.nanmax(cont_contrasts, axis=0)
 
-    platescale = 0.0078513
+    platescale = 0.00795
     zone_boundaries_arcsec = [x*platescale for x in zone_boundaries]
 
     #make figure

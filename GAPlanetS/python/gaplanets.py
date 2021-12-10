@@ -2240,9 +2240,8 @@ def plotdict_ctrst(d, maxsep=1):
     plt.xlabel("distance in arcseconds")
     plt.ylabel("contrast")
 
-    ax.legend()
+    ax.legend(frameon=False)
     return()
-
 
 def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, returnfig=False, ax=None):
     """
@@ -2376,11 +2375,14 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
                 circ=patches.Circle((stampcen+plsep_x[i],stampcen+plsep_y[i]),radius=4, fill=False, ec='cyan', lw=2, ls=lsty)
                 circ_label=pllabels[i]
                 a.add_patch(circ, )
-                a.text(stampcen+plsep_x[i]+5.5,stampcen+plsep_y[i],circ_label, color='white',fontsize=16)
+                addx = [5.5 if plspecs[2][i]>180 else -7]
+                labelposx = stampcen+plsep_x[i]+addx[0]
+                labelposy = stampcen+plsep_y[i]
+                a.text(labelposx,labelposy,circ_label, color='white',fontsize=16)
 
     if title!=False:
         #plt.suptitle(title, size=22) 
-        ax1.text(-25,25, title, rotation=90, fontsize=20, weight='bold', multialignment='center')  
+        ax1.text(-1*stampsz/3,stampsz/3.5, title, rotation=90, fontsize=20, weight='bold', multialignment='center')  
 
     if ax!=False:
         ax[0].add_subplot(ax1)

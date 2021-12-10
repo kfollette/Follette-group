@@ -1838,7 +1838,7 @@ def grab_planet_specs(df,dset_path):
 
 def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5, 
     klopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=25, maxy=25, skipdates=False,
-    pldf=False, seppl=False, sepkl=False, smt=1, timecoll='median'):
+    pldf=False, seppl=False, sepkl=False, smt=1, timecoll='median',combochoice=None):
     
     thisdir=os.getcwd()
 
@@ -1909,8 +1909,14 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
         for yr in np.arange(len(unique)):
             if counts[yr]>1:
                 print("more than one", obj, "entry for year", unique[yr])
-                answ = input('Should I combine (Y/N)?')
-                if answ=='Y' or 'y':
+                if combochoice!=True:
+                    if combochoice==False:
+                        gencombo=False
+                    else:
+                        answ = input('Should I combine (Y/N)?')
+                        if answ=='Y' or 'y':
+                            combochoice=True
+                if combochoice==True:
                     gencombo = True
                     #find last occurrence
                     dupobj.append(obj)

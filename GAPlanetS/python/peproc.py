@@ -1293,8 +1293,8 @@ def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pkl
               diff_agg = diff[-1,0,:,0,:,:]
 
               #avg metric score diffs across KL mode
-              sig_diff_avg = np.nanmean(sig_diff)
-              sig_diff_wt_avg = np.nanmean(sig_diff_wt)
+              sig_diff_avg = np.mean(sig_diff)
+              sig_diff_wt_avg = np.mean(sig_diff_wt)
 
               #difference in metric score at fake planet peak
               coll_string = dset_string+'_wts'+''.join([str(x) for x in mcombo])+'_kls'+''.join([str(x) if str(x)=='1' else '0' for x in list(klcombo)])+'_sepkl'+str(sepkl)+'_snthresh'+str(snt)
@@ -1646,16 +1646,16 @@ def compute_dset_diagnostics(current_keys, done, pklstr, out_dir):
 def avg_diag_across_dsets(diaglists, refkeys):
 
     sum_list, std_list, med_list, mdiff_list = diaglists
-    #loop ofer all possible combos
+    #loop over all possible combos
     mean_sum = []
     mean_std = []
     mean_med = []
     mean_mdiff = []
     for i in np.arange(len(refkeys)):
-      mean_sum.append(np.nanmean(sum_list[i,:]))
-      mean_std.append(np.nanmean(std_list[i,:]))
-      mean_med.append(np.nanmean(med_list[i,:]))
-      mean_mdiff.append(np.nanmean(mdiff_list[i,:]))
+      mean_sum.append(np.mean(sum_list[i,:]))
+      mean_std.append(np.mean(std_list[i,:]))
+      mean_med.append(np.mean(med_list[i,:]))
+      mean_mdiff.append(np.mean(mdiff_list[i,:]))
 
     masterlists = (mean_sum, mean_std, mean_med, mean_mdiff)
     return(masterlists)
@@ -1664,10 +1664,10 @@ def find_best_diag(masterlists, cutoffpct, refkeys):
 
     mean_sum, mean_std, mean_med, mean_mdiff = masterlists
 
-    sumcut = np.percentile(np.abs(mean_sum),cutoffpct)
-    stdcut = np.percentile(mean_std,cutoffpct)
-    medcut = np.percentile(np.abs(mean_med),cutoffpct)
-    diffcut = np.percentile(np.abs(mean_mdiff), cutoffpct)
+    sumcut = np.nanpercentile(np.abs(mean_sum),cutoffpct)
+    stdcut = np.nanpercentile(mean_std,cutoffpct)
+    medcut = np.nanpercentile(np.abs(mean_med),cutoffpct)
+    diffcut = np.nanpercentile(np.abs(mean_mdiff), cutoffpct)
 
     cutoffs = (sumcut, stdcut, medcut, diffcut)
     bestlist=[]

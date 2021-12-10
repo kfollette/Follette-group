@@ -2003,7 +2003,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 hpval = hpmult*fwhm    
                  
                 #find peak for this set according to kl collapse mode in order to select optimal ann, movm
-                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxy=maxy)
+                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxx=maxx, maxy=maxy)
 
                 ann = int(anns[0][0])
                 movm = int(movms[0][0])
@@ -2011,7 +2011,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
 
                 #run metric calculation for ALL kl modes so can select optimal kl
                 kllist = [1,2,3,4,5,10,20,50,100]     
-                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxy=maxy)
+                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxx=maxx, maxy=maxy)
 
                 #find kl mode with highest score at ann, movm
                 if klopt==True:

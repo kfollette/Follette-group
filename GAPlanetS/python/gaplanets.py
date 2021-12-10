@@ -1838,7 +1838,7 @@ def grab_planet_specs(df,dset_path):
 
 def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5, 
     klopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=25, maxy=25, skipdates=False,
-    pldf=False, seppl=False, sepkl=False, smt=1, yrcombo=False, timecoll='median'):
+    pldf=False, seppl=False, sepkl=False, smt=1, timecoll='median'):
     
     thisdir=os.getcwd()
 
@@ -1853,7 +1853,11 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
     n_dsets = []
     #count how many total datasets
     for obj in sorted_objs:
-        n_dsets.append(len(df[df["Object Name"]==obj][df["Done"]=='Y']))
+        filt = df[df["Object Name"]==obj][df["Done"]=='Y']
+        if skipdates!=False:
+            n_dsets.append(len(filt[~filt.Date.isin(skipdates)]))
+        else:    
+            n_dsets.append(len(filt))
 
     totaldsets = np.sum(n_dsets)
 
@@ -1861,20 +1865,31 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
     #dset counter
     i=0 #plot counter
 
+    dupobj=[]
+    lastind=[]
+    dupyr=[]
+    dup_dstrings=[]
+
     for obj in sorted_objs:
-        n_dset=(len(df[df["Object Name"]==obj]))
+        if skipdates==False:
+            subdf = df[df["Object Name"]==obj]
+        else:
+            subdf = df[df["Object Name"]==obj][~df.Date.isin(skipdates)]
         
+        n_dset=(len(subdf))
         #list of paths for theis object
         dpaths=[]
         for dset in np.arange(n_dset):
-            dpaths.append(df[df["Object Name"]==obj]["Path"].values[dset])
+            dpaths.append(subdf["Path"].values[dset])
         
         #put in date order
         monthstrs = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
         t=[]
+        line_dates=[]
         for j in np.arange(n_dset):
             linefname = dpaths[j].split('/')
             line_date = linefname[1]
+            line_dates.append(line_date)
             if '_' in line_date:
                 line_date = line_date.split('_')[0]
             monthstr = [s for s in monthstrs if s in line_date]
@@ -1883,6 +1898,27 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
             day = line_date.split(monthstr[0])[0]
             #print(line_date, '= day:', day, ' month:', monthno[0], ' year:', year)
             t.append(dt.date(year=year, month=int(monthno[0]), day=int(day)))
+
+        yrlist=[]
+        gencombo=False
+
+        for date in t:
+            yrlist.append(date.year)
+
+        unique, counts = np.unique(yrlist, return_counts=True)
+        for yr in np.arange(len(unique)):
+            if counts[yr]>1:
+                print("more than one", obj, "entry for year", unique[yr])
+                answ = input('Should I combine (Y/N)?')
+                if answ=='Y' or 'y':
+                    gencombo = True
+                    #find last occurrence
+                    dupobj.append(obj)
+                    li = len(yrlist)-1-yrlist[::-1].index(unique[yr])
+                    lastind.append(li)
+                    dupyr.append(yrlist[li])
+                    dlist = [line_dates[i] for i in np.arange(len(yrlist)) if yrlist[i]==unique[yr]]
+                    dup_dstrings.append(dlist)
 
         #now sort
         sorted_dpaths = [x for _, x in sorted(zip(t, dpaths))]
@@ -2061,6 +2097,11 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 #add dict for this dataset to dict of dicts
                 dofds[data_str]=d
                 i+=1
+
+    if gencombo==True:
+        dofds = add_dsetcombos(dofds,dupobj,dup_dstrings)
+        totaldsets+=(len(dupobj))
+
     objlist = '_'.join(sorted_objs)
     master_keys = ["theseparams","totaldsets","objlist","outdir"]
     for ky in master_keys:
@@ -2070,6 +2111,52 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
     pickle.dump(dofds,open(dictname,"wb"))
 
     return(dictname, dofds)
+
+def add_dsetcombos(dofds,dupobj,dup_dstrings, dupyr):
+    
+    #add a new combo dictionary for each combined dataset
+    for ds in np.arange(len(dupobj)):
+        combod = {}
+        dicts = []
+
+        #make a list of the dictionaries corresponding to this combo
+        for i in np.arange(len(dup_dstrings[ds])):
+            print(dupobj[ds],dup_dstrings[ds])
+            thiskey =  dupobj[ds]+'_'+dup_dstrings[ds][i]
+            print("key", thiskey)
+            dicts.append(dofds[thiskey])
+    
+        #average line/cont snrmaps and ims
+        keylist = ['linecube', 'contcube', 'sdicube', 'sdicube2', 'linesnr', 'contsnr', 'sdisnr', 'sdisnr2']
+        for key in keylist:
+            if 'snr' in key:
+                foravg = np.zeros((len(dicts),1,1,451,451))
+            else:
+                foravg = np.zeros((len(dicts),1,451,451))
+            for d in np.arange(len(dicts)):
+                foravg[d,:,:]=dicts[d][key]
+            combod[key]=np.nanmean(foravg,axis=0)
+
+        #average scales
+        parlist = []
+        quants = ["scale","IWA"]
+        for q in quants:
+            for d in np.arange(len(dicts)):
+                parlist.append(dicts[d][q])
+            combod[q]=np.mean(parlist)
+
+        #grab planet specs from first dict
+        combod["plspecs"]=dicts[0]["plspecs"]
+        combod["plcand"]=dicts[0]["plcand"]
+        combod["obj"]=dupobj[ds]
+
+        newkey = dupobj[ds]+'_'+str(dupyr[ds])+'_combo'
+        print("new key", newkey)
+        combod["prefix"]=newkey
+
+        dofds[newkey]=combod
+        print(combod.keys())
+    return(dofds)  
 
 def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
     """
@@ -2093,7 +2180,12 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
     for i in np.arange((totaldsets)):
         thisd = d[dset_strs[i]]
         inner = outer[i:i+1].subgridspec(1, 4, wspace=0.01, hspace=0)
-        datestr = thisd["date_obj"].strftime("%b %d %Y")
+        if "combo" in dset_strs[i]:
+            dset_pieces =dset_strs[i].split('_')
+            datestr = dset_pieces[1]+' combo'
+        else:
+            datestr = thisd["date_obj"].strftime("%b %d %Y")
+        
         
         if snr==True:
             if smt!=False:
@@ -2113,7 +2205,7 @@ def plotdict_ctrst(d, maxsep=1):
 
     """
     #if d is string, open it
-    if d.isinstance(str):
+    if isinstance(d, str):
         d = pickle.load( open(d, "rb" ) )
 
     totaldsets = d["totaldsets"]

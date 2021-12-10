@@ -310,7 +310,8 @@ def make_prefix(data_str, wl, cut):
 
 def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numann=3, movm=4, KLlist=[10], IWA=0,
                   contrast=1e-2, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
-                  highpass=True, ghost=False, savefig=False, overwrite=False, iterations=3,rdx_params_dfname='rdx_params.csv'):
+                  highpass=True, ghost=False, savefig=False, overwrite=False, iterations=3,rdx_params_dfname='rdx_params.csv',
+                  timecoll='median'):
     """
     PURPOSE
     Injects false planets separated by the measured fwhm of the dataset in radius and the clockang parameter
@@ -584,7 +585,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
                 # KLIP dataset with fake planets. Highpass filter here.
                 parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=pfx, algo='klip', annuli=numann,
                                           subsections=1, movement=movm, numbasis=KLlist, calibrate_flux=False, mode="ADI",
-                                          highpass=highpass, save_aligned=False, time_collapse='median', maxnumbasis=100)
+                                          highpass=highpass, save_aligned=False, time_collapse=timecoll, maxnumbasis=100)
 
             # reset initial theta for recovery loop
             inittheta = 75.*iter
@@ -750,7 +751,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
 def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir = 'dq_cuts/contrastcurves/', numann=3,
                         movm=4, KLlist=[10], IWA=0, rdx_params_dfname='rdx_params.csv', record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], 
-                        savefig=False, debug=False, overwrite=False, highpass=True, maxsep=1.5):
+                        savefig=False, debug=False, overwrite=False, highpass=True, maxsep=1.5, timecoll='median'):
     """
     PURPOSE
     calculates raw contrast by running KLIP on images and then corrects for throughput
@@ -821,7 +822,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
         # klip the dataset with same set of KLIP parameters as fake planets
         parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=dataset_prefix, annuli=numann, subsections=1,
                                   algo='klip', movement=movm, numbasis=KLlist, calibrate_flux=False,
-                                  mode="ADI", highpass=highpass, time_collapse='median', maxnumbasis=100)
+                                  mode="ADI", highpass=highpass, time_collapse=timecoll, maxnumbasis=100)
 
         ##pull some needed info from headers
         kl_hdulist = fits.open("{out}/{pre}-KLmodes-all.fits".format(out=outputdir, pre=dataset_prefix))
@@ -1268,7 +1269,7 @@ def clean_fakes(keepstr, fakesdir):
 
 def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=6, movm=1, KLlist=[1,2,3,4,5,10,20,50,100],
                  contrasts=[1e-2,1e-2,1e-2], seps=[10, 10, 10], thetas=[0, 120, 240], debug=False,
-                 ghost=False, mask=[3, 15], slicefakes=True,ctrlrad=30, highpass=True, meansnr=False):
+                 ghost=False, mask=[3, 15], slicefakes=True,ctrlrad=30, highpass=True, meansnr=False, timecoll='median'):
     """
     PURPOSE
     Injects false planets at specified locations, runs through KLIP, calculates throughput and
@@ -1395,7 +1396,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=6, mo
     # KLIP dataset with fake planets. Highpass filter here.
     parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix_fakes+strklip, algo='klip', annuli=numann,
                               subsections=1, movement=movm, numbasis=KLlist, calibrate_flux=False, mode="ADI",
-                              highpass=highpass, save_aligned=False, time_collapse='median', verbose = False, maxnumbasis=100)
+                              highpass=highpass, save_aligned=False, time_collapse=timecoll, verbose = False, maxnumbasis=100)
 
     # read in the KLIP cube that was just created
     klcube = fits.getdata("{out}/{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix_fakes+strklip))
@@ -1697,7 +1698,7 @@ def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', rdx_par
     return (objname, date, cut, movm, numann, fwhm, IWA, kllist)
 
 
-def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=True, overwrite=False, klinput = False, indir='dq_cuts/', outputdir='final_ims/', ctrlrad=30):
+def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=True, overwrite=False, klinput = False, indir='dq_cuts/', outputdir='final_ims/', ctrlrad=30, timecoll='median'):
 
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
@@ -1767,7 +1768,7 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
         filelist = glob.glob(slicedir + "/sliced*.fits")
         dataset = MagAO.MagAOData(filelist, highpass=False) 
         parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix, algo='klip', annuli=numann, subsections=1, movement=movm,
-                              numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=highpass, save_aligned=False, time_collapse='median',
+                              numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=highpass, save_aligned=False, time_collapse=timecoll,
                               maxnumbasis=100)
         klcube = fits.getdata("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix))
     
@@ -1791,7 +1792,7 @@ def get_scale_factor(data_str, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     return (scale)
 
 
-def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv', overwrite=False):
+def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv', overwrite=False, timecoll='median'):
     wls = ['Line', 'Cont']
     if params == False:
         objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
@@ -1799,8 +1800,8 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
         objname, date, cut, movm, numann, fwhm, IWA, kllist = params
 
     #print(data_str, imstring, indir, outputdir)
-    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite)
-    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite)
+    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite, timecoll=timecoll)
+    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite, timecoll=timecoll)
     
     if scale == False:
         print('pulling scale from file')
@@ -1836,8 +1837,8 @@ def grab_planet_specs(df,dset_path):
     return(tuple(pllabel),tuple(plsep),tuple(plpa))
 
 def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5, 
-    klopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxy=25, 
-    pldf=False, seppl=False, sepkl=False, smt=1):
+    klopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=25, maxy=25, skipdates=False,
+    pldf=False, seppl=False, sepkl=False, smt=1, yrcombo=False, timecoll='median'):
     
     thisdir=os.getcwd()
 
@@ -2009,26 +2010,29 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 os.chdir(full_fpath)
                 thrpt_out, zb, df2, dataset_prefix = compute_thrpt(data_str, wl, cut, outputdir = outdir+data_str+'/', numann=ann, movm=movm, KLlist=[kl], IWA=IWA, 
                                                                     contrast=contrast, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
-                                                                    ghost=ghost, savefig=True, iterations=3,rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', highpass=hpval, overwrite=overwrite)
+                                                                    ghost=ghost, savefig=True, iterations=3,rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 
+                                                                    highpass=hpval, overwrite=overwrite, timecoll=timecoll)
             
                 contrast_out, df2, OWA = make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix,  outputdir=outdir+data_str+'/', 
                                                                 numann=ann, movm=movm, KLlist=[kl], IWA=IWA, rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 
-                                                                record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], savefig=True, debug=False, highpass=hpval, overwrite=overwrite)
+                                                                record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], savefig=True, debug=False, highpass=hpval, 
+                                                                overwrite=overwrite, timecoll=timecoll)
                 
             
                 klipstr=' a'+str(ann)+'m'+str(movm)+'kl'+str(kl)
-                ccurve_lbl = data_str + klipstr
+                date_obj = t[j]
+                ccurve_lbl = obj + ' ' + date_obj.strftime("%m/%d/%Y") + klipstr
                 ccurve_seps = contrast_out[0,0,:]
                 ccurve_ctrst = contrast_out[0,2,:]
 
                 #make a dictionary with all these things
-
                 params = [obj,date,cut,movm,ann,fwhm,IWA,kl]
-                date_obj = t[j]
+    
                 ##generate images
-                linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale = run_redx(data_str,params=params, scalefile=scalefile, highpass=hpval, scale=False, overwrite=overwrite)
-                linecube, linesnr, contcube, contsnr, sdicube2, sdisnr2, prefix, scale2 = run_redx(data_str,params=params, highpass=hpval, scale=1, overwrite=overwrite)
-                
+                linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale = run_redx(data_str,params=params, scalefile=scalefile, highpass=hpval, scale=False, overwrite=overwrite, timecoll=timecoll)
+                linecube, linesnr, contcube, contsnr, sdicube2, sdisnr2, prefix, scale2 = run_redx(data_str,params=params, highpass=hpval, scale=1, overwrite=overwrite, timecoll=timecoll)
+
+
                 #set planet marking keywords to False by default
                 plspecs = False
                 plcand = False

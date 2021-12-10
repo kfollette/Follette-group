@@ -2221,8 +2221,18 @@ def plotdict_ctrst(d, maxsep=1):
             dset_strs.append(key)
 
     for i in np.arange((totaldsets)):
-        thisd = d[key[i]]
-        ax.plot(thisd["ccurve_seps"]*platescale, thisd["ccurve_ctrst"], label = thisd["ccurve_lbl"], color=colors[i])
+        thisd = d[dset_strs[i]]
+        seps = thisd["ccurve_seps"]*platescale
+        ctrsts = thisd["ccurve_ctrst"]
+        IWA = thisd["IWA"]*platescale
+
+        #interpolate to iwa
+        #slope of innermost two points
+        m = (np.log10(ctrsts[0])-np.log10(ctrsts[1]))/(seps[1]-seps[0])
+        IWA_y = (seps[0] -IWA)*m+10**ctrsts[0]
+
+        ax.plot([IWA, seps[0]],[IWA_y, ctrsts[0]],  '--', color=colors[i])
+        ax.plot(seps, ctrsts, label = thisd["ccurve_lbl"], color=colors[i])
 
     plt.yscale("log")
     plt.xlim(0, maxsep)

@@ -505,10 +505,11 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
         # calculates separations (in pixels) where planets will be injected
         thrpt_seps = []
-        sep = fwhm/2
+        sep = int(fwhm)/2
+        thissep=first
         for i in np.arange(n_planets):
-            thrpt_seps.append(sep)
-            sep += fwhm
+            thrpt_seps.append(thissep)
+            thissep += sep
 
         if debug == True:
             print("injecting planets at the following radii:", thrpt_seps)

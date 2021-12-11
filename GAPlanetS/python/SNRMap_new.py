@@ -338,12 +338,9 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
 
     #smooth input image by specified amount
     if smooth > 0:
-        # print("smoothing")
-        # gauss = conv.Gaussian2DKernel(stddev=smooth)
-        # inpsm =conv.convolve(inp, gauss, preserve_nan=True)
-        # inp = inpsm
-        inp = klip.nan_gaussian_filter(inp, smooth)
-        outname = outname+'_sm'+str(smooth)
+        nkl = inp.shape[0]
+        for kl in np.arange(nkl):
+            inp[kl,:,:] = klip.nan_gaussian_filter(inp[kl,:,:], smooth)
 
   
     #gets size of pixel value array

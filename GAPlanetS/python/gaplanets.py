@@ -15,6 +15,8 @@ import matplotlib.cm as cm
 import shutil
 import re
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+import matplotlib.font_manager as fm
 import matplotlib.patches as patches
 import SNRMap_new as snr
 from importlib import reload
@@ -1270,7 +1272,7 @@ def clean_fakes(keepstr, fakesdir):
 
 def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=6, movm=1, KLlist=[1,2,3,4,5,10,20,50,100],
                  contrasts=[1e-2,1e-2,1e-2], seps=[10, 10, 10], thetas=[0, 120, 240], debug=False,
-                 ghost=False, mask=[3, 15], slicefakes=True,ctrlrad=30, highpass=True, meansnr=False, timecoll='median'):
+                 ghost=False, mask=[3, 15], slicefakes=True,ctrlrad=30, highpass=True, meansnr=False, timecoll='median', smooth=False):
     """
     PURPOSE
     Injects false planets at specified locations, runs through KLIP, calculates throughput and
@@ -1406,7 +1408,7 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=6, mo
     # make a SNRMap cube
     #print(fwhm, outputdir, prefix_fakes,strklip, planetspecs, klcube.shape)
     Output, snrs, snr_sums, snr_spurious, maskedims = snr.create_map(klcube, fwhm, saveOutput=True, outputName=outputdir+prefix_fakes+strklip + '_SNRMap.fits',
-                                       planets=planetspecs, checkmask=True, method='all',ctrlrad=ctrlrad)
+                                       planets=planetspecs, checkmask=True, method='all',ctrlrad=ctrlrad, smooth=smooth)
     # create a list that will store throughputs
     thrpt_list = []
 
@@ -1699,7 +1701,7 @@ def get_klip_inputs(data_str_uniq, pe_dfname='../../optimal_params.csv', rdx_par
     return (objname, date, cut, movm, numann, fwhm, IWA, kllist)
 
 
-def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=True, overwrite=False, klinput = False, indir='dq_cuts/', outputdir='final_ims/', ctrlrad=30, timecoll='median'):
+def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=True, overwrite=False, klinput = False, indir='dq_cuts/', outputdir='final_ims/', ctrlrad=30, timecoll='median', smooth=False):
 
     if os.path.exists(outputdir) == False:
         os.mkdir(outputdir)
@@ -1778,9 +1780,9 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
         #snmap = fits.getdata(outputdir+prefix + '_SNRMap.fits')
     #else:
     if planets != False:
-        snmap, snrs, snr_sums, snr_spurious = snr.create_map("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix), fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits', ctrlrad=ctrlrad, method='stdev')
+        snmap, snrs, snr_sums, snr_spurious = snr.create_map("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix), fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits', ctrlrad=ctrlrad, method='stdev', smooth=smooth)
     else: 
-        snmap = snr.create_map("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix), fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits', method="stdev")
+        snmap = snr.create_map("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix), fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits', method="stdev", smooth=smooth)
     #snmap, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=prefix + '_SNRMap.fits')
     return (klcube, snmap, fwhm)
 
@@ -1793,7 +1795,7 @@ def get_scale_factor(data_str, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     return (scale)
 
 
-def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv', overwrite=False, timecoll='median'):
+def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv', overwrite=False, timecoll='median', smooth=False):
     wls = ['Line', 'Cont']
     if params == False:
         objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
@@ -1801,8 +1803,8 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
         objname, date, cut, movm, numann, fwhm, IWA, kllist = params
 
     #print(data_str, imstring, indir, outputdir)
-    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite, timecoll=timecoll)
-    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite, timecoll=timecoll)
+    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite, timecoll=timecoll, smooth=smooth)
+    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite, timecoll=timecoll, smooth=smooth)
     
     if scale == False:
         print('pulling scale from file')
@@ -1824,7 +1826,7 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
         klstr='_'.join(klstrlist)
     prefix+='_kl'+klstr
 
-    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=outputdir+prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits', method='stdev')
+    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=outputdir+prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits', method='stdev', smooth=smooth)
 
     return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale)
 
@@ -1839,7 +1841,7 @@ def grab_planet_specs(df,dset_path):
 
 def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5, 
     klopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=25, maxy=25, skipdates=False,
-    pldf=False, seppl=False, sepkl=False, smt=1, timecoll='median',combochoice=None):
+    pldf=False, seppl=False, sepkl=False, smt=1, timecoll='median',combochoice=None,smooth=False):
     
     thisdir=os.getcwd()
 
@@ -2072,8 +2074,8 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 params = [obj,date,cut,movm,ann,fwhm,IWA,kl]
     
                 ##generate images
-                linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale = run_redx(data_str,params=params, scalefile=scalefile, highpass=hpval, scale=False, overwrite=overwrite, timecoll=timecoll)
-                linecube, linesnr, contcube, contsnr, sdicube2, sdisnr2, prefix, scale2 = run_redx(data_str,params=params, highpass=hpval, scale=1, overwrite=overwrite, timecoll=timecoll)
+                linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale = run_redx(data_str,params=params, scalefile=scalefile, highpass=hpval, scale=False, overwrite=overwrite, timecoll=timecoll, smooth=smooth)
+                linecube, linesnr, contcube, contsnr, sdicube2, sdisnr2, prefix, scale2 = run_redx(data_str,params=params, highpass=hpval, scale=1, overwrite=overwrite, timecoll=timecoll, smooth=smooth)
 
 
                 #set planet marking keywords to False by default
@@ -2277,7 +2279,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     else:
         nplots = 3
 
-    pixscale = 0.0078513
+    platescale = 0.00795
     imsz = lineim.shape[1]
 
     #mask IWA
@@ -2290,11 +2292,11 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
 
     ##COORDS RELATIVE TO STAMP CENTER
     stampcen = (stampsz - 1)/2.
-    stampsz_asec = stampsz*pixscale
+    stampsz_asec = stampsz*platescale
     nticks = np.floor(stampsz_asec/2/0.25)
     ticklabels = np.arange(-1*nticks, nticks+1)*0.25
     ticklabels_str = [str(lab)+'\"' for lab in ticklabels]
-    ticks = ticklabels/pixscale + stampcen
+    ticks = ticklabels/platescale + stampcen
 
     cen = (imsz - 1) / 2
     low = int(cen - stampsz / 2)
@@ -2347,6 +2349,12 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     im2 = ax2.imshow(contim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
     im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
  
+    fontprops = fm.FontProperties(size=16)
+    scalebar = AnchoredSizeBar(ax1.transData, 0.1/platescale, '0.1\"', 'lower left', pad=0.1, color='white', 
+        frameon=False, size_vertical=1, fontproperties=fontprops)
+
+    ax1.add_artist(scalebar)
+
     if num==0:
         ax1.set_title(r'KLIP-ed H$\alpha$ Image', **titlestyle)
         ax2.set_title(r'KLIP-ed Continuum Image',**titlestyle)
@@ -2361,7 +2369,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     if secondscale!=False:
         im4 = ax4.imshow(secondscaleim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
         if num==0:
-            ax4.set_title(r'ASDI Image (H$\alpha$-scale$\times$Cont)',**titlestyle)
+            ax4.set_title(r'ASDI Image (H$\alpha$-Cont)',**titlestyle)
         ax4.text(0.58,0.93, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,**labelstyle)
         ax4.axes.get_yaxis().set_visible(False)
         divider = make_axes_locatable(ax4)

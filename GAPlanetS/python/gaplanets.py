@@ -456,7 +456,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         #for ann=1 zone boundary is OWA
         else:
             sep_spacing = thrpt_cube[0,0,-1] - thrpt_cube[0,0,-2]
-            zone_boundaries = thrpt_seps = [thrpt_cube[0,0,-1]+sep_spacing]
+            zone_boundaries = [thrpt_cube[0,0,-1]+sep_spacing]
             
         if file_kl == KLlist:
             print("KLmodes match. reading in values.")
@@ -496,8 +496,8 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             dataset.input[i, :, :] /= starpeak[i]
 
         # compute number of planets to inject
-        first = IWA + fwhm
-        n_planets = (dataset.input.shape[1] / 2. - IWA) / fwhm
+        first = IWA + fwhm*0.75
+        n_planets = (dataset.input.shape[1] / 2. - IWA) / fwhm * 2
         #stay away from very outer part of image
         n_planets = int(n_planets)-2
         if debug == True:
@@ -505,7 +505,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
         # calculates separations (in pixels) where planets will be injected
         thrpt_seps = []
-        sep = first
+        sep = fwhm/2
         for i in np.arange(n_planets):
             thrpt_seps.append(sep)
             sep += fwhm

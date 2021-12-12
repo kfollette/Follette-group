@@ -1995,7 +1995,11 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 dirnames = [d for d in fakedirfiles if os.path.isdir(d)]
                 fakedir = [dir for dir in dirnames if dir[-4:] == 'klip']
                 if len(fakedir) > 1:
-                    print('more than one klipped fakes dir')
+                    print('more than one klipped fakes dir.')
+                    for opt in np.arange(len(fakedir)):
+                        print('option', opt, ': ', fakedir[opt])
+                    choiceind = input('Which do you want?')
+                    fakedir=fakedir[choiceind]
                 else:
                     fakedir=fakedir[0]
                 

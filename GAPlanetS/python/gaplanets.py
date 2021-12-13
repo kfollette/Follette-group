@@ -1999,19 +1999,23 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
 
                 #find optimal params according to the collapse strategy
                 #find the cont fakes klip dir with paramexplore file
-                fakepath=data_str+'fakes_redo/'
-                fakedirfiles = glob.glob(full_fpath+'/'+fakepath+'*')
-                dirnames = [d for d in fakedirfiles if os.path.isdir(d)]
-                fakedir = [dir for dir in dirnames if dir[-4:] == 'klip']
-                if len(fakedir) > 1:
-                    print('more than one klipped fakes dir.')
-                    for opt in np.arange(len(fakedir)):
-                        print('option', opt, ': ', fakedir[opt])
-                    choiceind = input('Which do you want?')
-                    fakedir=fakedir[choiceind]
+                if haopt==True:
+                    fakedir=full_fpath+'/dq_cuts/'+wl+'_'+dq_str+'_sliced_klip/'
+                    print(fakedir)
                 else:
-                    fakedir=fakedir[0]
-                
+                    fakepath=data_str+'fakes_redo/'
+                    fakedirfiles = glob.glob(full_fpath+'/'+fakepath+'*')
+                    dirnames = [d for d in fakedirfiles if os.path.isdir(d)]
+                    fakedir = [dir for dir in dirnames if dir[-4:] == 'klip']
+                    if len(fakedir) > 1:
+                        print('more than one klipped fakes dir.')
+                        for opt in np.arange(len(fakedir)):
+                            print('option', opt, ': ', fakedir[opt])
+                        choiceind = input('Which do you want?')
+                        fakedir=fakedir[int(choiceind)]
+                    else:
+                        fakedir=fakedir[0]
+                    
                 pefile = glob.glob(fakedir+'/param*.fits')
                 if len(pefile) > 1:
                     print('more than one pefile')

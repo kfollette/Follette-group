@@ -1836,12 +1836,15 @@ def grab_planet_specs(df,dset_path):
     """
     pllabel = df[df["Path"]==dset_path]["Designation"].values
     plsep = df[df["Path"]==dset_path]["Separation (pix)"].values
+    seperr = df[df["Path"]==dset_path]["Sep Error"].values
     plpa = df[df["Path"]==dset_path]["PA"].values
-    return(tuple(pllabel),tuple(plsep),tuple(plpa))
+    #for later. this is how to make a wedge-shaped patch. pull pa uncert as well
+    #Wedge((.8, .3), .2, 45, 90, width=0.10),  # Ring sector
+    return(tuple(pllabel),tuple(plsep),tuple(plpa), tuple(seperr))
 
 def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5, 
     klopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=25, maxy=25, skipdates=False,
-    pldf=False, seppl=False, sepkl=False, smt=1, timecoll='median',combochoice=None,smooth=False):
+    pldf=False, seppl=False, sepkl=False, smt=1, timecoll='median',combochoice=None,smooth=False, haopt=False):
     
     thisdir=os.getcwd()
 
@@ -2263,7 +2266,7 @@ def plotdict_ctrst(d, maxsep=1):
     ax.legend(frameon=False)
     return()
 
-def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, returnfig=False, ax=None):
+def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, returnfig=False, ax=None, markctrl=None):
     """
     creates a three panel figure with line, continuum and SDI images
 
@@ -2345,12 +2348,18 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
         plsep_y=[]
         plsep_x=[]
         pllabels=[]
+        plseperr=[]
+
+        #apply PA offset for VisAO (Balmer+2022) = 0.497+/-0.192 CCW
+        paoff=-0.0497
+
         for i in np.arange(len(plspecs[0])):
             lb = plspecs[0][i]
             plsep = plspecs[1][i]
-            plpa = plspecs[2][i]
+            plpa = plspecs[2][i]+paoff
             plsep_y.append(float(plsep)*np.sin((float(plpa)+90)*np.pi/180))
             plsep_x.append(float(plsep)*np.cos((float(plpa)+90)*np.pi/180))
+            plseperr.append(plspecs[3][i])
             pllabels.append(str(lb))
 
     titlestyle=dict(size=16)
@@ -2404,7 +2413,11 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
             else:
                 lsty='-'
             for a in axs:
-                circ=patches.Circle((stampcen+plsep_x[i],stampcen+plsep_y[i]),radius=4, fill=False, ec='cyan', lw=2, ls=lsty)
+                if np.isfinite(plseperr[i]):
+                    circrad = float(plseperr[i])
+                else:
+                    circrad = 5
+                circ=patches.Circle((stampcen+plsep_x[i],stampcen+plsep_y[i]),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty)
                 circ_label=pllabels[i]
                 a.add_patch(circ, )
                 addx = [5.5 if plspecs[2][i]>180 else -7]

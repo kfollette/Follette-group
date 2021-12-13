@@ -1953,7 +1953,6 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 go=False
 
             if go==True:
-                full_fpath = fpath_st+dset_path
                 #optimal values from df
                 cut = int(df[df["Path"]==dset_path]["cut chosen"].values[0])
                 dq_str = str(cut)+'pctcut'
@@ -1963,13 +1962,20 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 contrast = float(df[df["Path"]==dset_path]["injected planet contrast"].values[0])
                 satrad = df[df["Path"]==dset_path]["saturation radius"].values[0]
                 whichbin = df[df["Path"]==dset_path]["bin"].values[0]
+ 
                 if np.isfinite(whichbin):
                     if int(whichbin)==1:
                         ctrlrad=30
-                    else:
+                    elif int(whichbin)==2:
                         ctrlrad=15
+                    else:
+                        print('bin must be 1 or 2')
+                        ctrlrad=None
                 else:
-                    ctrlrad = np.nan
+                    "no bin specified - can't plot ctrlrad"
+                    ctrlrad=None
+                
+                full_fpath = fpath_st+dset_path
 
                 d["IWA"]=IWA
         
@@ -2161,6 +2167,7 @@ def add_dsetcombos(dofds,dupobj,dup_dstrings, dupyr):
         #grab planet specs from first dict
         combod["plspecs"]=dicts[0]["plspecs"]
         combod["plcand"]=dicts[0]["plcand"]
+        combod["ctrlrad"]=dicts[0]["ctrlrad"]
         combod["obj"]=dupobj[ds]
 
         newkey = dupobj[ds]+'_'+str(dupyr[ds])+'_combo'
@@ -2205,9 +2212,9 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
                 smtstr='sm'+str(smt)
             else:
                 smtstr=''
-            indivobj_fig(thisd["linesnr"][0,0,:,:],thisd["contsnr"][0,0,:,:],thisd["sdisnr"][0,0,:,:], thisd["scale"],thisd["prefix"]+'_SNR_'+smtstr,IWA=thisd["IWA"], smooth=smt, secondscale=1,secondscaleim=thisd["sdisnr2"][0,0,:,:],snr=True, title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], returnfig=True, ax=(f1, inner, i, totaldsets))
+            indivobj_fig(thisd["linesnr"][0,0,:,:],thisd["contsnr"][0,0,:,:],thisd["sdisnr"][0,0,:,:], thisd["scale"],thisd["prefix"]+'_SNR_'+smtstr,IWA=thisd["IWA"], smooth=smt, secondscale=1,secondscaleim=thisd["sdisnr2"][0,0,:,:],snr=True, title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], returnfig=True, ax=(f1, inner, i, totaldsets), markctrl=int(thisd["ctrlrad"]))
         else:
-            indivobj_fig(thisd["linecube"][0,:,:],thisd["contcube"][0,:,:],thisd["sdicube"][0,:,:], thisd["scale"],thisd["prefix"],IWA=thisd["IWA"], secondscale=1,secondscaleim=thisd["sdicube2"][0,:,:], title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], returnfig=True, ax=(f1,inner, i, totaldsets))
+            indivobj_fig(thisd["linecube"][0,:,:],thisd["contcube"][0,:,:],thisd["sdicube"][0,:,:], thisd["scale"],thisd["prefix"],IWA=thisd["IWA"], secondscale=1,secondscaleim=thisd["sdicube2"][0,:,:], title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], returnfig=True, ax=(f1,inner, i, totaldsets), markctrl=int(thisd["ctrlrad"]))
 
     plt.savefig(str(d["outdir"])+str(d["objlist"])+str(d["theseparams"])+'.png')
 
@@ -2381,6 +2388,12 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     if num!=totaldsets-1:
         for a in axs:
             a.axes.get_xaxis().set_visible(False)
+
+    #add ctrlrad marker
+    if markctrl>0:
+        for a in axs:
+            ctrlcirc=patches.Circle((stampcen,stampcen),radius=markctrl, fill=False, ec='white', lw=2, ls='--')
+            a.add_patch(ctrlcirc, )
 
     #add planet markers
     if plspecs!=False:

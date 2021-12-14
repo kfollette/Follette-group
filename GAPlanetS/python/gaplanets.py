@@ -2329,8 +2329,8 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     ticks = ticklabels/platescale + stampcen
 
     cen = (imsz - 1) / 2
-    low = int(cen - stampsz / 2)
-    high = int(cen + stampsz / 2 + 1)
+    low = int(cen - stampsz / 2 + 1)
+    high = int(cen + stampsz / 2 )
 
     if smooth != 0:
         gauss = conv.Gaussian2DKernel(x_stddev=smooth)

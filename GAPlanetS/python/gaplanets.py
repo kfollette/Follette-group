@@ -2164,12 +2164,16 @@ def add_dsetcombos(dofds,dupobj,dup_dstrings, dupyr):
             combod[key]=np.nanmean(foravg,axis=0)
 
         #average scales
-        parlist = []
-        quants = ["scale","IWA"]
+        quants = ["scale","IWA", "fwhm"]
         for q in quants:
+            parlist = []
             for d in np.arange(len(dicts)):
                 parlist.append(dicts[d][q])
-            combod[q]=np.mean(parlist)
+            print(parlist)
+            if q=="IWA":
+                combod[q]=np.max(parlist)
+            else:
+                combod[q]=np.mean(parlist)
 
         #grab planet specs from first dict
         combod["plspecs"]=dicts[0]["plspecs"]
@@ -2219,9 +2223,16 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
                 smtstr='sm'+str(smt)
             else:
                 smtstr=''
-            indivobj_fig(thisd["linesnr"][0,0,:,:],thisd["contsnr"][0,0,:,:],thisd["sdisnr"][0,0,:,:], thisd["scale"],thisd["prefix"]+'_SNR_'+smtstr,IWA=thisd["IWA"], smooth=smt, secondscale=1,secondscaleim=thisd["sdisnr2"][0,0,:,:],snr=True, title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], returnfig=True, ax=(f1, inner, i, totaldsets), markctrl=int(thisd["ctrlrad"]))
+            indivobj_fig(thisd["linesnr"][0,0,:,:],thisd["contsnr"][0,0,:,:],thisd["sdisnr"][0,0,:,:], thisd["scale"],
+                thisd["prefix"]+'_SNR_'+smtstr,IWA=thisd["IWA"], smooth=smt, secondscale=1,secondscaleim=thisd["sdisnr2"][0,0,:,:],
+                snr=True, title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], 
+                returnfig=True, ax=(f1, inner, i, totaldsets), markctrl=int(thisd["ctrlrad"]), fwhm=int(thisd["fwhm"]))
         else:
-            indivobj_fig(thisd["linecube"][0,:,:],thisd["contcube"][0,:,:],thisd["sdicube"][0,:,:], thisd["scale"],thisd["prefix"],IWA=thisd["IWA"], secondscale=1,secondscaleim=thisd["sdicube2"][0,:,:], title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], returnfig=True, ax=(f1,inner, i, totaldsets), markctrl=int(thisd["ctrlrad"]))
+            indivobj_fig(thisd["linecube"][0,:,:],thisd["contcube"][0,:,:],thisd["sdicube"][0,:,:], thisd["scale"],
+                thisd["prefix"],IWA=thisd["IWA"], secondscale=1,secondscaleim=thisd["sdicube2"][0,:,:], 
+                title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], 
+                plcand=thisd["plcand"], returnfig=True, ax=(f1,inner, i, totaldsets), 
+                markctrl=int(thisd["ctrlrad"]), fwhm=int(thisd["fwhm"]))
 
     plt.savefig(str(d["outdir"])+str(d["objlist"])+str(d["theseparams"])+'.png')
 
@@ -2270,7 +2281,7 @@ def plotdict_ctrst(d, maxsep=1):
     ax.legend(frameon=False)
     return()
 
-def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, returnfig=False, ax=None, markctrl=None):
+def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, returnfig=False, ax=None, markctrl=None, fwhm=None):
     """
     creates a three panel figure with line, continuum and SDI images
 
@@ -2363,7 +2374,10 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
             plpa = plspecs[2][i]+paoff
             plsep_y.append(float(plsep)*np.sin((float(plpa)+90)*np.pi/180))
             plsep_x.append(float(plsep)*np.cos((float(plpa)+90)*np.pi/180))
-            plseperr.append(plspecs[3][i])
+            seperr = plspecs[3][i]
+            if fwhm/2>seperr:
+                seperr=fwhm/2
+            plseperr.append(seperr)
             pllabels.append(str(lb))
 
     titlestyle=dict(size=16)
@@ -2424,10 +2438,13 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
                 circ=patches.Circle((stampcen+plsep_x[i],stampcen+plsep_y[i]),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty)
                 circ_label=pllabels[i]
                 a.add_patch(circ, )
-                addx = [5.5 if plspecs[2][i]>180 else -7]
+                addx = [circrad+1 if plspecs[2][i]>180 else -1*(circrad+5)]
                 labelposx = stampcen+plsep_x[i]+addx[0]
                 labelposy = stampcen+plsep_y[i]
                 a.text(labelposx,labelposy,circ_label, color='white',fontsize=16)
+
+    resel = patches.Circle((stampsz*0.95,stampsz*0.05),radius=fwhm/2, fill=True, color='white')
+    ax4.add_patch(resel, )
 
     if title!=False:
         #plt.suptitle(title, size=22) 

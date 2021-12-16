@@ -2290,7 +2290,7 @@ def plotdict_ctrst(d, maxsep=1):
     colors = pl.cm.magma(np.linspace(0.1,0.9,totaldsets))
     platescale = 0.00795
 
-    f,ax = plt.subplots(1)
+    f,ax = plt.subplots(1, figsize=(8,6), dpi=750)
     dkeys = d.keys()
     dset_strs = []
     for key in dkeys:
@@ -2318,7 +2318,7 @@ def plotdict_ctrst(d, maxsep=1):
     plt.xlabel("distance in arcseconds")
     plt.ylabel("contrast")
 
-    ax.legend(frameon=False)
+    ax.legend(frameon=False, fontsize=10)
     return()
 
 def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, returnfig=False, ax=None, markctrl=None, fwhm=None):
@@ -2428,8 +2428,12 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
  
     fontprops = fm.FontProperties(size=16)
-    scalebar = AnchoredSizeBar(ax1.transData, 0.1/platescale, '0.1\"', 'lower left', pad=0.1, color='white', 
-        frameon=False, size_vertical=1, fontproperties=fontprops)
+    if stampsz<100:
+        scalebar = AnchoredSizeBar(ax1.transData, 0.1/platescale, '0.1\"', 'lower left', pad=0.1, color='white', 
+            frameon=False, size_vertical=1, fontproperties=fontprops)
+    else:
+        scalebar = AnchoredSizeBar(ax1.transData, 0.5/platescale, '0.5\"', 'lower left', pad=0.1, color='goldenrod', 
+            frameon=False, size_vertical=1, fontproperties=fontprops)
 
     ax1.add_artist(scalebar)
 
@@ -2441,7 +2445,10 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     ax2.axes.get_yaxis().set_visible(False)
     ax3.axes.get_yaxis().set_visible(False)
 
-    labelstyle = dict(size=16, color='white', weight='bold')
+    if stampsz<300:
+        labelstyle = dict(size=16, color='white', weight='bold')
+    else:
+        labelstyle = dict(size=16, color='goldenrod', weight='bold')        
     ax3.text(0.58,0.93, 'scale='+'{:.2f}'.format(scale), transform=ax3.transAxes,**labelstyle)
 
     if secondscale!=False:

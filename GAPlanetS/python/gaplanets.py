@@ -1407,8 +1407,8 @@ def inject_fakes(data_str, cut, IWA, wl='Line', outputdir='fakes/', numann=6, mo
     planetspecs = (seps, thetas, mask)
     # make a SNRMap cube
     #print(fwhm, outputdir, prefix_fakes,strklip, planetspecs, klcube.shape)
-    Output, snrs, snr_sums, snr_spurious, maskedims = snr.create_map(klcube, fwhm, saveOutput=True, outputName=outputdir+prefix_fakes+strklip + '_SNRMap.fits',
-                                       planets=planetspecs, checkmask=True, method='all',ctrlrad=ctrlrad, smooth=smooth)
+    Output, snrs, snr_sums, snr_spurious = snr.create_map(klcube, fwhm, saveOutput=True, outputName=outputdir+prefix_fakes+strklip + '_SNRMap.fits',
+                                       planets=planetspecs, checkmask=False, method='all',ctrlrad=ctrlrad, smooth=smooth)
     # create a list that will store throughputs
     thrpt_list = []
 
@@ -1834,7 +1834,7 @@ def get_scale_factor(data_str, scalefile = '../../GAPlanetS_Dataset_Table.csv'):
     return (scale)
 
 
-def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv', overwrite=False, timecoll='median', smooth=False):
+def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=False, outputdir = 'final_ims/', klinput=False, scalefile = '../../GAPlanetS_Dataset_Table.csv', overwrite=False, timecoll='median', smooth=False, planets=False):
     wls = ['Line', 'Cont']
     if params == False:
         objname, date, cut, movm, numann, fwhm, IWA, kllist = get_klip_inputs(data_str)
@@ -1842,8 +1842,8 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
         objname, date, cut, movm, numann, fwhm, IWA, kllist = params
 
     #print(data_str, imstring, indir, outputdir)
-    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite, timecoll=timecoll, smooth=smooth)
-    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite, timecoll=timecoll, smooth=smooth)
+    linecube, linesnr, linefwhm = klip_data(data_str, wls[0], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite, timecoll=timecoll, smooth=smooth, planets=planets)
+    contcube, contsnr, contfwhm = klip_data(data_str, wls[1], indir=indir, outputdir=outputdir, klinput=klinput, params=params, highpass=highpass, overwrite=overwrite, timecoll=timecoll, smooth=smooth, planets=planets)
     
     if scale == False:
         print('pulling scale from file')
@@ -1865,7 +1865,9 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
         klstr='_'.join(klstrlist)
     prefix+='_kl'+klstr
 
-    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=outputdir+prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits', method='stdev', smooth=smooth)
+    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=outputdir+prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits', method='stdev', smooth=smooth, planets=planets, checkmask=False)
+    if planets!=False:
+        sdisnr = sdisnr[0]
 
     return (linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale)
 
@@ -2129,10 +2131,6 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 #make a dictionary with all these things
                 params = [obj,date,cut,movm,ann,fwhm,IWA,kl]
     
-                ##generate images
-                linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale = run_redx(data_str,params=params, scalefile=scalefile, highpass=hpval, scale=False, overwrite=overwrite, timecoll=timecoll, smooth=smooth)
-                linecube, linesnr, contcube, contsnr, sdicube2, sdisnr2, prefix, scale2 = run_redx(data_str,params=params, highpass=hpval, scale=1, overwrite=overwrite, timecoll=timecoll, smooth=smooth)
-
 
                 #set planet marking keywords to False by default
                 plspecs = False
@@ -2140,14 +2138,21 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
 
                 ##compile a bunch of stuff for plotting, labeling, etc.
 
+                planets=False
                 #pull planet info, if given a planet specs frame
                 if isinstance(pldf, pd.DataFrame):
                     #check whether df contains note to mark planets
                     if df[df["Path"]==dset_path]["mark known planets"].values[0]=="Y":
                         plspecs = grab_planet_specs(pldf,dset_path)
+                        planets=(plspecs[1],plspecs[2],(fwhm/2,15))
                         #check whether marked as candidate
                         if df[df["Path"]==dset_path]["candidate"].values[0]=="Y":
                             plcand=True
+
+                ##generate images
+                linecube, linesnr, contcube, contsnr, sdicube, sdisnr, prefix, scale = run_redx(data_str,params=params, scalefile=scalefile, highpass=hpval, scale=False, overwrite=overwrite, timecoll=timecoll, smooth=smooth, planets=planets)
+                linecube, linesnr, contcube, contsnr, sdicube2, sdisnr2, prefix, scale2 = run_redx(data_str,params=params, highpass=hpval, scale=1, overwrite=overwrite, timecoll=timecoll, smooth=smooth, planets=planets)
+
 
                 dict_keys = ['prefix', 'full_fpath', 'dset_path', 'satrad', 'ctrlrad', 'scale', 
                 'ccurve_seps', 'ccurve_ctrst', 'ccurve_lbl',

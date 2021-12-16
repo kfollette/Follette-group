@@ -2144,7 +2144,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                     #check whether df contains note to mark planets
                     if df[df["Path"]==dset_path]["mark known planets"].values[0]=="Y":
                         plspecs = grab_planet_specs(pldf,dset_path)
-                        planets=(plspecs[1],plspecs[2],(fwhm/2,15))
+                        planets=(plspecs[1],plspecs[2],(fwhm,15))
                         #check whether marked as candidate
                         if df[df["Path"]==dset_path]["candidate"].values[0]=="Y":
                             plcand=True
@@ -2493,7 +2493,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
                 if stampsz<100:
                     addx = [circrad+1 if plspecs[2][i]>180 else -1*(circrad+5)]
                 else:
-                    addx = [circrad+5 if plspecs[2][i]>180 else -1*(circrad+10)]
+                    addx = [circrad+10 if plspecs[2][i]>180 else -1*(circrad+15)]
                 labelposx = stampcen+plsep_x[i]+addx[0]
                 labelposy = stampcen+plsep_y[i]
                 a.text(labelposx,labelposy,circ_label, color='white',fontsize=16)

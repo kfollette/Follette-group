@@ -2433,7 +2433,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
  
     fontprops = fm.FontProperties(size=16)
-    if stampsz<100:
+    if stampsz<250:
         scalebar = AnchoredSizeBar(ax1.transData, 0.1/platescale, '0.1\"', 'lower left', pad=0.1, color='white', 
             frameon=False, size_vertical=1, fontproperties=fontprops)
     else:

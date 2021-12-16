@@ -1491,10 +1491,18 @@ def ctrlmask(xdim, ydim, rin, rout):
     new[(arr >= rin) & (arr <= rout)] = np.nan
     return(new)
 
-def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1], snrmeth='all', smt=3):
+def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1], snrmeth='all', smt=3, separate_planets=False, separate_kls=False):
     
-    snr_norm_avg, nq_snr, snr_norm_avg_umask, nq_snr_umask, stdev_norm_avg_umask, nq_stdev_umask, spurpix_avg, agg, ann_val, movm_val, metric_scores = \
-        pe.find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt)
+    """
+    Right now only works with either separate_kls=False or a single KL mode
+    Likewise, will only work with planets collapsed or will show innermost (index 0) planet
+    """
+
+    metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = \
+        pe.find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt, separate_planets=separate_planets, separate_kls=separate_kls)
+
+    #reduce dimensions of metric cube (see note above)
+    metric_cube = metric_cube[:,0,0,0,:,:]
 
     if writestr == False:
         writestr = pename[:-17]
@@ -1513,81 +1521,112 @@ def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1
     nstepy = (ymax - ymin) / ystep
 
     # set up tick labels according to parameter ranges
-    fig_xdim = nstepx*0.5
+    fig_xdim = nstepx*0.35
     fig_ydim = nstepy
 
     fig = plt.figure(tight_layout=True, figsize=(fig_ydim,fig_xdim))
-    gs = fig.add_gridspec(2, 4)
+    gs = fig.add_gridspec(2, 5, hspace=0.2, wspace=0.5)
     ax1 = fig.add_subplot(gs[0,0])
     ax2 = fig.add_subplot(gs[0,1])
     ax3 = fig.add_subplot(gs[1,0])
     ax4 = fig.add_subplot(gs[1,1])
     ax5 = fig.add_subplot(gs[0,2])
     ax6 = fig.add_subplot(gs[1,2])
+    ax7 = fig.add_subplot(gs[:,3:])
     #ax5 = fig.add_subplot(gs[:,2:])
 
-    plt.setp((ax1, ax2, ax3, ax4, ax5, ax6), xticks=np.arange(nstepx + 1), xticklabels=np.arange(xmin, xmax + 1),
-             yticks=np.arange(nstepy + 1), yticklabels=np.arange(ymin, ymax + 1))
+    plt.setp((ax1, ax2, ax3, ax4, ax5, ax6, ax7), xticks=np.arange(0,nstepx + 1,2), xticklabels=np.arange(xmin, xmax + 1,2),
+             yticks=np.arange(0, nstepy + 1,2), yticklabels=np.arange(ymin, ymax + 1,2))
+
+    labelstyle=dict(size=16)
+    titlestyle=dict(size=18)
+    bigtitlestyle=dict(size=24)
 
     #plt.setp((ax1, ax2, ax3, ax4, ax5), xticks=np.arange(nstepx + 1), yticks=np.arange(nstepy + 1), xticklabels=[], yticklabels=[])
+    im1 = ax1.imshow(metric_cube[0,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
 
-    im1 = ax1.imshow(snr_norm, origin='lower', cmap='magma', vmin=0, vmax=1)
-
-    ax1.set_xlabel("movement parameter")
-    ax1.set_ylabel("annuli parameter")
+    ax1.set_xlabel("movement parameter", **labelstyle)
+    ax1.set_ylabel("annuli parameter", **labelstyle)
+    ax1.set_title("Peak SNR", **titlestyle)
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im1, cax=cax, orientation='vertical', label="Average SNR Metric")
+    cb = plt.colorbar(im1, cax=cax, orientation='vertical')
+    cb.set_label(label='Normalized Score', size=16)
+    cb.ax.tick_params(labelsize='large')
 
-    im2 = ax2.imshow(nq_snr, origin='lower',
+    im2 = ax2.imshow(metric_cube[1,:,:], origin='lower',
                      cmap='magma', vmin=0, vmax=1)
-    ax2.set_xlabel("movement parameter")
-    ax2.set_ylabel("annuli parameter")
+    ax2.set_xlabel("movement parameter", **labelstyle)
+    ax2.set_ylabel("annuli parameter", **labelstyle)
+    ax2.set_title("Peak SNR Neighbor Quality", **titlestyle)
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im2, cax=cax, orientation='vertical', label="SNR Neighbor Quality")
+    cb = plt.colorbar(im2, cax=cax, orientation='vertical')
+    cb.set_label(label='Normalized Score', size=16)
+    cb.ax.tick_params(labelsize='large')
 
-    im3 = ax3.imshow(spurpix, origin='lower', cmap='magma', vmin=0, vmax=np.nanmax(spurpix))
-    ax3.set_xlabel("movement parameter")
+    im3 = ax3.imshow(metric_cube[2,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+    ax3.set_xlabel("movement parameter", **labelstyle)
+    ax3.set_ylabel("annuli parameter", **labelstyle)
+    ax3.set_title("Avg. SNR Under Planet Mask", **titlestyle)
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im3, cax=cax, orientation='vertical', label="Spurious Pixels")
+    cb = plt.colorbar(im3, cax=cax, orientation='vertical')
+    cb.set_label(label='Normalized Score', size=16)
+    cb.ax.tick_params(labelsize='large')
     
-    im4 = ax4.imshow(1-spurpix/np.nanmax(spurpix), origin='lower', cmap='magma', vmin=0, vmax=1)
-    ax4.set_xlabel("movement parameter")
+    im4 = ax4.imshow(metric_cube[3,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+    ax4.set_xlabel("movement parameter", **labelstyle)
+    ax4.set_ylabel("annuli parameter", **labelstyle)
+    ax4.set_title("Avg. SNR Neighbor Quality", **titlestyle)
     divider = make_axes_locatable(ax4)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im4, cax=cax, orientation='vertical', label="Spurious Pixel Metric")
+    cb = plt.colorbar(im4, cax=cax, orientation='vertical')
+    cb.set_label(label='Normalized Score', size=16)
+    cb.ax.tick_params(labelsize='large')
+
     
-    im5 = ax5.imshow(stdev_norm, origin='lower',
+    im5 = ax5.imshow(metric_cube[4,:,:], origin='lower',
                      cmap='magma', vmin=0, vmax=1)
-    ax5.set_xlabel("movement parameter")
-    ax5.set_ylabel("annuli parameter")
+    ax5.set_xlabel("movement parameter", **labelstyle)
+    ax5.set_ylabel("annuli parameter", **labelstyle)
+    ax5.set_title("5$\sigma$ Pixels IWA to CR", **titlestyle)
     divider = make_axes_locatable(ax5)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im5, cax=cax, orientation='vertical', label="Standard Deviation Metric")
+    cb = plt.colorbar(im5, cax=cax, orientation='vertical')
+    cb.set_label(label='Normalized Score', size=16)
+    cb.ax.tick_params(labelsize='large')
 
-    #im4 = ax4.imshow(nq_stdev, origin='lower',
-     #                cmap='magma', vmin=0, vmax=1)
-    #ax4.set_xlabel("movement parameter")
-    #ax4.set_ylabel("annuli parameter")
-    #divider = make_axes_locatable(ax4)
-    #cax = divider.append_axes('right', size='5%', pad=0.05)
-    #plt.colorbar(im4, cax=cax, orientation='vertical', label="Stdev Neighbor Quality")
-
-    # plot metric
-    im6 = ax6.imshow(agg, origin='lower', vmin=1, vmax=np.nanmax(agg))
-    ax6.set_ylabel("annuli parameter")
+    im6 = ax6.imshow(metric_cube[5,:,:], origin='lower',
+                     cmap='magma', vmin=0, vmax=1)
     ax6.set_xlabel("movement parameter")
+    ax6.set_ylabel("annuli parameter")
+    ax6.set_title("Contrast", **titlestyle)
     divider = make_axes_locatable(ax6)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    plt.colorbar(im6, cax=cax, orientation='vertical', label="Parameter Quality Metric")
+    cb = plt.colorbar(im6, cax=cax, orientation='vertical')
+    cb.set_label(label='Normalized Score', size=16)
+    cb.ax.tick_params(labelsize='large')
+
+
+    # plot metric
+    agg=metric_cube[6,:,:]
+    im7 = ax7.imshow(agg, origin='lower', vmin=1, vmax=np.nanmax(agg))
+    ax7.set_ylabel("annuli parameter", **titlestyle)
+    ax7.set_xlabel("movement parameter", **titlestyle)
+    ax7.set_title("Aggregate Parameter Quality Metric", **bigtitlestyle)
+    divider = make_axes_locatable(ax7)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    plt.colorbar(im7, cax=cax, orientation='vertical', label="")
+    cb = plt.colorbar(im7, cax=cax, orientation='vertical')
+    cb.set_label(label='Weighted Aggregate Score', size=20)
+    cb.ax.tick_params(labelsize=16)
 
     ind = np.where(agg == np.nanmax(agg))
-    label_text = 'a' + str(ann_val[0]) + 'm' + str(movm_val[0])
+    label_text = 'a' + str(int(ann_val[0][0])) + 'm' + str(int(movm_val[0][0]))
     rect = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
-    ax6.add_patch(rect)
-    ax6.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
+    ax7.add_patch(rect)
+    ax7.text(ind[1][0] + 0.75, ind[0][0]-0.5, label_text, color='red', **titlestyle, weight='bold')
 
     plt.savefig(pedir+writestr+'_paramqual.png')
     

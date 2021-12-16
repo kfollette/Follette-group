@@ -1917,9 +1917,9 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
 
     for obj in sorted_objs:
         if skipdates==False:
-            subdf = df[df["Object Name"]==obj]
+            subdf = df[df["Object Name"]==obj][df["Done"]=='Y']
         else:
-            subdf = df[df["Object Name"]==obj][~df.Date.isin(skipdates)]
+            subdf = df[df["Object Name"]==obj][~df.Date.isin(skipdates)][df["Done"]=='Y']
         
         n_dset=(len(subdf))
         #list of paths for theis object
@@ -2478,12 +2478,18 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
                 circ=patches.Circle((stampcen+plsep_x[i],stampcen+plsep_y[i]),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty)
                 circ_label=pllabels[i]
                 a.add_patch(circ, )
-                addx = [circrad+1 if plspecs[2][i]>180 else -1*(circrad+5)]
+                if stampsz<100:
+                    addx = [circrad+1 if plspecs[2][i]>180 else -1*(circrad+5)]
+                else:
+                    addx = [circrad+5 if plspecs[2][i]>180 else -1*(circrad+10)]
                 labelposx = stampcen+plsep_x[i]+addx[0]
                 labelposy = stampcen+plsep_y[i]
                 a.text(labelposx,labelposy,circ_label, color='white',fontsize=16)
-
-    resel = patches.Circle((stampsz*0.95,stampsz*0.05),radius=fwhm/2, fill=True, color='white')
+    if stampsz>300:
+        resclr ='goldenrod' 
+    else:
+        resclr='white'
+    resel = patches.Circle((stampsz-fwhm/2-5,fwhm/2+5 ),radius=fwhm/2, fill=True, color=resclr)
     ax4.add_patch(resel, )
 
     if title!=False:

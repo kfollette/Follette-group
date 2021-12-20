@@ -27,6 +27,10 @@ import matplotlib.gridspec as gridspec
 import datetime as dt
 import matplotlib.pylab as pl
 import pickle
+from matplotlib import rc
+
+rc("text", usetex=True)
+#import accmodels as am
 
 def SliceCube(imfile, rotfile, indir='./', slicedir='sliced/'):
     """
@@ -412,6 +416,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             #if not the same
             else:
                 print('but these are new parameters. copying to a new line')
+                print('check', dataset_prefix, uniq_str_list)
                 #if more than one entry, just copy the first occurrence 
                 if len(idx)>1:
                     idx=idx[0]
@@ -1135,7 +1140,7 @@ def split_objstr(objstr, fakestr=False):
 
 
 def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLlist, outstr, outputdir = 'dq_cuts/contrastcurves/', outer=50, IWA=0,
-                    pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90]):
+                    pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], chosen=None):
     """
     PURPOSE
     Generate figure for comparison of contrasts with different image quality cuts
@@ -1157,6 +1162,8 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
     written by Kate Follette June 2019
     """
     
+    plt.rcParams["font.family"] = "sans-serif"
+
     platescale = 0.00795
     ctrl_rad = get_control_rad()
     ctrl_rad*=platescale
@@ -1179,9 +1186,11 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
 
     klctr=0
     for kl in KLlist:
-
         # plt.style.use('seaborn-colorblind')
-        f, ax1 = plt.subplots(figsize=(7,4), dpi=750)
+        f, ax2 = plt.subplots(figsize=(7,4), dpi=750)
+        ax1 = ax2.twinx()  
+
+        extrap_ctrst=[] 
         for i in np.arange(len(pctcuts)):
             cut = pctcuts[i]
             j = i / len(pctcuts)
@@ -1189,46 +1198,91 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
                 linesty = '-'
             else:
                 linesty = '--'
-            ax1.plot(contrast_seps * platescale, contrasts[i,klctr, :],
-                     label=str(cut) + ' cut', linestyle=linesty, color=cm.plasma(j))
-        cfloor = np.log10(np.nanmin(contrasts[:,:,0:last_idx])) - 0.2
-        print(cfloor)
-        cmax=np.nanmax(contrasts[i,klctr, :])+0.5
-        plt.yscale("log")
-        plt.title(data_str.replace('_',' '))
-        plt.xlim(0, outer_asec)
-        #plt.ylim(10 ** cfloor, cmax)
-        plt.xlabel("distance in arcseconds")
-        plt.ylabel("contrast")
 
-        ax2 = ax1.twinx()    
+            if chosen!=None and cut==int(chosen):
+                clr = 'k'
+                linewid=2
+                linesty = '-'
+                for_oplot = contrasts[i,klctr, :]
+            else:
+                clr = cm.plasma(j)
+                linewid=1
+            
+            ax1.plot(contrast_seps * platescale, contrasts[i,klctr, :],
+                     label=str(cut) + r'\% cut', linestyle=linesty, linewidth = linewid, 
+                     color=clr)
+
+            #extrapolate to iwa
+            #slope of innermost two points
+            m = (np.log10(contrasts[i,klctr,0])-np.log10(contrasts[i,klctr,1]))/((contrast_seps[1]-contrast_seps[0])*platescale)
+            IWA_y = np.log10(contrasts[i,klctr,0]) + m*(contrast_seps[0] - IWA)*platescale
+            extrap_ctrst.append(10**IWA_y)
+            if chosen!=None and cut==int(chosen):
+                IWA_y_oplot=IWA_y
+            ax1.plot([IWA * platescale, contrast_seps[0]*platescale],[10**IWA_y, contrasts[i,klctr,0]],  linesty, linewidth=linewid, color=clr, alpha=0.7)
+
+        if chosen!=None:
+            #overplot chosen cut so on top
+            ax1.plot(contrast_seps * platescale, for_oplot, linestyle='-', linewidth = 2, color='k')
+            ax1.plot([IWA * platescale, contrast_seps[0]*platescale],[10**IWA_y_oplot, for_oplot[0]],  '-', linewidth=2, color='k', alpha=0.7)
+ 
+        ax1.yaxis.tick_left()
+        ax1.yaxis.set_label_position("left")
+ 
+        cfloor = np.nanmin(contrasts[:,klctr,:])
+        cmax=np.nanmax(extrap_ctrst)
+
         if IWA > 0:
-            ax2.plot((IWA * platescale, IWA * platescale), (1e-5, cmax), 'k-', label='IWA')
-        ax2.plot((ctrl_rad, ctrl_rad),(0, cmax),'m--', label="control radius")
+            ax2.axvline(x=(IWA * platescale), linestyle='--', color='k', label='IWA')
+
+        ax2.axvline(x=ctrl_rad,linestyle='--', color='m', label="control radius")
+        ax2.get_yaxis().set_visible(False)
+        
         for bd in np.multiply(zone_boundaries,platescale):
             if bd < outer_asec:
                 if bd == zone_boundaries[0]*platescale:
-                    ax2.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
+                    ax2.axvline(x=bd, linestyle='--', color='grey', label='zone boundary')
                 else:
-                    ax2.plot((bd, bd), (0, 1), '--', color='grey')
-        ax2.get_yaxis().set_visible(False)
-        
-        #separate legend for cut lines and IWA/CR/ZB
-        ax1.legend(loc='lower left', fontsize='x-small')
-        ax2.legend(loc='upper right', fontsize='x-small')
+                    ax2.axvline(x=bd, linestyle='--', color='grey')
+
+        plt.yscale("log")
+
+        dset_label = data_str.split('_')
+        #translate to mm/dd/yy format
+        monthstrs = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        objname = dset_label[0]
+        datestr = dset_label[1]
+        print(objname, datestr)
+        monthstr = [s for s in monthstrs if s in datestr]
+        monthno = [i for i in np.arange(1,13) if monthstrs[i-1] in datestr]
+        year = int('20'+datestr[-2:])
+        day = datestr.split(monthstr[0])[0]
+        #print(line_date, '= day:', day, ' month:', monthno[0], ' year:', year)
+        date_label = dt.date(year=year, month=int(monthno[0]), day=int(day))
+
+
+        plt.title(objname + ' ' + date_label.strftime("%m/%d/%Y"))
+        plt.xlim(0, outer_asec)
+        plt.autoscale(enable=True, axis='y', tight=True)
+        #plt.ylim(10 ** cfloor, cmax)
+        ax2.set_xlabel("distance in arcseconds")
+        ax1.set_ylabel("contrast")
 
         #add some text with reduction parameters
         
-        text_block = r'\textbf{KLIP Parameters:} \n' + 'annuli = ' + ann + '\nmovement = ' + movm
-        text_block+= '\nIWA = ' + iwa + '\nhighpass = ' + hpstr + ' pix'
+        text_block = r'\textbf{KLIP Parameters:}'+ '\n annuli = ' + ann + '\n movement = ' + movm
+        text_block+= '\n IWA = ' + iwa + '\nhighpass = ' + hpstr + ' pix'
         if len(fakelist)>1:
             pa, ca, ctrst, numit = fakelist
-            text_block+= '\n\n'+r'\textbf{False Planet Parameters}: \n'
-            text_block+= 'initial PA = ' + pa + '\nclock angle =' + ca + '\nn iterations =' + numit 
+            text_block+= '\n\n'+r'\textbf{False Planet Parameters}:' +'\n'
+            text_block+= 'initial PA = ' + pa + '\n clock angle =' + ca + '\n n iterations =' + numit 
             text_block+= '\ncontrast = '+ ctrst
 
-        print(cmax, cfloor, ((cmax-cfloor)/2))
-        ax1.text(outer_asec*0.8, 0.01, text_block, multialignment="left",size=6)
+        ax1.text(outer_asec*0.8, (10**(np.log10(cmax)-(np.log10(cmax)-np.log10(cfloor))/2)), text_block, multialignment="left",size=6)
+
+        #separate legend for cut lines and IWA/CR/ZB
+        ax2.legend(loc='upper right', fontsize='x-small', facecolor='white', framealpha=1)
+        ax1.legend(loc='lower left', fontsize='x-small', facecolor='white', framealpha=1)
 
         # write out 
         plt.savefig(outputdir + data_str + outstr + '_KL'+str(kl)+'_contrastsbycut.jpg')
@@ -2309,7 +2363,7 @@ def plotdict_ctrst(d, maxsep=1):
             ctrsts = thisd["ccurve_ctrst"]
             IWA = thisd["IWA"]*platescale
 
-            #interpolate to iwa
+            #extrapolate to iwa
             #slope of innermost two points
             m = (np.log10(ctrsts[0])-np.log10(ctrsts[1]))/(seps[1]-seps[0])
             IWA_y = (seps[0] -IWA)*m+10**ctrsts[0]

@@ -473,7 +473,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             #calculate an aggregate parameter quality metric by summing the individual metrics * their weights
             agg=np.zeros((nstepy,nstepx))
             for metricind in np.arange(len(metriclist)):
-                #only sum if non-zero (otherwise nans will carry over)
+                #only sum if non-zero weight (otherwise nans in unweighted metrics will propagate)
                 if weights[metricind]>0:
                     agg+=weights[metricind]*metriclist[metricind]
 
@@ -1694,6 +1694,7 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
 
     wtslist = []
     klslist = []
+
     #loop through all metric combos meeting criteria
     for i in np.arange(len(bestlist)):
         
@@ -1708,41 +1709,55 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
 
         f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10,8))
 
-        n, b1, patches = ax1.hist(mean_sums, range=(0,250), bins=40,density=True, histtype='step', lw=3)
-        n, b1, patches = ax1.hist(mean_sums, range=(0,250), bins=40,density=True, alpha=0)
+        #Jea's preferred formatting
+        plt.rcParams["legend.frameon"] = False
+        plt.rcParams["legend.fontsize"] = 12
+        plt.rcParams["legend.borderpad"] = 0.3
+        plt.rcParams["legend.labelspacing"] = 0.3
+        plt.rcParams["legend.handletextpad"] = 0.3
+        plt.rcParams["font.family"] = "serif"
+        plt.rcParams["font.serif"] = "DejaVu Serif"
+        plt.rcParams["font.size"] = 14
+        plt.rcParams["xtick.top"] = True
+        plt.rcParams["ytick.right"] = True
+        plt.rcParams["xtick.direction"] = "in"
+        plt.rcParams["ytick.direction"] = "in"
+
+        n, b1, patches = ax1.hist(mean_sums, range=(0,200), bins=40,density=True, histtype='step', lw=3)
+        n, b1, patches = ax1.hist(mean_sums, range=(0,200), bins=40,density=True, alpha=0)
         last = np.where(b1<sumcut)[0][-1]
         plt.setp(patches[:last+1], 'facecolor', 'b', 'alpha', 0.2) 
-        ax1.set_xlabel('Avg. Sum of DQ$_{HR}$-DQ$_{CF}$')
+        ax1.set_xlabel('Avg. Sum of DQ$_{CF}$-DQ$_{HR}$')
         yl = ax1.get_ylim()
         ax1.plot((mean_sum,mean_sum),(0,yl[1]), color='r')
-        ax1.set_xlim(0,250)
+        ax1.set_xlim(0,200)
         ax1.set_ylabel("Density")
 
-        n, b1, patches = ax2.hist(mean_stds, range = (0.15,0.4), bins=40,density=True, lw=3, histtype='step')
-        n, b1, patches = ax2.hist(mean_stds, range = (0.15,0.4), bins=40,density=True, alpha=0)
+        n, b1, patches = ax2.hist(mean_stds, range = (0.1,0.45), bins=40,density=True, lw=3, histtype='step')
+        n, b1, patches = ax2.hist(mean_stds, range = (0.1,0.45), bins=40,density=True, alpha=0)
         last = np.where(b1<stdcut)[0][-1]
         plt.setp(patches[:last+1], 'facecolor', 'b', 'alpha', 0.2) 
-        ax2.set_xlabel(r'Avg. $\sigma$ of DQ$_{HR}$-DQ$_{CF}$')
+        ax2.set_xlabel(r'Avg. $\sigma$ of DQ$_{CF}$-DQ$_{HR}$')
         y2 = ax2.get_ylim()
         ax2.plot((mean_std,mean_std),(0,y2[1]), color='r')
-        ax2.set_xlim(0.1,0.4)
+        ax2.set_xlim(0.1,0.45)
 
-        n,b1,patches = ax3.hist(mean_meds, range=(0.005,0.1),bins=40,density=True, lw=3, histtype='step')
-        n,b1,patches = ax3.hist(mean_meds, range=(0.005,0.1),bins=40,density=True, lw=3, alpha=0)
+        n,b1,patches = ax3.hist(mean_meds, range=(-0.05,0.1),bins=40,density=True, lw=3, histtype='step')
+        n,b1,patches = ax3.hist(mean_meds, range=(-0.05,0.1),bins=40,density=True, lw=3, alpha=0)
         last = np.where(b1<medcut)[0][-1]
         plt.setp(patches[:last+1], 'facecolor', 'b', 'alpha', 0.2) 
-        ax3.set_xlabel(r'Avg. Median of DQ$_{HR}$-DQ$_{CF}$')
+        ax3.set_xlabel(r'Avg. Median of DQ$_{CF}$-DQ$_{HR}$')
         y3 = ax3.get_ylim()
         ax3.plot((mean_med,mean_med),(0,y3[1]), color='r')
-        ax3.set_xlim(0.005,0.1)
+        ax3.set_xlim(-0.05,0.1)
         ax3.set_ylabel("Density")
 
-        n, b1, patches = ax4.hist(mean_mdiffs, range =(-0.25,0.9), bins=40,density=True, lw=3, histtype='step')
-        n, b1, patches = ax4.hist(mean_mdiffs, range =(-0.25,0.9), bins=40,density=True, lw=3, alpha=0)
+        n, b1, patches = ax4.hist(mean_mdiffs, range =(0,0.9), bins=40,density=True, lw=3, histtype='step')
+        n, b1, patches = ax4.hist(mean_mdiffs, range =(0,0.9), bins=40,density=True, lw=3, alpha=0)
         last = np.where(np.abs(b1)<diffcut)[0][-1]
         first = np.where(np.abs(b1)<diffcut)[0][0]
-        plt.setp(patches[first-1:last+1], 'facecolor', 'b', 'alpha', 0.2) 
-        ax4.set_xlabel(r'Avg. DQ$_{HR}$-DQ$_{CF}$ at Continuum Peak')
+        plt.setp(patches[:last+1], 'facecolor', 'b', 'alpha', 0.2) 
+        ax4.set_xlabel(r'Avg. DQ$_{CF}$-DQ$_{HR}$ at Continuum Peak')
         y4 = ax4.get_ylim()
         ax4.plot((mean_mdiff,mean_mdiff),(0,y4[1]), color='r')
 
@@ -1758,6 +1773,22 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
 
     f = plt.figure(figsize=(14.9,4*len(dset_stringlist)))
     plt.axis('off')
+
+    #Jea's preferred formatting
+    plt.rcParams["legend.frameon"] = False
+    plt.rcParams["legend.fontsize"] = 12
+    plt.rcParams["legend.borderpad"] = 0.1
+    plt.rcParams["legend.labelspacing"] = 0.1
+    plt.rcParams["legend.handletextpad"] = 0.1
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["font.serif"] = "DejaVu Serif"
+    plt.rcParams["font.size"] = 12
+    plt.rcParams["xtick.top"] = True
+    plt.rcParams["ytick.right"] = True
+    plt.rcParams["xtick.direction"] = "in"
+    plt.rcParams["ytick.direction"] = "in"
+    
+    #set up gridspec
     nrows = 4*len(dset_stringlist)+1
     outer = gridspec.GridSpec(nrows, 1, wspace=0., hspace=0.)
 
@@ -1840,7 +1871,7 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
                 
                 f1 = ax1.imshow(fake_cube[-1,0,0,0,:,:], cmap='magma', vmax=0, vmin=1, origin='lower left', alpha=1)
                 if i==0:
-                    ax1.set_title('Cont. False Planet ADQ (ADQ$_{CF}$)')
+                    ax1.set_title('Cont. False Planet ADQ (ADQ$_{CF}$)', size=12)
                 ax1.set_xlabel('movement')
                 ax1.set_ylabel('annuli')
                 #ax1.set_facecolor("white")
@@ -1862,7 +1893,7 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
 
                 f2 = ax2.imshow(real_cube[-1,0,0,0,:,:], cmap='magma', vmax=0, vmin=1, origin='lower left')
                 if i==0:
-                    ax2.set_title(r'H$\alpha$ Real Object DQ (ADQ$_{HR}$)')
+                    ax2.set_title(r'H$\alpha$ Real Object DQ (ADQ$_{HR}$)', size=12)
                 if i==4:
                     ax2.set_xlabel('movement')
 
@@ -1889,7 +1920,7 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
 
                 f3 = ax3.imshow(diff_wt_agg, cmap='coolwarm', vmin=-0.3, vmax=0.3, origin='lower left')
                 if i==0:
-                    ax3.set_title('Parameter Quality Difference')
+                    ax3.set_title('Parameter Quality Difference', size=12)
                 if i==4:
                     ax3.set_xlabel('movement')
                 #ax3.set_ylabel('annuli')
@@ -1908,7 +1939,7 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
 
                 ax4.hist(diff_wt_agg.flatten(), range=(-0.5,0.5), color='k',  label='all',histtype='step', bins=20, density=True)
                 if i==0:
-                    ax4.set_title('Norm. Diff. Values')
+                    ax4.set_title('Norm. Diff. Values', size=12)
                 ax4.set_xlabel('ADQ$_{CF}$ - DQ$_{HR}$')
                 ax4.set_ylabel('density')
                 ax4.yaxis.set_label_position("right")

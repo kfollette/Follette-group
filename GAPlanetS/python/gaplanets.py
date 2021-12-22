@@ -693,7 +693,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
                     plt.plot((bd, bd), (0, 1), '--', color='grey',)
             plt.xlabel("separation in pixels")
             plt.ylabel("throughput")
-            plt.title(dataset_prefix+ ' KL '+str(KL)+ " Throughput")
+            plt.title(dataset_prefix.replace('_',' ')+ ' KL '+str(KL)+ ' Throughput')
             plt.legend()
             plt.savefig(outputdir + dataset_prefix + '_KL'+str(KL)+ '_throughput.jpg')
             plt.show()
@@ -911,7 +911,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
                         else:
                             plt.plot((bd, bd), (0, 1), '--', color='grey')
                 plt.legend()
-                plt.title(rawc_prefix+" KL"+str(KL)+ " Raw Contrast")
+                plt.title(rawc_prefix.replace('_',' ')+ "KL"+str(KL)+ " Raw Contrast")
                 plt.savefig(outputdir + rawc_prefix + "_KL"+str(KL)+ '_rawcontrast.jpg')
                 plt.show()
                 plt.clf()  # clear figure
@@ -954,8 +954,8 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
                 for iter in np.arange(iterations):
                     thrpts_thisset = np.interp(contrast_seps, thrpt_seps, thrpts[klctr,iter,:])
                     plt.plot(contrast_seps * platescale, contrast/thrpts_thisset, cx[iter], label="set"+str(iter+1))
-                plt.plot(contrast_seps * platescale, corrected_contrast_curve, label='average 5$\sigma$ contrast')
-                plt.plot(contrast_seps * platescale, contrast, label='raw 5$\sigma$ contrast', color='gray')
+                plt.plot(contrast_seps * platescale, corrected_contrast_curve, label=r'average 5$\sigma$ contrast')
+                plt.plot(contrast_seps * platescale, contrast, label=r'raw 5$\sigma$ contrast', color='gray')
                 plt.yscale("log")
                 plt.ylim(np.nanmin(contrast), 1e-1)
                 plt.xlabel("distance in arcseconds")
@@ -972,7 +972,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
                             else:
                                 plt.plot((bd, bd), (0, 1), '--', color='grey')
                 plt.legend()
-                plt.title(rawc_prefix + " KL"+str(KL)+" Corrected Contrast")
+                plt.title(rawc_prefix.replace('_',' ') + " KL"+str(KL)+" Corrected Contrast")
                 plt.savefig(outputdir + dataset_prefix + "_KL"+str(KL)+ '_contrastcurve.jpg')
                 plt.show()
                 plt.clf()  # clear figure
@@ -1644,7 +1644,7 @@ def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1
                      cmap='magma', vmin=0, vmax=1)
     ax5.set_xlabel("movement parameter", **labelstyle)
     ax5.set_ylabel("annuli parameter", **labelstyle)
-    ax5.set_title("5$\sigma$ Pixels IWA to CR", **titlestyle)
+    ax5.set_title(r"5$\sigma$ Pixels IWA to CR", **titlestyle)
     divider = make_axes_locatable(ax5)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     cb = plt.colorbar(im5, cax=cax, orientation='vertical')
@@ -2605,7 +2605,7 @@ def contrast_klcompare(data_str, ha_ctrsts, cont_ctrsts, KLlist, IWA, zone_bound
 
     floor = np.log10(np.nanmin(ha_contrasts)) - 0.2
     plt.yscale("log")
-    plt.title(data_str)
+    plt.title(data_str.replace('_',' '))
     plt.xlim(0, 1)
     plt.ylim(10 ** floor, 1e-1)
     plt.yscale("log")
@@ -2636,7 +2636,7 @@ def contrast_klcompare(data_str, ha_ctrsts, cont_ctrsts, KLlist, IWA, zone_bound
         plt.plot(cont_contrast_seps * platescale, cont_corrected_curve, label='Continuum'+str(KLlist[klctr])+' KL', color=cm.plasma(j))
 
     plt.yscale("log")
-    plt.title(data_str)
+    plt.title(data_str.replace('_',' '))
     plt.xlim(0, 1)
     plt.ylim(10 ** floor, 1e-1)
     plt.yscale("log")
@@ -2691,7 +2691,7 @@ def final_contrast_fig(data_str, ha_ctrsts, cont_ctrsts, IWA, zone_boundaries, o
     plt.fill_between(cont_contrast_seps * platescale, min_ctrst_cont, max_ctrst_cont, color='red', alpha=0.5)
     floor = np.log10(np.nanmin(ha_contrasts)) - 0.2
     plt.yscale("log")
-    plt.title(data_str)
+    plt.title(data_str.replace('_',' '))
     plt.xlim(0, 1)
     plt.ylim(10 ** floor, 1e-1)
     plt.yscale("log")

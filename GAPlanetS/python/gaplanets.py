@@ -2336,7 +2336,216 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
 
     return ()
 
-def plotdict_ctrst(d, maxsep=1):
+def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, plcen=None):
+    """
+
+    """
+    #if d is string, open it
+    if isinstance(d, str):
+        d = pickle.load( open(d, "rb" ) )
+
+    totaldsets = d["totaldsets"]
+
+    nrows = int(np.ceil(totaldsets/2))
+    fig = plt.figure(figsize=(10,nrows*5))
+    gs = fig.add_gridspec(nrows, 2, hspace=0.25, wspace=0.3) # ,6)
+
+    dkeys = list(d.keys())
+    dset_strs = []
+
+    platescale = 0.00795
+    titlestyle=dict(size=16)
+    fontprops = fm.FontProperties(size=16)
+
+    for key in dkeys:
+        if '_' in key:
+            dset_strs.append(key)
+
+    if stampsz=='adjust':
+        adjstamp=True
+    else:
+        adjstamp=False
+
+    for i in np.arange((totaldsets)):
+        thisd = d[dset_strs[i]]
+
+        #define left or righthand plot
+        if i%2==0:
+            ax = fig.add_subplot(gs[int(i/2),0])
+        else:
+            ax = fig.add_subplot(gs[int((i-1)/2),1])
+
+        if secondscale!=False:
+            sdiim = thisd["sdicube2"][0,:,:]
+        else:
+            sdiim = thisd["sdisnr"][0,0,:,:]
+        
+        imsz = sdiim.shape[1]
+
+        #mask IWA
+        IWA=thisd["IWA"]
+        IWAmask = ctrlmask(imsz, imsz, 0, IWA)
+        sdiim*=IWAmask
+
+        plspecs=thisd["plspecs"]
+        plcand=thisd["plcand"]
+        fwhm=thisd["fwhm"]
+        ##if planets need to be marked, find their coordinates and define patches
+        if plspecs!=False:
+            plsep_y=[]
+            plsep_x=[]
+            pllabels=[]
+            plseperr=[]
+
+            #apply PA offset for VisAO (Balmer+2022) = 0.497+/-0.192 CCW
+            paoff=-0.0497
+
+            for j in np.arange(len(plspecs[0])):
+                lb = plspecs[0][j]
+                plsep = plspecs[1][j]
+                plpa = plspecs[2][j]+paoff
+                plsep_y.append(float(plsep)*np.sin((float(plpa)+90)*np.pi/180))
+                plsep_x.append(float(plsep)*np.cos((float(plpa)+90)*np.pi/180))
+                seperr = plspecs[3][j]
+                if fwhm/2>seperr:
+                    seperr=fwhm/2
+                plseperr.append(seperr)
+                pllabels.append(str(lb))
+
+            #adjust stamp size according to planet separation if specified
+            if adjstamp==True:
+                maxx = np.nanmax(np.abs(plsep_x))
+                maxy = np.nanmax(np.abs(plsep_y))
+
+                print(maxx,maxy)
+                if maxx>maxy:
+                    stampsz=maxx*2+100
+                else:
+                    stampsz=maxy*2+100
+        
+        #this is dumb and I'm missing something silly in the algebra, but only centered
+        #perfectly if odd numbered
+        if stampsz%2==0:
+            stampsz+=1
+
+        ##COORDS RELATIVE TO STAMP CENTER
+        stampcen = (stampsz - 1)/2.
+        stampsz_asec = stampsz*platescale
+        nticks = np.floor(stampsz_asec/2/0.25)
+        ticklabels = np.arange(-1*nticks, nticks+1)*0.25
+        ticklabels_str = [str(lab)+'\"' for lab in ticklabels]
+        ticks = ticklabels/platescale + stampcen
+
+        cen = (imsz - 1) / 2
+        if plcen!=None:
+            print('here', plsep_y, plsep_x, plcen)
+            ylow = int(cen+plsep_y[plcen] - stampsz / 2 + 1)
+            yhigh = int(cen+plsep_y[plcen] + stampsz / 2 )
+            xlow = int(cen+plsep_x[plcen] - stampsz / 2 + 1)
+            xhigh = int(cen+plsep_x[plcen] + stampsz / 2 )
+            markctrl=False
+        else:
+            ylow = int(cen - stampsz / 2 + 1)
+            yhigh = int(cen + stampsz / 2 )
+            xlow=ylow
+            xhigh=yhigh
+            markctrl=int(thisd["ctrlrad"])
+        
+        print(xlow,xhigh,ylow,yhigh)
+        # set up tick labels according to parameter ranges
+        plt.setp(ax, xticks=ticks, xticklabels=ticklabels_str, yticks=ticks, yticklabels=ticklabels_str)
+     
+        if snr==True:
+            cbarlabel = 'SNR'
+        else:
+            cbarlabel = 'Intensity'
+        #user defined limits
+        if lims != False:
+            minm = lims[0]
+            sclmax = lims[1]
+        #otherwise limits set by default
+        else: 
+            sclmax = np.nanstd(sdiim[ylow:yhigh, xlow:xhigh])*5
+            minm = -1 * sclmax / 2
+
+        im1 = ax.imshow(sdiim[ylow:yhigh, xlow:xhigh], vmin=minm, vmax=sclmax, origin='lower', cmap='magma')
+     
+        if stampsz<300:
+            scalebar = AnchoredSizeBar(ax.transData, 0.1/platescale, '0.1\"', 'lower left', pad=0.1, color='white', 
+                frameon=False, size_vertical=1, fontproperties=fontprops)
+        else:
+            scalebar = AnchoredSizeBar(ax.transData, 0.5/platescale, '0.5\"', 'lower left', pad=0.1, color='goldenrod', 
+                frameon=False, size_vertical=1, fontproperties=fontprops)
+
+        ax.add_artist(scalebar)
+
+        print(dset_strs[i])
+        if 'combo' in dset_strs[i]:
+            title = dset_strs[i].replace('_', ' ')
+        else:
+            datestr = thisd["date_obj"].strftime("%b %d %Y")
+            title = thisd["obj"] + '\n'+ datestr
+        ax.set_title(title, **titlestyle)
+
+
+        #add ctrlrad marker
+        if markctrl>0:
+            ctrlcirc=patches.Circle((stampcen,stampcen),radius=markctrl, fill=False, ec='white', lw=2, ls='--')
+            ax.add_patch(ctrlcirc, )
+
+        #add planet markers
+        if plspecs!=False:
+            for j in np.arange(len(pllabels)):
+                #if candidate, make it a dashed line
+                if plcand==True:
+                    lsty=':'
+                else:
+                    lsty='-'
+                
+                if np.isfinite(plseperr[j]):
+                    circrad = float(plseperr[j])
+                else:
+                    if stampsz<100:
+                        circrad = 5
+                    else:
+                        circrad = 10
+
+                if plcen!=None:
+                    circ=patches.Circle((stampcen,stampcen),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty)
+                else:
+                    circ=patches.Circle((stampcen+plsep_x[j],stampcen+plsep_y[j]),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty)
+                circ_label=pllabels[j]
+                ax.add_patch(circ, )
+                if stampsz<250:
+                    addx = [circrad+1 if (plspecs[2][j]>180 or plspecs[2][j]<10) else -1.5*circrad]
+                else:
+                    addx = [circrad+10 if plspecs[2][j]>180 else -1*(circrad+15)]
+                if plcen!=None:
+                    labelposx = stampcen+addx[0]
+                    labelposy = stampcen
+                else:
+                    labelposx = stampcen+plsep_x[j]+addx[0]
+                    labelposy = stampcen+plsep_y[j] 
+                ax.text(labelposx,labelposy,circ_label, color='white',fontsize=16)
+        
+        if stampsz>300:
+            resclr='goldenrod'
+        else:
+            resclr='white'
+        resel = patches.Circle((stampsz-fwhm/2-5,fwhm/2+5 ),radius=fwhm/2, fill=True, color=resclr)
+        ax.add_patch(resel, )
+        cax = ax.inset_axes([1.04, 0.05, 0.05, 0.9],  transform=ax.transAxes)
+        plt.colorbar(im1, ax=ax, cax=cax, orientation='vertical', label=cbarlabel) 
+
+
+    #plt.tight_layout()
+
+    plt.savefig(str(d["outdir"])+str(d["objlist"])+str(d["theseparams"])+'.png')
+
+    return ()
+
+
+def plotdict_ctrst(d, maxsep=1,to_mdot=None):
     """
 
     """

@@ -1219,12 +1219,12 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
             extrap_ctrst.append(10**IWA_y)
             if chosen!=None and cut==int(chosen):
                 IWA_y_oplot=IWA_y
-            ax1.plot([IWA * platescale, contrast_seps[0]*platescale],[10**IWA_y, contrasts[i,klctr,0]],  linesty, linewidth=linewid, color=clr, alpha=0.7)
+            ax1.plot([IWA * platescale, contrast_seps[0]*platescale],[10**IWA_y, contrasts[i,klctr,0]],  linesty, linewidth=linewid, color=clr, alpha=0.3)
 
         if chosen!=None:
             #overplot chosen cut so on top
             ax1.plot(contrast_seps * platescale, for_oplot, linestyle='-', linewidth = 2, color='k')
-            ax1.plot([IWA * platescale, contrast_seps[0]*platescale],[10**IWA_y_oplot, for_oplot[0]],  '-', linewidth=2, color='k', alpha=0.7)
+            ax1.plot([IWA * platescale, contrast_seps[0]*platescale],[10**IWA_y_oplot, for_oplot[0]],  '-', linewidth=2, color='k', alpha=0.3)
  
         ax1.yaxis.tick_left()
         ax1.yaxis.set_label_position("left")
@@ -1949,6 +1949,10 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
     klstr = '_kl'+'_'.join(str(val2) for val2 in kllist_coll)   
     hpstr = "_"+str(hpmult)+"fwhm"
     theseparams ='wts'+wtstr+klstr+'_seppl'+str(seppl)+'_sepkl'+str(sepkl)+hpstr
+    if maxx!=25:
+        theseparams+='_maxx'+str(maxx)
+    if maxy!=25:
+        theseparams+='_maxy'+str(maxy)
     outname = outdir+'Optimal_Vals_Coll_'+theseparams+'.csv'
     
     n_dsets = []

@@ -2306,15 +2306,28 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
 
     dkeys = list(d.keys())
     dset_strs = []
+    datestrs = []
     for key in dkeys:
         if '_' in key:
+            key_split =key.split('_')
+            #pull out year
+            if "combo" in key:    
+                #pull out year and add 0.2 so it appears at the end of that year
+                datestr = key_split[1]+'.2'
+            else:
+                datestr = '20'+key_split[1][-2:]
+            
+            #add to datestring and dataset lists
+            datestrs.append(datestr)
             dset_strs.append(key)
+    #sort datasets according to date strings (just puts combos in right place)
+    sorted_dset_strs = [x for _, x in sorted(zip(datestrs, dset_strs))]
 
     for i in np.arange((totaldsets)):
-        thisd = d[dset_strs[i]]
+        thisd = d[sorted_dset_strs[i]]
         inner = outer[i:i+1].subgridspec(1, 4, wspace=0.01, hspace=0)
-        if "combo" in dset_strs[i]:
-            dset_pieces =dset_strs[i].split('_')
+        if "combo" in sorted_dset_strs[i]:
+            dset_pieces =sorted_dset_strs[i].split('_')
             datestr = dset_pieces[1]+' combo'
         else:
             datestr = thisd["date_obj"].strftime("%b %d %Y")

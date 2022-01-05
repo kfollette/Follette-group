@@ -28,6 +28,7 @@ import datetime as dt
 import matplotlib.pylab as pl
 import pickle
 from matplotlib import rc
+import accmodels as am
 
 rc("text", usetex=True)
 #import accmodels as am
@@ -2610,6 +2611,17 @@ def plotdict_ctrst(d, maxsep=1,to_mdot=None):
     plt.yscale("log")
     plt.xlabel("distance in arcseconds")
     plt.ylabel("contrast")
+
+    if to_mdot!=None:
+        #dist =
+        #star_mag = 
+        R = 1.6 #jupiter radii 
+        units='Msun'
+        law='aoyama'
+        filtwid = 0.006
+        xeropt = 2.339e-5
+        mdot = am.contrast_to_MMdot(dist,star_mag,contr,R, M, units=units, law=law,filtwid=filtwid,zeropt=zeropt)
+
 
     ax.legend(frameon=False, fontsize=10)
     return()

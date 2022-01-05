@@ -2355,7 +2355,9 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
 
 def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, plcen=None):
     """
-
+    OPTIONAL INPUTS:
+    plcen = a number equal to the index of the planet candidate you'd like to center the image stamp on
+            default = None
     """
     #if d is string, open it
     if isinstance(d, str):
@@ -2365,7 +2367,7 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
 
     nrows = int(np.ceil(totaldsets/2))
     fig = plt.figure(figsize=(10,nrows*5))
-    gs = fig.add_gridspec(nrows, 2, hspace=0.25, wspace=0.3) # ,6)
+    gs = fig.add_gridspec(nrows, 2, hspace=0.25, wspace=0.4) # ,6)
 
     dkeys = list(d.keys())
     dset_strs = []
@@ -2393,9 +2395,15 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
             ax = fig.add_subplot(gs[int((i-1)/2),1])
 
         if secondscale!=False:
-            sdiim = thisd["sdicube2"][0,:,:]
+            if snr==True:
+                sdiim = thisd["sdisnr2"][0,0,:,:]
+            else:
+                sdiim = thisd["sdicube2"][0,:,:]
         else:
-            sdiim = thisd["sdisnr"][0,0,:,:]
+            if snr==True:
+                sdiim = thisd["sdisnr"][0,0,:,:]
+            else:
+                sdiim = thisd["sdicube"][0,:,:]
         
         imsz = sdiim.shape[1]
 
@@ -2487,7 +2495,7 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
 
         im1 = ax.imshow(sdiim[ylow:yhigh, xlow:xhigh], vmin=minm, vmax=sclmax, origin='lower', cmap='magma')
      
-        if stampsz<300:
+        if stampsz<302:
             scalebar = AnchoredSizeBar(ax.transData, 0.1/platescale, '0.1\"', 'lower left', pad=0.1, color='white', 
                 frameon=False, size_vertical=1, fontproperties=fontprops)
         else:
@@ -2545,7 +2553,7 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
                     labelposy = stampcen+plsep_y[j] 
                 ax.text(labelposx,labelposy,circ_label, color='white',fontsize=16)
         
-        if stampsz>300:
+        if stampsz>302:
             resclr='goldenrod'
         else:
             resclr='white'

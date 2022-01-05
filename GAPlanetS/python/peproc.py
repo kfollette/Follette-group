@@ -1710,18 +1710,18 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
         f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10,8))
 
         #Jea's preferred formatting
-        plt.rcParams["legend.frameon"] = False
-        plt.rcParams["legend.fontsize"] = 12
-        plt.rcParams["legend.borderpad"] = 0.3
-        plt.rcParams["legend.labelspacing"] = 0.3
-        plt.rcParams["legend.handletextpad"] = 0.3
-        plt.rcParams["font.family"] = "serif"
-        plt.rcParams["font.serif"] = "DejaVu Serif"
-        plt.rcParams["font.size"] = 14
-        plt.rcParams["xtick.top"] = True
-        plt.rcParams["ytick.right"] = True
-        plt.rcParams["xtick.direction"] = "in"
-        plt.rcParams["ytick.direction"] = "in"
+        #plt.rcParams["legend.frameon"] = False
+        #plt.rcParams["legend.fontsize"] = 12
+        #plt.rcParams["legend.borderpad"] = 0.3
+        #plt.rcParams["legend.labelspacing"] = 0.3
+        #plt.rcParams["legend.handletextpad"] = 0.3
+        #plt.rcParams["font.family"] = "serif"
+        #plt.rcParams["font.serif"] = "DejaVu Serif"
+        #plt.rcParams["font.size"] = 14
+        #plt.rcParams["xtick.top"] = True
+        #plt.rcParams["ytick.right"] = True
+        #plt.rcParams["xtick.direction"] = "in"
+        #plt.rcParams["ytick.direction"] = "in"
 
         n, b1, patches = ax1.hist(mean_sums, range=(0,200), bins=40,density=True, histtype='step', lw=3)
         n, b1, patches = ax1.hist(mean_sums, range=(0,200), bins=40,density=True, alpha=0)

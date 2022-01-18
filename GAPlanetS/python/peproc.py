@@ -482,7 +482,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
 
             ##find location or peak of parameter quality metric and print info
             #for y (annuli values), indexing starts at 1 so subtract 1
-            ind = np.where(agg[miny-1:maxy,minx:maxx+1] == np.nanmax(agg[miny-1:maxy,minx:maxx+1]))
+            ind = np.where(agg == np.nanmax(agg[miny-1:maxy,minx:maxx+1]))
 
             if agg[ind[0],ind[1]].shape[0]>1:
                 print("the optimal solution for this choice of parameters/weights is not unique")

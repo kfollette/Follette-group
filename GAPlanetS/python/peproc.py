@@ -221,7 +221,7 @@ def filter_nan_gaussian_conserving(arr, sigma):
     return gauss
 
 def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, weights=[1,1,1,1,1,1], outdir='proc/', snrthresh=False,
-    oldpe=False, debug=False, smt=3, snrmeth='all',separate_planets=False, separate_kls=False, verbose=False, maxy=25, maxx=25):
+    oldpe=False, debug=False, smt=3, snrmeth='all',separate_planets=False, separate_kls=False, verbose=False, maxy=25, maxx=24, minx=0, miny=1):
     """
     collapses parameter explorer file and extracts the optimal parameter value
 
@@ -481,9 +481,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             agg_cube[k,p,:,:]=agg
 
             ##find location or peak of parameter quality metric and print info
-            maxx=int(maxx)
-            maxy=int(maxy)
-            ind = np.where(agg[:maxy,:maxx] == np.nanmax(agg[:maxy,:maxx]))
+            #for y (annuli values), indexing starts at 1 so subtract 1
+            ind = np.where(agg[miny-1:maxy,minx:maxx+1] == np.nanmax(agg[miny-1:maxy,minx:maxx+1)]))
 
             if agg[ind[0],ind[1]].shape[0]>1:
                 print("the optimal solution for this choice of parameters/weights is not unique")
@@ -1189,7 +1188,7 @@ def pull_dsets(false_dir, real_dir, out_dir, namestr='*',exceptstr = False, date
   return(dset_stringlist, rlist, flist)
 
 
-def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pklstr='*', overwrite=False):
+def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pklstr='*', overwrite=False, maxx=24, maxy=25, minx=0, miny=1):
   """
   process one dataset at a time, generating all possible klcombo, parametercombo pairs and save normalized difference
   stats and images in a dictionary
@@ -1255,9 +1254,11 @@ def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pkl
 
               try:
                 fake_metric_cube, fake_agg_cube, fake_ann_val, fake_movm_val, fake_metric_scores, fake_metric_fname = find_best_new(falsepe, kls, pedir=false_dir, writestr=False, writefiles=False, weights=list(mcombo), outdir=false_dir+'proc/', 
-                                                                                                                                            oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=False, separate_kls=sepkl, snrthresh=snt)
+                                                                                                                                            oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=False, separate_kls=sepkl, snrthresh=snt, 
+                                                                                                                                            maxx=maxx, maxy=maxy, minx=minx, miny=miny)
                 real_metric_cube, real_agg_cube, real_ann_val, real_movm_val, real_metric_scores, real_metric_fname = find_best_new(realpe, kls, pedir=real_dir, writestr=False, writefiles=False, weights=list(mcombo), outdir=real_dir+'proc/', 
-                                                                                                                                            oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=False, separate_kls=sepkl, snrthresh=snt) 
+                                                                                                                                            oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=False, separate_kls=sepkl, snrthresh=snt,
+                                                                                                                                            maxx=maxx, maxy=maxy, minx=minx, miny=miny) 
                 go=True  
 
               except:
@@ -1273,12 +1274,12 @@ def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pkl
               sig_diff_wt=np.zeros((len(kls)))*np.nan
 
               for kl in np.arange(len(kls)):
-                fake_cube[-1,:,kl,:,:,:]=fake_cube[-1,:,kl,:,:,:]-np.nanpercentile(fake_cube[-1,:,kl,:,:,:],10)
-                real_cube[-1,:,kl,:,:,:]=real_cube[-1,:,kl,:,:,:]-np.nanpercentile(real_cube[-1,:,kl,:,:,:],10)
+                fake_cube[-1,:,kl,:,:,:]=fake_cube[-1,:,kl,:,:,:]-np.nanpercentile(fake_cube[-1,:,kl,:,miny-1:maxy,minx:maxx+1],10)
+                real_cube[-1,:,kl,:,:,:]=real_cube[-1,:,kl,:,:,:]-np.nanpercentile(real_cube[-1,:,kl,:,miny-1:maxy,minx:maxx+1],10)
                         
                 #normalize to max
-                fake_cube[-1,:,kl,:,:,:]=fake_cube[-1,:,kl,:,:,:]/np.nanpercentile(fake_cube[-1,:,kl,:,:,:],90)
-                real_cube[-1,:,kl,:,:,:]=real_cube[-1,:,kl,:,:,:]/np.nanpercentile(real_cube[-1,:,kl,:,:,:],90)
+                fake_cube[-1,:,kl,:,:,:]=fake_cube[-1,:,kl,:,:,:]/np.nanpercentile(fake_cube[-1,:,kl,:,miny-1:maxy,minx:maxx+1],90)
+                real_cube[-1,:,kl,:,:,:]=real_cube[-1,:,kl,:,:,:]/np.nanpercentile(real_cube[-1,:,kl,:,miny-1:maxy,minx:maxx+1],90)
                                   
                 diff = fake_cube-real_cube
                 #weight it by the normalized aggregate metric (downweights low SNR regions)
@@ -1298,8 +1299,8 @@ def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pkl
 
               #difference in metric score at fake planet peak
               coll_string = dset_string+'_wts'+''.join([str(x) for x in mcombo])+'_kls'+''.join([str(x) if str(x)=='1' else '0' for x in list(klcombo)])+'_sepkl'+str(sepkl)+'_snthresh'+str(snt)
-              dtn[coll_string]=(np.nansum(diff_wt_agg), np.nanstd(diff_wt_agg), np.nanmedian(diff_wt_agg), sig_diff_wt_avg)
-              dtn2[coll_string]=(np.nansum(diff_agg), np.nanstd(diff_agg), np.nanmedian(diff_agg), sig_diff_avg) 
+              dtn[coll_string]=(np.nansum(diff_wt_agg[:,miny-1:maxy,minx:maxx+1]), np.nanstd(diff_wt_agg[:,miny-1:maxy,minx:maxx+1]), np.nanmedian(diff_wt_agg[:,miny-1:maxy,minx:maxx+1]), sig_diff_wt_avg)
+              dtn2[coll_string]=(np.nansum(diff_agg[:,miny-1:maxy,minx:maxx+1]), np.nanstd(diff_agg[:,miny-1:maxy,minx:maxx+1]), np.nanmedian(diff_agg[:,miny-1:maxy,minx:maxx+1]), sig_diff_avg) 
               
               j+=1
         else:
@@ -1355,14 +1356,14 @@ def split_by_completeness(false_dir, real_dir, out_dir, namestr='*', pklstr='*',
 
     return(toproc, done)
 
-def batch_dset_proc(dset_stringlist, toproc, false_dir, real_dir, out_dir,  pklstr='*', overwrite=False, parallel=False):
+def batch_dset_proc(dset_stringlist, toproc, false_dir, real_dir, out_dir,  pklstr='*', overwrite=False, parallel=False, maxx=24, maxy=25, minx=0, miny=1):
 
     dsetlist, rlist, flist = toproc
 
     if parallel==True:
         threadlist = []
         for k in np.arange(len(dsetlist)):
-            t = threading.Thread(target=proc_one_dset,args=(dsetlist[k],rlist[k],flist[k],false_dir, real_dir, out_dir,  pklstr, overwrite))
+            t = threading.Thread(target=proc_one_dset,args=(dsetlist[k],rlist[k],flist[k],false_dir, real_dir, out_dir,  pklstr, overwrite, maxx, maxy, minx, miny))
             threadlist.append(t)
             t.start()
         
@@ -1372,7 +1373,7 @@ def batch_dset_proc(dset_stringlist, toproc, false_dir, real_dir, out_dir,  pkls
     else:
         for i in np.arange(len(dset_stringlist)):
             print(i)
-            proc_one_dset(dsetlist[i],rlist[i],flist[i], false_dir, real_dir, out_dir,  pklstr=pklstr, overwrite=overwrite)
+            proc_one_dset(dsetlist[i],rlist[i],flist[i], false_dir, real_dir, out_dir,  pklstr=pklstr, overwrite=overwrite, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
     return()
 
 def compile_keys(out_dir, done, pklstr):
@@ -1723,8 +1724,10 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
         #plt.rcParams["xtick.direction"] = "in"
         #plt.rcParams["ytick.direction"] = "in"
 
-        n, b1, patches = ax1.hist(mean_sums, range=(0,200), bins=40,density=True, histtype='step', lw=3)
-        n, b1, patches = ax1.hist(mean_sums, range=(0,200), bins=40,density=True, alpha=0)
+        nbins = 60
+
+        n, b1, patches = ax1.hist(mean_sums, range=(0,200), bins=nbins,density=True, histtype='step', lw=3)
+        n, b1, patches = ax1.hist(mean_sums, range=(0,200), bins=nbins,density=True, alpha=0)
         last = np.where(b1<sumcut)[0][-1]
         plt.setp(patches[:last+1], 'facecolor', 'b', 'alpha', 0.2) 
         ax1.set_xlabel('Avg. Sum of DQ$_{CF}$-DQ$_{HR}$')
@@ -1733,27 +1736,29 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
         ax1.set_xlim(0,200)
         ax1.set_ylabel("Density")
 
-        n, b1, patches = ax2.hist(mean_stds, range = (0.1,0.45), bins=40,density=True, lw=3, histtype='step')
-        n, b1, patches = ax2.hist(mean_stds, range = (0.1,0.45), bins=40,density=True, alpha=0)
-        last = np.where(b1<stdcut)[0][-1]
+        n, b1, patches = ax2.hist(mean_stds, range = (0.1,0.6), bins=nbins,density=True, lw=3, histtype='step')
+        n, b1, patches = ax2.hist(mean_stds, range = (0.1,0.6), bins=nbins,density=True, alpha=0)
+        last = np.where(np.abs(b1)<stdcut)[0][-1]
         plt.setp(patches[:last+1], 'facecolor', 'b', 'alpha', 0.2) 
         ax2.set_xlabel(r'Avg. $\sigma$ of DQ$_{CF}$-DQ$_{HR}$')
         y2 = ax2.get_ylim()
         ax2.plot((mean_std,mean_std),(0,y2[1]), color='r')
-        ax2.set_xlim(0.1,0.45)
+        ax2.set_xlim(0.1,0.6)
 
-        n,b1,patches = ax3.hist(mean_meds, range=(-0.05,0.1),bins=40,density=True, lw=3, histtype='step')
-        n,b1,patches = ax3.hist(mean_meds, range=(-0.05,0.1),bins=40,density=True, lw=3, alpha=0)
+        n,b1,patches = ax3.hist(mean_meds, range=(-0.05,0.06),bins=nbins,density=True, lw=3, histtype='step')
+        n,b1,patches = ax3.hist(mean_meds, range=(-0.05,0.06),bins=nbins,density=True, lw=3, alpha=0)
+        first = np.where(np.abs(b1)<medcut)[0][0]
+        print(first, patches[first])
         last = np.where(b1<medcut)[0][-1]
-        plt.setp(patches[:last+1], 'facecolor', 'b', 'alpha', 0.2) 
+        plt.setp(patches[first:last+1], 'facecolor', 'b', 'alpha', 0.2) 
         ax3.set_xlabel(r'Avg. Median of DQ$_{CF}$-DQ$_{HR}$')
         y3 = ax3.get_ylim()
         ax3.plot((mean_med,mean_med),(0,y3[1]), color='r')
-        ax3.set_xlim(-0.05,0.1)
+        ax3.set_xlim(-0.05,0.06)
         ax3.set_ylabel("Density")
 
-        n, b1, patches = ax4.hist(mean_mdiffs, range =(0,0.9), bins=40,density=True, lw=3, histtype='step')
-        n, b1, patches = ax4.hist(mean_mdiffs, range =(0,0.9), bins=40,density=True, lw=3, alpha=0)
+        n, b1, patches = ax4.hist(mean_mdiffs, range =(0,1), bins=nbins,density=True, lw=3, histtype='step')
+        n, b1, patches = ax4.hist(mean_mdiffs, range =(0,1), bins=nbins,density=True, lw=3, alpha=0)
         last = np.where(np.abs(b1)<diffcut)[0][-1]
         first = np.where(np.abs(b1)<diffcut)[0][0]
         plt.setp(patches[:last+1], 'facecolor', 'b', 'alpha', 0.2) 
@@ -1766,7 +1771,7 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
         plt.show()
     return(wtslist, klslist)
 
-def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*', exceptstr=False, wts=[1,1,1,1,1,1], kls=[1,2,3,4,5,10,20,50,100], datestr=False, sepkl=False, seppl=False, snt=False, makeplot=True, writefits=False, maxx=25, maxy=25):
+def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*', exceptstr=False, wts=[1,1,1,1,1,1], kls=[1,2,3,4,5,10,20,50,100], datestr=False, sepkl=False, seppl=False, snt=False, makeplot=True, writefits=False, maxx=24, maxy=25, minx=0, miny=1):
 
     #find all completed pe combos
     dset_stringlist, reallist, falselist = pull_dsets(false_dir, real_dir, out_dir, namestr=namestr, exceptstr=exceptstr)
@@ -1830,9 +1835,9 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
         #compute the aggregate parameter quality metric for the real and fake data
         if match==True:
             fake_metric_cube, fake_agg_cube, fake_ann_val, fake_movm_val, fake_metric_scores, fake_metric_fname = find_best_new(falselist[falseind], kls, pedir=false_dir, writestr=False, writefiles=False, weights=wts, outdir=false_dir+'proc/', 
-                                                                                                                                oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt, maxx=maxx, maxy=maxy)
+                                                                                                                                oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
             real_metric_cube, real_agg_cube, real_ann_val, real_movm_val, real_metric_scores, real_metric_fname = find_best_new(reallist[i], kls, pedir=real_dir, writestr=False, writefiles=False, weights=wts, outdir=real_dir+'proc/', 
-                                                                                                                                oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt, maxx=maxx, maxy=maxy)
+                                                                                                                                oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
             ##NORMALIZE TO MAX AND SUBTRACT MIN
             fake_cube = fake_metric_cube
             real_cube = real_metric_cube
@@ -1883,7 +1888,7 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
                 if i<4:
                     ax1.axes.get_xaxis().set_visible(False)
 
-                ind = np.where(fake_cube[-1,0,0,0,:,:] == np.nanmax(fake_cube[-1,0,0,0,:maxy,:maxx]))
+                ind = np.where(fake_cube[-1,0,0,0,:,:] == np.nanmax(fake_cube[-1,0,0,0,miny-1:maxy,minx:maxx+1]))
                 label_text = 'a' + str(int(fake_ann_val[0][0])) + 'm' + str(int(fake_movm_val[0][0]))
                 rect = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='k', facecolor='none')
                 ax1.add_patch(rect)
@@ -1898,7 +1903,7 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
                     ax2.set_xlabel('movement')
 
                 f.colorbar(f2, ax=ax2, shrink=0.75, pad=-0.2,  label='Relative Parameter Quality')
-                ind2 = np.where(real_cube[-1,0,0,0,:,:] == np.nanmax(real_cube[-1,0,0,0,:maxy,:maxx]))
+                ind2 = np.where(real_cube[-1,0,0,0,:,:] == np.nanmax(real_cube[-1,0,0,0,miny-1:maxy,minx:maxx+1]))
                 label_text2 = 'a' + str(int(real_ann_val[0][0])) + 'm' + str(int(real_movm_val[0][0]))
                 rect2 = patches.Rectangle((ind2[1][0] - 0.5, ind2[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
                 ax2.add_patch(rect2)

@@ -1939,7 +1939,7 @@ def grab_planet_specs(df,dset_path):
     return(tuple(pllabel),tuple(plsep),tuple(plpa), tuple(seperr))
 
 def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5, 
-    klopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=25, maxy=25, skipdates=False,
+    klopt=False, ctrstopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=24, maxy=25, minx=0, miny=1 , skipdates=False,
     pldf=False, seppl=False, sepkl=False, smt=1, timecoll='median',combochoice=None,smooth=False, haopt=False):
     
     thisdir=os.getcwd()
@@ -1950,7 +1950,11 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
     klstr = '_kl'+'_'.join(str(val2) for val2 in kllist_coll)   
     hpstr = "_"+str(hpmult)+"fwhm"
     theseparams ='wts'+wtstr+klstr+'_seppl'+str(seppl)+'_sepkl'+str(sepkl)+hpstr
-    if maxx!=25:
+    if minx!=0:
+        theseparams+='_minx'+str(minx)
+    if miny!=1:
+        theseparams+='_miny'+str(miny)
+    if maxx!=24:
         theseparams+='_maxx'+str(maxx)
     if maxy!=25:
         theseparams+='_maxy'+str(maxy)
@@ -2129,7 +2133,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 hpval = hpmult*fwhm    
                  
                 #find peak for this set according to kl collapse mode in order to select optimal ann, movm
-                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxx=maxx, maxy=maxy)
+                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
 
                 ann = int(anns[0][0])
                 movm = int(movms[0][0])
@@ -2137,7 +2141,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
 
                 #run metric calculation for ALL kl modes so can select optimal kl
                 kllist = [1,2,3,4,5,10,20,50,100]     
-                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxx=maxx, maxy=maxy)
+                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
 
                 #find kl mode with highest score at ann, movm
                 if klopt==True:
@@ -2454,14 +2458,13 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
 
             #adjust stamp size according to planet separation if specified
             if adjstamp==True:
-                maxx = np.nanmax(np.abs(plsep_x))
-                maxy = np.nanmax(np.abs(plsep_y))
+                xmax = np.nanmax(np.abs(plsep_x))
+                ymax = np.nanmax(np.abs(plsep_y))
 
-                print(maxx,maxy)
-                if maxx>maxy:
-                    stampsz=maxx*2+100
+                if xmax>ymax:
+                    stampsz=xmax*2+100
                 else:
-                    stampsz=maxy*2+100
+                    stampsz=ymax*2+100
         
         #this is dumb and I'm missing something silly in the algebra, but only centered
         #perfectly if odd numbered

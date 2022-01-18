@@ -1938,9 +1938,10 @@ def grab_planet_specs(df,dset_path):
     #Wedge((.8, .3), .2, 45, 90, width=0.10),  # Ring sector
     return(tuple(pllabel),tuple(plsep),tuple(plpa), tuple(seperr))
 
-def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5, 
-    klopt=False, ctrstopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=24, maxy=25, minx=0, miny=1 , skipdates=False,
-    pldf=False, seppl=False, sepkl=False, smt=1, timecoll='median',combochoice=None,smooth=False, haopt=False):
+def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5,
+    klopt=False, ctrstopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=24, maxy=25, 
+    minx=0, miny=1, skipdates=False, pldf=False, seppl=False, sepkl=False, smt=1, timecoll='median',combochoice=None,
+    smooth=False, haopt=False):
     
     thisdir=os.getcwd()
 

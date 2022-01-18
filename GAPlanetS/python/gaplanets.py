@@ -31,6 +31,8 @@ from matplotlib import rc
 import accmodels as am
 
 rc("text", usetex=True)
+plt.rcParams.update(plt.rcParamsDefault)
+
 #import accmodels as am
 
 def SliceCube(imfile, rotfile, indir='./', slicedir='sliced/'):
@@ -1162,8 +1164,6 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
 
     written by Kate Follette June 2019
     """
-    
-    plt.rcParams["font.family"] = "sans-serif"
 
     platescale = 0.00795
     ctrl_rad = get_control_rad()
@@ -2151,6 +2151,20 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 
                     print('peak metric for this ann, movm combo among', pk, 'is', pk[int(pk_ind[0])], 'for kl', kl)
                     df.loc[df["Path"]==dset_path,"opt kl"]=kl
+                elif ctrstopt==True:
+                    peuse=fits.getdata(pedir+pefname)
+                    pk=np.zeros((len(kllist)))
+                    for k in np.arange(len(kllist)):
+                        #subtract 1 from ann to index from 0. note assumes step size is 1
+                        #last index in pe is contrast
+                        pk[k] = np.nanmin(np.log10(-1*peuse[-1,0,k,0,ann-1,movm]))
+                
+                    pk_ind = np.where(pk == np.nanmin(pk))
+                    kl = kllist[int(pk_ind[0])]
+                
+                    print('best log contrast for this ann, movm combo among', pk, 'is', pk[int(pk_ind[0])], 'for kl', kl)
+                    df.loc[df["Path"]==dset_path,"opt kl"]=kl
+
                 else:
                     #otherwise, do 10 kl modes
                     kl = 10

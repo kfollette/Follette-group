@@ -1941,7 +1941,7 @@ def grab_planet_specs(df,dset_path):
 def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5,
     klopt=False, ctrstopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=24, maxy=25, 
     minx=0, miny=1, skipdates=False, pldf=False, seppl=False, sepkl=False, smt=1, timecoll='median',combochoice=None,
-    smooth=False, haopt=False):
+    smooth=False, haopt=False, maskspec=None):
     
     thisdir=os.getcwd()
 
@@ -2222,7 +2222,9 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                     #check whether df contains note to mark planets
                     if df[df["Path"]==dset_path]["mark known planets"].values[0]=="Y":
                         plspecs = grab_planet_specs(pldf,dset_path)
-                        planets=(plspecs[1],plspecs[2],(fwhm/2,15))
+                        if maskspec!=None:
+                            maskspec=(fwhm/2,15)
+                        planets=(plspecs[1],plspecs[2],maskspec)
                         #check whether marked as candidate
                         if df[df["Path"]==dset_path]["candidate"].values[0]=="Y":
                             plcand=True
@@ -2373,7 +2375,7 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
 
     return ()
 
-def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, plcen=None):
+def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, plcen=None, nperrow=2):
     """
     OPTIONAL INPUTS:
     plcen = a number equal to the index of the planet candidate you'd like to center the image stamp on
@@ -2385,9 +2387,9 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
 
     totaldsets = d["totaldsets"]
 
-    nrows = int(np.ceil(totaldsets/2))
-    fig = plt.figure(figsize=(10,nrows*5))
-    gs = fig.add_gridspec(nrows, 2, hspace=0.25, wspace=0.4) # ,6)
+    nrows = int(np.ceil(totaldsets/nperrow))
+    fig = plt.figure(figsize=(5*nperrow,nrows*5))
+    gs = fig.add_gridspec(nrows, nperrow, hspace=0.25, wspace=0.4) # ,6)
 
     dkeys = list(d.keys())
     dset_strs = []
@@ -2409,10 +2411,12 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
         thisd = d[dset_strs[i]]
 
         #define left or righthand plot
-        if i%2==0:
-            ax = fig.add_subplot(gs[int(i/2),0])
+        if i%nperrow==0:
+            ax = fig.add_subplot(gs[int(i/nperrow),0])
+            pltctr=1
         else:
-            ax = fig.add_subplot(gs[int((i-1)/2),1])
+            ax = fig.add_subplot(gs[int((i-1)/nperrow),pltctr])
+            pltctr+=1
 
         if secondscale!=False:
             if snr==True:
@@ -2487,6 +2491,11 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
             yhigh = int(cen+plsep_y[plcen] + stampsz / 2 )
             xlow = int(cen+plsep_x[plcen] - stampsz / 2 + 1)
             xhigh = int(cen+plsep_x[plcen] + stampsz / 2 )
+            ##make ticklabels relative to central star
+            xticklabels = np.arange(-1*nticks, nticks+1)*0.25+plsep_x[plcen]*platescale
+            yticklabels = np.arange(-1*nticks, nticks+1)*0.25+plsep_y[plcen]*platescale
+            xticklabels_str = ["{:4.2f}".format(lab)+'\"' for lab in xticklabels]
+            yticklabels_str = ["{:4.2f}".format(lab)+'\"' for lab in yticklabels]
             markctrl=False
         else:
             ylow = int(cen - stampsz / 2 + 1)
@@ -2494,10 +2503,12 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
             xlow=ylow
             xhigh=yhigh
             markctrl=int(thisd["ctrlrad"])
+            xticklabels_str=ticklabels_str
+            yticklabels_str=ticklabels_str
         
         print(xlow,xhigh,ylow,yhigh)
         # set up tick labels according to parameter ranges
-        plt.setp(ax, xticks=ticks, xticklabels=ticklabels_str, yticks=ticks, yticklabels=ticklabels_str)
+        plt.setp(ax, xticks=ticks, xticklabels=xticklabels_str, yticks=ticks, yticklabels=yticklabels_str)
      
         if snr==True:
             cbarlabel = 'SNR'
@@ -2555,22 +2566,24 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
                         circrad = 10
 
                 if plcen!=None:
-                    circ=patches.Circle((stampcen,stampcen),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty)
+                    circ=patches.Circle((stampcen,stampcen),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty, alpha=0.5)
                 else:
-                    circ=patches.Circle((stampcen+plsep_x[j],stampcen+plsep_y[j]),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty)
+                    circ=patches.Circle((stampcen+plsep_x[j],stampcen+plsep_y[j]),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty, alpha=0.5)
                 circ_label=pllabels[j]
                 ax.add_patch(circ, )
-                if stampsz<250:
-                    addx = [circrad+1 if (plspecs[2][j]>180 or plspecs[2][j]<10) else -1.5*circrad]
+                if plspecs[2][j]>180:
+                    addx = [circrad+1]
+                    align = 'left'
                 else:
-                    addx = [circrad+10 if plspecs[2][j]>180 else -1*(circrad+15)]
+                    addx = [-1*(circrad+1)]
+                    align = 'right'
                 if plcen!=None:
                     labelposx = stampcen+addx[0]
                     labelposy = stampcen
                 else:
                     labelposx = stampcen+plsep_x[j]+addx[0]
                     labelposy = stampcen+plsep_y[j] 
-                ax.text(labelposx,labelposy,circ_label, color='white',fontsize=16)
+                ax.text(labelposx,labelposy,circ_label, color='white',fontsize=16, horizontalalignment=align, verticalalignment='center')
         
         if stampsz>302:
             resclr='goldenrod'

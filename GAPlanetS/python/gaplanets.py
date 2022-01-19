@@ -320,7 +320,7 @@ def make_prefix(data_str, wl, cut):
 def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numann=3, movm=4, KLlist=[10], IWA=0,
                   contrast=1e-2, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                   highpass=True, ghost=False, savefig=False, overwrite=False, iterations=3,rdx_params_dfname='rdx_params.csv',
-                  timecoll='median'):
+                  timecoll='median', usecutfwhm=False):
     """
     PURPOSE
     Injects false planets separated by the measured fwhm of the dataset in radius and the clockang parameter
@@ -493,9 +493,11 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             head = fits.getheader(filelist[i])
             starpeak.append(head["STARPEAK"])
 
-        #pull fwhm of 0pctcut for consistent spacings
-        fwhm=head["0PCTFWHM"]
-
+        if usecutfwhm==True:
+            fwhm=head["MEDFWHM"]
+        else:
+            #pull fwhm of 0pctcut for consistent spacings
+            fwhm=head["0PCTFWHM"]
         # import the dataset. Wait to highpass filter until the KLIP call in the next cell
         dataset = MagAO.MagAOData(filelist, highpass=False)
         # set IWA
@@ -506,7 +508,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             dataset.input[i, :, :] /= starpeak[i]
 
         # compute number of planets to inject
-        first = IWA + fwhm*0.75
+        first = IWA + fwhm*0.5
         n_planets = (dataset.input.shape[1] / 2. - IWA) / fwhm * 2
         #stay away from very outer part of image
         n_planets = int(n_planets)-2
@@ -1013,7 +1015,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
 
 def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                    contrast=1e-2, numann=3, movm=4, KLlist=[10], IWA=0, savefig=False, ghost=False, rdx_params_dfname='rdx_params.csv', debug=False,
-                   iterations=3, theta=0., overwrite=False, highpass=True, clockang=85):
+                   iterations=3, theta=0., overwrite=False, highpass=True, clockang=85, usecutfwhm=False):
     """
     PURPOSE
     loop through data quality cuts and compile corrected contrast curves into single array
@@ -1068,7 +1070,8 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
                                                                     #KLIP parameters
                                                                     numann=numann, movm=movm, highpass=highpass,
                                                                     KLlist=KLlist, IWA=IWA, rdx_params_dfname=rdx_params_dfname, 
-                                                                    debug=debug, iterations=iterations, overwrite=overwrite)
+                                                                    debug=debug, iterations=iterations, overwrite=overwrite,
+                                                                    usecutfwhm=usecutfwhm)
 
         if (os.path.exists(outputdir + namestr + '_contrasts.fits')) and (overwrite==False):
             print ('found existing contrast curve', outputdir + namestr + '_contrasts.fits')
@@ -2190,9 +2193,9 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 #compute contrast curve
                 os.chdir(full_fpath)
                 thrpt_out, zb, df2, dataset_prefix = compute_thrpt(data_str, wl, cut, outputdir = outdir+data_str+'/', numann=ann, movm=movm, KLlist=[kl], IWA=IWA, 
-                                                                    contrast=contrast, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
+                                                                    contrast=contrast, theta=0., clockang=135, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                                                                     ghost=ghost, savefig=True, iterations=3,rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 
-                                                                    highpass=hpval, overwrite=overwrite, timecoll=timecoll)
+                                                                    highpass=hpval, overwrite=overwrite, timecoll=timecoll, usecutfwhm=True)
             
                 contrast_out, df2, OWA = make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix,  outputdir=outdir+data_str+'/', 
                                                                 numann=ann, movm=movm, KLlist=[kl], IWA=IWA, rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 
@@ -2621,7 +2624,8 @@ def plotdict_ctrst(d, maxsep=1,to_mdot=None):
     for key in dkeys:
         if key!="totaldsets":
             dset_strs.append(key)
-
+    maxctrst=[]
+    minctrst = []
     for i in np.arange((totaldsets)):
         thisd = d[dset_strs[i]]
         if "combo" not in thisd["prefix"]:
@@ -2631,14 +2635,18 @@ def plotdict_ctrst(d, maxsep=1,to_mdot=None):
 
             #extrapolate to iwa
             #slope of innermost two points
-            m = (np.log10(ctrsts[0])-np.log10(ctrsts[1]))/(seps[1]-seps[0])
+            m = (np.log10(ctrsts[0])-np.log10(ctrsts[1]))/((seps[1]-seps[0])/platescale)
             IWA_y = (seps[0] -IWA)*m+10**ctrsts[0]
 
             ax.plot([IWA, seps[0]],[IWA_y, ctrsts[0]],  '--', color=colors[i])
             ax.plot(seps, ctrsts, label = thisd["ccurve_lbl"], color=colors[i])
+            maxctrst.append(IWA_y)
+            nindlast = len(seps[seps<maxsep])
+            minctrst.append(np.nanmin(ctrsts[:nindlast+2]))
 
     plt.yscale("log")
     plt.xlim(0, maxsep)
+    plt.ylim(np.nanmin(minctrst),np.nanmax(maxctrst))
     plt.yscale("log")
     plt.xlabel("distance in arcseconds")
     plt.ylabel("contrast")

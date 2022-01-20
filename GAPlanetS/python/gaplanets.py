@@ -2225,7 +2225,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                     #check whether df contains note to mark planets
                     if df[df["Path"]==dset_path]["mark known planets"].values[0]=="Y":
                         plspecs = grab_planet_specs(pldf,dset_path)
-                        if maskspec!=None:
+                        if maskspec==None:
                             maskspec=(fwhm/2,15)
                         planets=(plspecs[1],plspecs[2],maskspec)
                         #check whether marked as candidate

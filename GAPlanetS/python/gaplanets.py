@@ -2635,8 +2635,8 @@ def plotdict_ctrst(d, maxsep=1,to_mdot=None):
 
             #extrapolate to iwa
             #slope of innermost two points
-            m = (np.log10(ctrsts[0])-np.log10(ctrsts[1]))/((seps[1]-seps[0])/platescale)
-            IWA_y = (seps[0] -IWA)*m+10**ctrsts[0]
+            m = (np.log10(ctrsts[0])-np.log10(ctrsts[1]))/((seps[1]-seps[0]))
+            IWA_y = 10**((seps[0]-IWA)*m+np.log10(ctrsts[0]))
 
             ax.plot([IWA, seps[0]],[IWA_y, ctrsts[0]],  '--', color=colors[i])
             ax.plot(seps, ctrsts, label = thisd["ccurve_lbl"], color=colors[i])

@@ -2168,6 +2168,9 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                         pk[k] = np.nanmin(np.log10(-1*peuse[-1,0,k,0,ann-1,movm]))
                 
                     pk_ind = np.where(pk == np.nanmin(pk))
+                    #if more than one with same contrast, pick lowest kl mode
+                    if len(pk_ind[0])>1:
+                        pk_ind=[pk_ind[0][0]]
                     kl = kllist[int(pk_ind[0])]
                 
                     print('best log contrast for this ann, movm combo among', pk, 'is', pk[int(pk_ind[0])], 'for kl', kl)

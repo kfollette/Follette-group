@@ -392,7 +392,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             #note - hard-coded for subsections = 1
             snr_norm = (kltrim_snr[0,0,k,p,:,:]-np.nanmin(pecube_snr[0,0,:,p,:,:]))/ (np.nanmax(pecube_snr[0,0,:,p,:,:])-np.nanmin(pecube_snr[0,0,:,p,:,:]))
             snr_norm_umask = (kltrim_snr[1,0,k,p,:,:]-np.nanmin(pecube_snr[1,0,:,p,:,:])) / (np.nanmax(pecube_snr[1,0,:,p,:,:])-np.nanmin(pecube_snr[1,0,:,p,:,:]))
-            print(k,np.nanmin(pecube_snr[0,0,k,p,:,:]),np.nanmax(pecube_snr[0,0,k,p,:,:]), np.nanmin(snr_norm), np.nanmin(snr_norm_umask), np.nanmax(snr_norm), np.nanmax(snr_norm_umask))
+            #print(k,np.nanmin(pecube_snr[0,0,k,p,:,:]),np.nanmax(pecube_snr[0,0,k,p,:,:]), np.nanmin(snr_norm), np.nanmin(snr_norm_umask), np.nanmax(snr_norm), np.nanmax(snr_norm_umask))
             
 
             #if stdev_valid==True:
@@ -769,7 +769,7 @@ def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1
     raw_metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = \
         find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt, separate_planets=separate_planets, separate_kls=separate_kls)
 
-    print(ann_val,movm_val, agg_cube.shape, raw_metric_cube.shape)
+    #print(ann_val,movm_val, agg_cube.shape, raw_metric_cube.shape)
 
     #reduce dimensions of metric cube (see note above)
     kldim=raw_metric_cube.shape[2]

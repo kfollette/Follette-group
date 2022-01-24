@@ -298,26 +298,36 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
     if snrmeth != 'all':
         #for single method cubes, slices are SNR peak, avg SNR, total >thresh pixels, >thresh pixels inside CR
         kltrim_snr=kltrim[slice::2,:,:,:,:,:]
+        pecube_snr=pecube[slice::2,:,:,:,:,:]
 
         #if snrmeth = absmed, grab contrast slice too
         if slice==1:
             dmns = np.array(kltrim_snr.shape)
+            pedmns = np.array(pecube_snr.shape)
             dmns[0]+=1
             kltrim_plusone = np.zeros(dmns)
+            pe_plusone = np.zeros(dmns)
             kltrim_plusone[0:-1,:,:,:,:,:]=kltrim_snr
+            pe_plusone[0:-1,:,:,:,:,:]=pecube_snr
             #fill last one with contrast cube dimension, which is not dependent on snr method
             kltrim_plusone[-1,:,:,:,:,:]=kltrim[-1,:,:,:,:,:]
+            pe_plusone[-1,:,:,:,:,:]=pecube[-1,:,:,:,:,:]
             kltrim_snr = kltrim_plusone
+            pecube_snr =pe_plusone
 
     #if snrmeth is 'all', average the slices
     else:
         #average each of the first 4 pairs of metrics
         avgdim = list(kltrim.shape)
+        peavgdim = list(pecube.shape)
         avgdim[0]=5
         kltrim_snr=np.zeros(avgdim)
+        pecube_snr=np.zeros(peavgdim)
         for i in np.arange(4):
             kltrim_snr[i,:,:,:,:,:]=np.average(kltrim[2*i:2*i+1,:,:,:,:,:], axis=0)
+            pecube_snr[i,:,:,:,:,:]=np.average(pecube[2*i:2*i+1,:,:,:,:,:], axis=0)
         kltrim_snr[-1,:,:,:,:,:]=kltrim[-1,:,:,:,:,:]
+        pecube_snr[-1,:,:,:,:,:]=pecube[-1,:,:,:,:,:]
 
     #set up kllist argument for loop
     if len(kllist)>1 and separate_kls==False:
@@ -356,12 +366,13 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
     ##Note - hard coded for 1 subsection. 
     metric_cube = np.zeros([7, 1, klloop, npldim, nstepy, nstepx])
     qual_cube = np.zeros([6, 1, klloop, npldim, nstepy, nstepx])
+    logcontrast = np.zeros([klloop,npldim,nstepy,nstepx])
 
     for p in np.arange(npldim):
 
         for k in np.arange(klloop):
                 
-            #finds locations of peaks
+            #finds locations of peak for this kl mode
             #note - currently hard coded for 1 subsection (second index)
             maxind = np.where(kltrim_snr[0,0,k,p,:,:] == np.nanmax(kltrim_snr[0,0,k,p,:,:]))
             maxind_umask = np.where(kltrim_snr[1,0,k,p,:,:] == np.nanmax(kltrim_snr[1,0,k,p,:,:]))
@@ -377,9 +388,12 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             #print("peak value for avg SNR under mask is at coordinates:", xcoord, ycoord)
 
             #normalize the SNR metric to range from 0 to 1
-            #note - hard-coded for susections = 1
-            snr_norm = (kltrim_snr[0,0,k,p,:,:]-np.nanmin(kltrim_snr[0,0,k,p,:,:]))/ np.nanmax(kltrim_snr[0,0,k,p,:,:])
-            snr_norm_umask = (kltrim_snr[1,0,k,p,:,:]-np.nanmin(kltrim_snr[1,0,k,p,:,:])) / np.nanmax(kltrim_snr[1,0,k,p,:,:])
+            #normalize across all kl modes (including those not selected here)
+            #note - hard-coded for subsections = 1
+            snr_norm = (kltrim_snr[0,0,k,p,:,:]-np.nanmin(pecube_snr[0,0,:,p,:,:]))/ (np.nanmax(pecube_snr[0,0,:,p,:,:])-np.nanmin(pecube_snr[0,0,:,p,:,:]))
+            snr_norm_umask = (kltrim_snr[1,0,k,p,:,:]-np.nanmin(pecube_snr[1,0,:,p,:,:])) / (np.nanmax(pecube_snr[1,0,:,p,:,:])-np.nanmin(pecube_snr[1,0,:,p,:,:]))
+            print(k,np.nanmin(pecube_snr[0,0,k,p,:,:]),np.nanmax(pecube_snr[0,0,k,p,:,:]), np.nanmin(snr_norm), np.nanmin(snr_norm_umask), np.nanmax(snr_norm), np.nanmax(snr_norm_umask))
+            
 
             #if stdev_valid==True:
                 #normalize standard deviations across KL modes. Low values = good
@@ -394,22 +408,22 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             #else:
                 #stdev_norm = np.zeros([nstepy,nstepx])*np.nan
                 #stdev_norm_umask = np.zeros([nstepy,nstepx])*np.nan
-
-            #spurious pixels metrics - pulling slice 3 (in between IWA and CR only)
-            spurpix = kltrim_snr[3,0,k,p,:,:]
             
             #make a contrast metric
             #returned quantity is -1*contrast. turn back into contrast
             #and log so that higher = better
-            logcontrast = np.log10(-1*kltrim_snr[4,0,k,p,:,:])
+            logcontrast[k,p,:,:] = np.log10(-1*kltrim_snr[4,0,k,p,:,:])
+            pelogcontrast=np.log10(-1*pecube_snr[4,0,:,p,:,:])
             #filter out unphysical contrasts
             logcontrast[logcontrast>0]=np.nan
+            pelogcontrast[pelogcontrast>0]=np.nan
             #now take absolute value - smaller is better
-            logcontrast = np.abs(logcontrast)
+            logcontrast[k,p,:,:] = np.abs(logcontrast[k,p,:,:])
+            pelogcontrast = np.abs(pelogcontrast)
             #and subtract the minimum so goes min=0 to max
-            logcontrast = logcontrast - np.nanmin(logcontrast)
+            logcontrast[k,p,:,:] = logcontrast[k,p,:,:] - np.nanmin(pelogcontrast)
             #now divide by the max so goes 0-->1
-            contrast = logcontrast/np.nanmax(logcontrast)
+            contrast = logcontrast[k,p,:,:]/(np.nanmax(pelogcontrast)- np.nanmin(pelogcontrast))
             
             #compute neighbor quality metrics by smoothing with Gaussian
             sig=smt
@@ -423,19 +437,6 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             #nq_stdev /= np.nanmax(nq_stdev)
             nq_snr_umask /= np.nanmax(nq_snr_umask)
             #nq_stdev_umask /= np.nanmax(nq_stdev_umask)
-
-            if debug==True:
-                #make a cube of all these metrics for sanity checking
-                qual_cube[0,:,k,p,:,:]=snr_norm
-                qual_cube[1,:,k,p,:,:]=snr_norm_umask
-                #qual_cube[2,:,k,p,:,:]=stdev_norm
-                #qual_cube[3,:,k,p,:,:]=stdev_norm_umask
-                qual_cube[2,:,k,p,:,:]=spurpix
-                qual_cube[3,:,k,p,:,:]=nq_snr
-                qual_cube[4,:,k,p,:,:]=nq_snr_umask
-                #qual_cube[7,:,k,p,:,:]=nq_stdev
-                #qual_cube[8,:,k,p,:,:]=nq_stdev_umask
-                qual_cube[5,:,k,p,:,:]=contrast
 
             #average under mask and peak pixel estimates
             #snr_norm_combo = (snr_norm_avg + snr_norm_avg_umask) / 2.
@@ -453,14 +454,29 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             #metric_cube[4,:,k,p,:,:]= stdev_norm_umask
             #metric_cube[5,:,k,p,:,:]= nq_stdev_umask
 
+            #spurious pixels metrics - pulling slice 3 (in between IWA and CR only)
+            spurpix = kltrim_snr[3,0,k,p,:,:]
             #spurious pixel metric = 1 if no spurious pixels and 0 if max number for this dataset
             if np.nanmax(spurpix)>0:
-                spurpix_norm = 1-(spurpix-np.nanmin(spurpix))/np.nanmax(spurpix)
+                spurpix_norm = 1-(spurpix-np.nanmin(pecube_snr[3,0,:,p,:,:])/(np.nanmax(pecube_snr[3,0,:,p,:,:])-np.nanmin(pecube_snr[3,0,:,p,:,:])))
             else: #edge case - no spurious pixels in any image
                 spurpix_norm= 1+spurpix
              
             metric_cube[4,:,k,p,:,:]= spurpix_norm
             metric_cube[5,:,k,p,:,:]= contrast 
+
+            if debug==True:
+                #make a cube of all these metrics for sanity checking
+                qual_cube[0,:,k,p,:,:]=snr_norm
+                qual_cube[1,:,k,p,:,:]=snr_norm_umask
+                #qual_cube[2,:,k,p,:,:]=stdev_norm
+                #qual_cube[3,:,k,p,:,:]=stdev_norm_umask
+                qual_cube[2,:,k,p,:,:]=spurpix
+                qual_cube[3,:,k,p,:,:]=nq_snr
+                qual_cube[4,:,k,p,:,:]=nq_snr_umask
+                #qual_cube[7,:,k,p,:,:]=nq_stdev
+                #qual_cube[8,:,k,p,:,:]=nq_stdev_umask
+                qual_cube[5,:,k,p,:,:]=contrast
 
             metriclist = (snr_norm, nq_snr, snr_norm_umask, nq_snr_umask, spurpix_norm, contrast)
             #metriclist = (snr_norm, nq_snr, snr_norm_umask, nq_snr_umask, stdev_norm_umask, nq_stdev_umask, spurpix_norm, contrast)
@@ -744,141 +760,165 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1], mode='Lin
                         d["pe{0}haklipim".format(i+1)]=klcube
     return(d)
 
-def paramexplore_fig(pename, kllist, pedir='proc/', outdir='proc/', writestr=False, weights=[1,1,1,1,1,1], 
-    snrmeth='stdev', smt=3, separate_planets=False, separate_kls=False):
+def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1], snrmeth='all', smt=3, separate_planets=False, separate_kls=False):
     
-    metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = find_best_new(pename, kllist, pedir=pedir, 
-        outdir=outdir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt, separate_planets=separate_planets, 
-        separate_kls=separate_kls)
+    """
+    
+    """
 
-    if writestr == False:
-        writestr = pename[:-17]
+    raw_metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = \
+        find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt, separate_planets=separate_planets, separate_kls=separate_kls)
 
-    namelist = pename.split('_')
-    params = [s for s in namelist if s[0] == 'a']
-    params = params[0]
-    params = re.split('a|-|x|m|s|iwa|hp', params)
-    ymin = int(params[1])
-    ymax = int(params[2])
-    ystep = int(params[3])
-    xmin = int(float(params[4]))
-    xmax = int(float(params[5]))
-    xstep = int(float(params[6]))
-    nstepx = (xmax - xmin) / xstep
-    nstepy = (ymax - ymin) / ystep
+    print(ann_val,movm_val, agg_cube.shape, raw_metric_cube.shape)
 
-    fig_xdim = nstepx*0.25
-    fig_ydim = nstepy
+    #reduce dimensions of metric cube (see note above)
+    kldim=raw_metric_cube.shape[2]
+    pldim=raw_metric_cube.shape[3]
+    for k in np.arange(kldim):
+        for p in np.arange(pldim):
+            metric_cube = raw_metric_cube[:,0,k,p,:,:]
 
-    fig = plt.figure(figsize=(fig_ydim,fig_xdim))
-    gs = fig.add_gridspec(2, 4) # ,6)
-    ax1 = fig.add_subplot(gs[0,0])
-    ax2 = fig.add_subplot(gs[0,1])
-    ax3 = fig.add_subplot(gs[1,0])
-    ax4 = fig.add_subplot(gs[1,1])
-    #ax5 = fig.add_subplot(gs[0,2])
-    #ax6 = fig.add_subplot(gs[0,3])
-    ax7 = fig.add_subplot(gs[0,2])
-    ax8 = fig.add_subplot(gs[1,2])
-    ax9 = fig.add_subplot(gs[:,3:])
+            if writestr == False:
+                outwritestr = pename[:-17]
+            else:
+                outwritestr = writestr
 
-    plt.setp((ax1, ax2, ax3, ax4, ax7, ax8, ax9), xticks=np.arange(0, nstepx + 1, 2), xticklabels=np.arange(xmin, xmax + 1, 2),
-                 yticks=np.arange(0, nstepy + 1, 2), yticklabels=np.arange(ymin, ymax + 1, 2))
+            if separate_planets==False:
+                plstr='plavg'
+            else:
+                plstr='pl'+str(p+1)
+            if separate_kls==False:
+                klstr='klavg'
+            else:
+                klstr='kl'+str(kllist[k])
 
-    #if extracted kl or planets separately, make figs separately
-    nkldim = ann_val.shape[0]
-    npldim = ann_val.shape[1]
+            outwritestr+=klstr+'_'+plstr+'_'
 
-    for kl in np.arange(nkldim):
-        for pl in np.arange(npldim):
+            namelist = pename.split('_')
+            params = [s for s in namelist if s[0] == 'a']
+            params = params[0]
+            params = re.split('a|-|x|m|s|iwa', params)
+            ymin = int(params[1])
+            ymax = int(params[2])
+            ystep = int(params[3])
+            xmin = int(float(params[4]))
+            xmax = int(float(params[5]))
+            xstep = int(float(params[6]))
+            nstepx = (xmax - xmin) / xstep
+            nstepy = (ymax - ymin) / ystep
 
-            im1 = ax1.imshow(metric_cube[0,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-            ax1.set_xlabel("movement parameter")
-            ax1.set_ylabel("annuli parameter")
-            ax1.set_title("Peak SNR: Weight = "+str(weights[0]))
+            # set up tick labels according to parameter ranges
+            fig_xdim = nstepx*0.35
+            fig_ydim = nstepy
+
+            fig = plt.figure(tight_layout=True, figsize=(fig_ydim,fig_xdim))
+            gs = fig.add_gridspec(2, 5, hspace=0.2, wspace=0.5)
+            ax1 = fig.add_subplot(gs[0,0])
+            ax2 = fig.add_subplot(gs[0,1])
+            ax3 = fig.add_subplot(gs[1,0])
+            ax4 = fig.add_subplot(gs[1,1])
+            ax5 = fig.add_subplot(gs[0,2])
+            ax6 = fig.add_subplot(gs[1,2])
+            ax7 = fig.add_subplot(gs[:,3:])
+            #ax5 = fig.add_subplot(gs[:,2:])
+
+            plt.setp((ax1, ax2, ax3, ax4, ax5, ax6, ax7), xticks=np.arange(0,nstepx + 1,2), xticklabels=np.arange(xmin, xmax + 1,2),
+                     yticks=np.arange(0, nstepy + 1,2), yticklabels=np.arange(ymin, ymax + 1,2))
+
+            labelstyle=dict(size=16)
+            titlestyle=dict(size=18)
+            bigtitlestyle=dict(size=24)
+
+            #plt.setp((ax1, ax2, ax3, ax4, ax5), xticks=np.arange(nstepx + 1), yticks=np.arange(nstepy + 1), xticklabels=[], yticklabels=[])
+            im1 = ax1.imshow(metric_cube[0,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+
+            ax1.set_xlabel("movement parameter", **labelstyle)
+            ax1.set_ylabel("annuli parameter", **labelstyle)
+            ax1.set_title("Peak SNR", **titlestyle)
             divider = make_axes_locatable(ax1)
             cax = divider.append_axes('right', size='5%', pad=0.05)
-            plt.colorbar(im1, cax=cax, orientation='vertical')
+            cb = plt.colorbar(im1, cax=cax, orientation='vertical')
+            cb.set_label(label='Normalized Score', size=16)
+            cb.ax.tick_params(labelsize='large')
 
-            im2 = ax2.imshow(metric_cube[1,0,kl,pl,:,:], origin='lower',cmap='magma', vmin=0, vmax=1)
-            ax2.set_xlabel("movement parameter")
-            ax2.set_ylabel("annuli parameter")
-            ax2.set_title("Peak SNR Neighbor Quality: Weight = "+str(weights[1]))
+            im2 = ax2.imshow(metric_cube[1,:,:], origin='lower',
+                             cmap='magma', vmin=0, vmax=1)
+            ax2.set_xlabel("movement parameter", **labelstyle)
+            ax2.set_ylabel("annuli parameter", **labelstyle)
+            ax2.set_title("Peak SNR Neighbor Quality", **titlestyle)
             divider = make_axes_locatable(ax2)
             cax = divider.append_axes('right', size='5%', pad=0.05)
-            plt.colorbar(im2, cax=cax, orientation='vertical')
+            cb = plt.colorbar(im2, cax=cax, orientation='vertical')
+            cb.set_label(label='Normalized Score', size=16)
+            cb.ax.tick_params(labelsize='large')
 
-            im3 = ax3.imshow(metric_cube[2,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-            ax3.set_xlabel("movement parameter")
-            ax3.set_ylabel("annuli parameter")
-            ax3.set_title("Avg SNR Under Mask: Weight = "+str(weights[2]))
+            im3 = ax3.imshow(metric_cube[2,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+            ax3.set_xlabel("movement parameter", **labelstyle)
+            ax3.set_ylabel("annuli parameter", **labelstyle)
+            ax3.set_title("Avg. SNR Under Planet Mask", **titlestyle)
             divider = make_axes_locatable(ax3)
             cax = divider.append_axes('right', size='5%', pad=0.05)
-            plt.colorbar(im3, cax=cax, orientation='vertical')
-
-            im4 = ax4.imshow(metric_cube[3,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-            ax4.set_xlabel("movement parameter")
-            ax4.set_ylabel("annuli parameter")
-            ax4.set_title("Avg SNR Neighbor Quality: Weight = "+str(weights[3]))
+            cb = plt.colorbar(im3, cax=cax, orientation='vertical')
+            cb.set_label(label='Normalized Score', size=16)
+            cb.ax.tick_params(labelsize='large')
+            
+            im4 = ax4.imshow(metric_cube[3,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
+            ax4.set_xlabel("movement parameter", **labelstyle)
+            ax4.set_ylabel("annuli parameter", **labelstyle)
+            ax4.set_title("Avg. SNR Neighbor Quality", **titlestyle)
             divider = make_axes_locatable(ax4)
             cax = divider.append_axes('right', size='5%', pad=0.05)
-            plt.colorbar(im4, cax=cax, orientation='vertical')
+            cb = plt.colorbar(im4, cax=cax, orientation='vertical')
+            cb.set_label(label='Normalized Score', size=16)
+            cb.ax.tick_params(labelsize='large')
 
             
-            #im5 = ax5.imshow(metric_cube[4,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-            #ax5.set_xlabel("movement parameter")
-            #ax5.set_ylabel("annuli parameter")
-            #ax5.set_title("Stdev Across KL: Weight = "+str(weights[4]))
-            #divider = make_axes_locatable(ax5)
-            #cax = divider.append_axes('right', size='5%', pad=0.05)
-            #plt.colorbar(im5, cax=cax, orientation='vertical')
-
-            #im6 = ax6.imshow(metric_cube[5,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-            #ax6.set_xlabel("movement parameter")
-            #ax6.set_ylabel("annuli parameter")
-            #ax6.set_title("Stdev Neighbor Quality: Weight = "+str(weights[5]))
-            #divider = make_axes_locatable(ax6)
-            #cax = divider.append_axes('right', size='5%', pad=0.05)
-            #plt.colorbar(im6, cax=cax, orientation='vertical')
-
-            im7 = ax7.imshow(metric_cube[4,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-            ax7.set_xlabel("movement parameter")
-            ax7.set_ylabel("annuli parameter")
-            ax7.set_title("Spurious Pixels: Weight = "+str(weights[4]))
-            divider = make_axes_locatable(ax7)
+            im5 = ax5.imshow(metric_cube[4,:,:], origin='lower',
+                             cmap='magma', vmin=0, vmax=1)
+            ax5.set_xlabel("movement parameter", **labelstyle)
+            ax5.set_ylabel("annuli parameter", **labelstyle)
+            ax5.set_title(r"5$\sigma$ Pixels IWA to CR", **titlestyle)
+            divider = make_axes_locatable(ax5)
             cax = divider.append_axes('right', size='5%', pad=0.05)
-            plt.colorbar(im7, cax=cax, orientation='vertical')
+            cb = plt.colorbar(im5, cax=cax, orientation='vertical')
+            cb.set_label(label='Normalized Score', size=16)
+            cb.ax.tick_params(labelsize='large')
 
-
-            im8 = ax8.imshow(metric_cube[5,0,kl,pl,:,:], origin='lower', cmap='magma', vmin=0, vmax=1)
-            ax8.set_xlabel("movement parameter")
-            ax8.set_ylabel("annuli parameter")
-            ax8.set_title("Contrast: Weight = "+str(weights[5]))
-            divider = make_axes_locatable(ax8)
+            im6 = ax6.imshow(metric_cube[5,:,:], origin='lower',
+                             cmap='magma', vmin=0, vmax=1)
+            ax6.set_xlabel("movement parameter")
+            ax6.set_ylabel("annuli parameter")
+            ax6.set_title("Contrast", **titlestyle)
+            divider = make_axes_locatable(ax6)
             cax = divider.append_axes('right', size='5%', pad=0.05)
-            plt.colorbar(im8, cax=cax, orientation='vertical')
+            cb = plt.colorbar(im6, cax=cax, orientation='vertical')
+            cb.set_label(label='Normalized Score', size=16)
+            cb.ax.tick_params(labelsize='large')
+
 
             # plot metric
-            im9 = ax9.imshow(agg_cube[kl,pl,:,:], origin='lower', vmin=0, vmax=np.sum(weights))
-            ax9.set_ylabel("annuli parameter")
-            ax9.set_xlabel("movement parameter")
-            ax9.set_title("Aggregate Parameter Quality")
-            divider = make_axes_locatable(ax9)
+            agg=metric_cube[6,:,:]
+            im7 = ax7.imshow(agg, origin='lower', vmin=1, vmax=np.nanmax(agg))
+            ax7.set_ylabel("annuli parameter", **titlestyle)
+            ax7.set_xlabel("movement parameter", **titlestyle)
+            ax7.set_title("Aggregate Parameter Quality Metric", **bigtitlestyle)
+            divider = make_axes_locatable(ax7)
             cax = divider.append_axes('right', size='5%', pad=0.05)
-            plt.colorbar(im9, cax=cax, orientation='vertical')
+            plt.colorbar(im7, cax=cax, orientation='vertical', label="")
+            cb = plt.colorbar(im7, cax=cax, orientation='vertical')
+            cb.set_label(label='Weighted Aggregate Score', size=20)
+            cb.ax.tick_params(labelsize=16)
 
-            ind = np.where(agg_cube[kl,pl,:,:] == np.nanmax(agg_cube[kl,pl,:,:]))
-            label_text = 'a' + str(ann_val[kl][pl]) + 'm' + str(movm_val[kl][pl])
+            ind = np.where(agg == np.nanmax(agg))
+            label_text = 'a' + str(int(ann_val[k][p])) + 'm' + str(int(movm_val[k][p]))
             rect = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
-            ax9.add_patch(rect)
-            ax9.text(ind[1][0] + 0.75, ind[0][0], label_text, color='red')
+            ax7.add_patch(rect)
+            ax7.text(ind[1][0] + 0.75, ind[0][0]-0.5, label_text, color='red', **titlestyle, weight='bold')
 
-            plt.suptitle(writestr)
-            gs.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
-
-            plt.savefig(outdir+writestr+'_kl'+str(kllist[kl])+'_pl'+str(pl)+'_paramqual.png')
+            plt.savefig(pedir+outwritestr+'_paramqual.png')
     
-    return
+    return(ann_val, movm_val, agg)
+
 
 def make_klip_snrmaps(d, pedir='./', outdir='proc/', smooth=0.5, snrmeth='stdev', mode='Line', scale=1):
     """

@@ -433,9 +433,9 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             #nq_stdev_umask = filter_nan_gaussian_conserving(stdev_norm_umask,sig)
 
             #normalizes neighbor quality
-            nq_snr /= np.nanmax(nq_snr)
+            #nq_snr /= np.nanmax(nq_snr)
             #nq_stdev /= np.nanmax(nq_stdev)
-            nq_snr_umask /= np.nanmax(nq_snr_umask)
+            #nq_snr_umask /= np.nanmax(nq_snr_umask)
             #nq_stdev_umask /= np.nanmax(nq_stdev_umask)
 
             #average under mask and peak pixel estimates

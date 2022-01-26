@@ -394,11 +394,11 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
         #KL mode loop
         for s in range (kldim):
             try:
-                indiv = np.copy(inp[s,:,:])
+                indiv = inp[s,:,:]
             except:
-                indiv = np.copy(inp)
+                indiv = inp
 
-        #creates dictionary holding the noise value at each radius for this method
+            #creates dictionary holding the noise value at each radius for this method and kl mode
             NoiseMap = noisemap(indiv, planets, fwhm, method=method)
             fivesig = 0
             fivesig_atmask=0
@@ -420,7 +420,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                             indiv[x][y] = np.nan
                  
                         else:
-                            indiv[x][y] = indiv[x][y]/NoiseMap[radius]
+                            indiv[x][y]/=NoiseMap[radius]
 
                         if makenoisemap == True:
                             noise[x][y] = NoiseMap[radius]
@@ -484,8 +484,8 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                 #calculate and store planet data
                 if planets != False:
                     for p in np.arange(nplanets):
-                        snrs[methodctr,s,p]=np.nanmax(planet_pixels[:,:,methodctr,s,p])
-                        snr_sums[methodctr,s,p] = np.nansum(planet_pixels_pos[:,:,methodctr,s,p])/npospix[methodctr,s,p]
+                        snrs[methodctr,s,p]=np.max(planet_pixels[:,:,methodctr,s,p])
+                        snr_sums[methodctr,s,p] = np.sum(planet_pixels_pos[:,:,methodctr,s,p])/npospix[methodctr,s,p]
 
                     snr_spurious[methodctr,s,:]=[fivesig, fivesig_atmask, fivesig_inmask, allplanetpix, notplanetpix]
                 #print("max SNR under mask is", snrs[methodctr,s], "for slice", s)

@@ -484,8 +484,8 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                 #calculate and store planet data
                 if planets != False:
                     for p in np.arange(nplanets):
-                        snrs[methodctr,s,p]=np.max(planet_pixels[:,:,methodctr,s,p])
-                        snr_sums[methodctr,s,p] = np.sum(planet_pixels_pos[:,:,methodctr,s,p])/npospix[methodctr,s,p]
+                        snrs[methodctr,s,p]=np.nanmax(planet_pixels[:,:,methodctr,s,p])
+                        snr_sums[methodctr,s,p] = np.nansum(planet_pixels_pos[:,:,methodctr,s,p])/npospix[methodctr,s,p]
 
                     snr_spurious[methodctr,s,:]=[fivesig, fivesig_atmask, fivesig_inmask, allplanetpix, notplanetpix]
                 #print("max SNR under mask is", snrs[methodctr,s], "for slice", s)

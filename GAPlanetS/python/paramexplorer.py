@@ -296,7 +296,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
 
             #figure out whether there is enough range in the innermost annulus. Skip cases where not enough rotational space.
 
-            if np.arctan(m/(IWA+dr/2))*180/np.pi>totrot:
+            if np.arctan(m/(iwa+dr/2))*180/np.pi>totrot:
                 if verbose is True:
                     print("movement", m, "=" "%5.1f" % (np.arctan(m/ann_cen_rad[0])*180/np.pi), 
                         "deg. for innermost annulus. Only ", "%5.1f" % (totrot), 

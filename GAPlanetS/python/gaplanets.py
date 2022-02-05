@@ -1726,6 +1726,8 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
     if runrdx==True:   
         filelist = glob.glob(slicedir + "/sliced*.fits")
         dataset = MagAO.MagAOData(filelist, highpass=False) 
+        dataset.IWA=IWA
+        #print("CHECK IWA", dataset.IWA)
         parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix, algo='klip', annuli=numann, subsections=1, movement=movm,
                               numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=highpass, save_aligned=False, time_collapse=timecoll,
                               maxnumbasis=100)
@@ -1996,7 +1998,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 hpval = hpmult*fwhm    
                  
                 #find peak for this set according to kl collapse mode in order to select optimal ann, movm
-                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
+                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', verbose=True, separate_planets=seppl, separate_kls=sepkl, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
 
                 ann = int(anns[0][0])
                 movm = int(movms[0][0])
@@ -2004,7 +2006,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
 
                 #run metric calculation for ALL kl modes so can select optimal kl
                 kllist = [1,2,3,4,5,10,20,50,100]     
-                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
+                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', verbose=True, separate_planets=seppl,separate_kls=True, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
 
                 #find kl mode with highest score at ann, movm
                 if klopt==True:

@@ -521,7 +521,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             if verbose==True:
                 print('peak for planet =', plno, 'klmode = ', kllist[k], 'is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val[k][p], ' and movement', movm_val[k][p])
             #print('SNR value for fake planets (avg of SNR methods and planets) is', avgSNR)
-            #print('metric scores for (snr peak, snr peak neigbors, snr umask, snr umask neighbors, stdev, stdev neighbors, spurious pix, contrast, agg) are:', metric_scores)
+                print('metric scores for (snr peak, snr peak neigbors, snr umask, snr umask neighbors, spurious pix, contrast, agg) are:', metric_scores)
 
 
 

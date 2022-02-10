@@ -25,7 +25,15 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     movement_stop, FWHM, ra, pa, wid, annuli_inc=1, movement_inc=1, subsections_start=False, subsections_stop=False, subsections_inc=False,  
     smooth=False, input_contrast=False, time_collapse='median', highpass = True, owa=False,
     saveSNR = True, singleAnn = False, boundary=False, verbose = False, snrsmt = False,
-    calibrate_flux=False, pickup=True):
+    calibrate_flux=False, pickup=True, submean=False):
+
+    """
+    I need a docstring
+
+    MODIFICATION NOTES
+    2/9/22 - KBF added submean keyword
+
+    """
 
     #default is 1 subsection
     if subsections_start == False:
@@ -417,7 +425,7 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                                 cont_meas[k] = -cal_contrast
                                         
                         # makes SNR map
-                        snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(fname, FWHM, smooth=snrsmt, planets=mask, saveOutput=False, sigma = 5, checkmask=False, verbose = verbose)
+                        snrmaps, peaksnr, snrsums, snrspurious= snr.create_map(fname, FWHM, smooth=snrsmt, planets=mask, saveOutput=False, sigma = 5, checkmask=False, submean=submean, verbose = verbose)
 
                         PECube[0:2, scount, :, :, acount, mcount] = peaksnr
                         PECube[2:4, scount, :, :, acount, mcount] = snrsums

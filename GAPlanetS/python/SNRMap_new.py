@@ -206,7 +206,7 @@ def toPolar(x, y):
 
 
 
-def noisemap(indiv, planets, fwhm, method='stdev'):
+def noisemap(indiv, planets, fwhm, method='stdev', returnmean=False):
     
     """
     This function takes a filename and a list of parameters for objects to mask and outputs a dictionary object of
@@ -229,10 +229,12 @@ def noisemap(indiv, planets, fwhm, method='stdev'):
     
     Last Modified:
     6/28/2016
+    2/9/2022 by KBF - adding option to return means in the one pixel annuli
     
     """
     #creates empty dictionary objects to store unmasked pixel values and radial standard deviations
     noise_={}
+    means_={}
     radialProfs = {}
     radialProfs_abs = {}
     
@@ -275,16 +277,21 @@ def noisemap(indiv, planets, fwhm, method='stdev'):
                     noise_[r]= np.nanstd(radialProfs[r])/np.sqrt(1+(fwhm/(2*math.pi*r)))
                 if method == 'med':
                     noise_[r]=np.nanmedian(radialProfs_abs[r])/np.sqrt(1+(fwhm/(2*math.pi*r)))
+                if returnmean==True:
+                    means_[r] = np.nanmean(radialProfs[r])
         except: 
             pass
         
     #returns dictionary holding standard deviations
-    return noise_
+    if returnmean==True:
+        return noise_, means_
+    else:
+        return noise_
 
 
 
 
-def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveOutput = True, outputName=False, ctrlrad=30, method = 'all', checkmask=False, makenoisemap=False, sigma = 5, verbose = False):
+def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveOutput = True, outputName=False, submean=False, ctrlrad=30, method = 'all', checkmask=False, makenoisemap=False, sigma = 5, verbose = False):
     """
     creates signal to noise ratio map of image.
     
@@ -399,7 +406,11 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                 indiv = inp
 
             #creates dictionary holding the noise value at each radius for this method and kl mode
-            NoiseMap = noisemap(indiv, planets, fwhm, method=method)
+            if submean==False:
+                NoiseMap = noisemap(indiv, planets, fwhm, method=method)
+            #if needed, extract means as well
+            else:
+                NoiseMap, MeanMap = noisemap(indiv, planets, fwhm, method=method, returnmean=True)
             fivesig = 0
             fivesig_atmask=0
             fivesig_inmask = 0
@@ -420,6 +431,10 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                             indiv[x][y] = np.nan
                  
                         else:
+                            #subtract mean first if keyword set
+                            if submean==True:
+                               indiv[x][y]-=MeanMap[radius]
+                                
                             indiv[x][y]/=NoiseMap[radius]
 
                         if makenoisemap == True:

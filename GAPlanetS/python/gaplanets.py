@@ -1727,7 +1727,6 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
         filelist = glob.glob(slicedir + "/sliced*.fits")
         dataset = MagAO.MagAOData(filelist, highpass=False) 
         dataset.IWA=IWA
-        #print("CHECK IWA", dataset.IWA)
         parallelized.klip_dataset(dataset, outputdir=outputdir, fileprefix=prefix, algo='klip', annuli=numann, subsections=1, movement=movm,
                               numbasis=kllist, calibrate_flux=False, mode="ADI", highpass=highpass, save_aligned=False, time_collapse=timecoll,
                               maxnumbasis=100)
@@ -1804,7 +1803,7 @@ def grab_planet_specs(df,dset_path):
 
 def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5,
     klopt=False, ctrstopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=24, maxy=25, 
-    minx=0, miny=1, skipdates=False, pldf=False, seppl=False, sepkl=False, smt=1, timecoll='median',combochoice=None,
+    minx=0, miny=1, skipdates=False, pldf=False, seppl=False, sepkl=False, timecoll='median',combochoice=None,
     smooth=False, haopt=False, maskspec=None):
     
     thisdir=os.getcwd()
@@ -1960,7 +1959,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                     satrad=int(satrad)
 
                 #path to the relevant line directory
-                fpath=full_fpath+'/dq_cuts/'+wl+'_'+dq_str+'_sliced/'
+                fpath=full_fpath+'/dq_cuts/Line_'+dq_str+'_sliced/'
                 #dataset label = string of filepath
                 data_str = dset_path.replace('/','_')
 
@@ -1969,7 +1968,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 #find optimal params according to the collapse strategy
                 #find the cont fakes klip dir with paramexplore file
                 if haopt==True:
-                    fakedir=full_fpath+'/dq_cuts/'+wl+'_'+dq_str+'_sliced_klip/'
+                    fakedir=full_fpath+'/dq_cuts/Line_'+dq_str+'_sliced_klip/'
                     print(fakedir)
                 else:
                     fakepath=data_str+'fakes_redo/'
@@ -1998,7 +1997,8 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 hpval = hpmult*fwhm    
                  
                 #find peak for this set according to kl collapse mode in order to select optimal ann, movm
-                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', verbose=True, separate_planets=seppl, separate_kls=sepkl, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
+                print("weights", wts, "kl list", kllist_coll)
+                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
 
                 ann = int(anns[0][0])
                 movm = int(movms[0][0])
@@ -2006,7 +2006,8 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
 
                 #run metric calculation for ALL kl modes so can select optimal kl
                 kllist = [1,2,3,4,5,10,20,50,100]     
-                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', verbose=True, separate_planets=seppl,separate_kls=True, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
+                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
+
 
                 #find kl mode with highest score at ann, movm
                 if klopt==True:

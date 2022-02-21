@@ -138,7 +138,10 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
     starpeak = []
     for i in np.arange(len(filelist)):
         head = fits.getheader(filelist[i])
-        starpeak.append(head["STARPEAK"])
+        try:
+            starpeak.append(head["STARPEAK"])
+        except:
+            print("WARNING - failed for", filelist[i])
 
     dataset = MagAO.MagAOData(filelist)
     #make a clean copy of the dataset that will be pulled each time (parallelized modifies dataset.input object)

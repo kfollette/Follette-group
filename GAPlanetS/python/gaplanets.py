@@ -1804,7 +1804,7 @@ def grab_planet_specs(df,dset_path):
 def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5,
     klopt=False, ctrstopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=24, maxy=25, 
     minx=0, miny=1, skipdates=False, pldf=False, seppl=False, sepkl=False, timecoll='median',combochoice=None,
-    smooth=False, haopt=False, maskspec=None, submean=False):
+    smooth=False, haopt=False, contopt=False, maskspec=None, submean=False, kluse=None):
     
     thisdir=os.getcwd()
 
@@ -1969,7 +1969,8 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 #find the cont fakes klip dir with paramexplore file
                 if haopt==True:
                     fakedir=full_fpath+'/dq_cuts/Line_'+dq_str+'_sliced_klip/'
-                    print(fakedir)
+                if contopt==True:
+                    fakedir=full_fpath+'/dq_cuts/Cont_'+dq_str+'_sliced_klip/'
                 else:
                     fakepath=data_str+'fakes_redo/'
                     fakedirfiles = glob.glob(full_fpath+'/'+fakepath+'*')
@@ -1997,7 +1998,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 hpval = hpmult*fwhm    
                  
                 #find peak for this set according to kl collapse mode in order to select optimal ann, movm
-                print("weights", wts, "kl list", kllist_coll)
+                print("processing PE file", pefname, "with weights", wts, "and kl list", kllist_coll)
                 cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
 
                 ann = int(anns[0][0])
@@ -2038,6 +2039,8 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                     print('best log contrast for this ann, movm combo among', pk, 'is', pk[int(pk_ind[0])], 'for kl', kl)
                     df.loc[df["Path"]==dset_path,"opt kl"]=kl
 
+                elif kluse != None:
+                    kl = kluse
                 else:
                     #otherwise, do 10 kl modes
                     kl = 10
@@ -2694,13 +2697,16 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
                 circ=patches.Circle((stampcen+plsep_x[i],stampcen+plsep_y[i]),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty)
                 circ_label=pllabels[i]
                 a.add_patch(circ, )
-                if stampsz<250:
-                    addx = [circrad+1 if (plspecs[2][i]>180 or plspecs[2][i]<10) else -3*circrad]
-                else:
-                    addx = [circrad+10 if plspecs[2][i]>180 else -1*(circrad+15)]
-                labelposx = stampcen+plsep_x[i]+addx[0]
+                #if stampsz<250:
+                    #addx = [circrad+1 if (plspecs[2][i]>180 or plspecs[2][i]<10) else -1*(circrad+1)]
+                #else:
+                    #addx = [circrad+10 if plspecs[2][i]>180 else -1*(circrad+15)]
+                labelposx = stampcen+plsep_x[i]
                 labelposy = stampcen+plsep_y[i]
-                a.text(labelposx,labelposy,circ_label, color='white',fontsize=16)
+                if plspecs[2][i]<180:
+                    a.text(labelposx-circrad-1,labelposy,circ_label, color='white',fontsize=16, ha='right', va='center')
+                else:
+                    a.text(labelposx+circrad+1,labelposy,circ_label, color='white',fontsize=16, ha='left',va='center')
     if stampsz>300:
         resclr ='goldenrod' 
     else:

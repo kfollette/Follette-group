@@ -288,17 +288,27 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
             dataset.IWA = lowBound
             dataset.OWA = upBound
     
+        badpl = None
         #if boundary keyword is set, check to see if any planets are too close to annuli boundaries
         if boundary != False:
             #is planet within +/- number set as boundary pixels
             if not (len( [b for b in all_bounds for r in ra if(b <= r+boundary and b >= r-boundary)] ) == 0):
-                print([b for b in all_bounds for r in ra if(b <= r+boundary and b >= r-boundary)])
-                print("A planet is near annulus boundary; skipping KLIP for annuli = " + str(a))
-                #assign a unique value as a flag for these cases in the parameter explorer map
-                PECube[:,:,:,:,acount,:] = np.nan
-                #break out of annuli loop before KLIPing
-                acount=1
-                continue
+                badb = [b for b in all_bounds for r in ra if(b <= r+boundary and b >= r-boundary)]
+                badr = [r for b in all_bounds for r in ra if(b <= r+boundary and b >= r-boundary)]
+                print(badb,badr)
+                badpl = [i for i in np.arange(0,nplanets) if ra[i] in badr]
+                print(badpl)
+                for bad in np.arange(len(badpl)):
+                    print("Planet", badpl[bad], "at separation", badr[bad],  "is near annulus boundary", badb[bad])
+                
+                #don't KLIP if all planets are bad
+                if len(badpl)==nplanets:
+                    #assign all movement values with this annulus combo to nan
+                    PECube[:,:,:,:,acount,:] = np.nan
+                    print("All planets near boundary. Skipping KLIP for annuli = ", str(a))
+                    #break out of annuli loop before KLIPing
+                    acount+=1
+                    continue
 
         # used for indexing: keeps track of number of movement values that have been tested
         mcount = 0
@@ -448,10 +458,13 @@ def explore_params(path_to_files, outfile_name, iwa, klmodes, annuli_start, annu
                             writeData(snrmaps, hdr, a, m, s, snrmap = True, pre = 'snrmap_')
                             if verbose is True:
                                 print("Writing SNR maps to " + path_to_files + "_klip/")
-        
                 
                     scount+=1
                 mcount+=1                
+        if badpl!=None:
+            for bad in badpl:
+                print("removing values for planet", bad, ", annuli", acount, "as it is too close to a zone boundary")
+                PECube[:,:,:,bad,acount,:]*=np.nan
         acount+=1
     
     if verbose is True:        

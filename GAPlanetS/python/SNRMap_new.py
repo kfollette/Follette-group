@@ -291,7 +291,7 @@ def noisemap(indiv, planets, fwhm, method='stdev', returnmean=False):
 
 
 
-def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveOutput = True, outputName=False, submean=False, ctrlrad=30, method = 'all', checkmask=False, makenoisemap=False, sigma = 5, verbose = False):
+def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveOutput = True, outputName=False, submean=False, ctrlrad=30, method = 'all', checkmask=False, makenoisemap=False, makemeanmap=False, sigma = 5, verbose = False):
     """
     creates signal to noise ratio map of image.
     
@@ -381,6 +381,10 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
         noises = np.ones((nmethods,kldim,ydim,xdim))
         noise = np.ones((ydim, xdim))
 
+    if makemeanmap == True:
+        meanmaps = np.ones((nmethods,kldim,ydim,xdim))
+        means = np.ones((ydim, xdim))
+
     #pull values from planets needed for spurious pixels at same radius counts
     if planets != False:
         rads, PAs, wid = planets
@@ -440,6 +444,9 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                         if makenoisemap == True:
                             noise[x][y] = NoiseMap[radius]
 
+                        if makemeanmap ==True:
+                            means[x][y] = MeanMap[radius]
+
                     #if no noise value can be calculated, pixel is given a nan value
                     except:
                         indiv[x][y] = np.nan
@@ -496,6 +503,9 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                 if makenoisemap==True:
                     noises[methodctr, s,:,:]=noise
 
+                if makemeanemap==True:
+                    meanmaps[methodctr, s,:,:]=means
+
                 #calculate and store planet data
                 if planets != False:
                     for p in np.arange(nplanets):
@@ -528,6 +538,9 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
 
         if makenoisemap==True:
             fits.writeto(outname+'_noisemap.fits', noises, head, overwrite=True)
+
+        if makemeanmap==True:
+            fits.writeto(outname+'_meanmap.fits', meanmaps, head, overwrite=True)
 
     #returns final SNR map
     if planets != False:

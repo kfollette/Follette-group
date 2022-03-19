@@ -503,7 +503,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                 if makenoisemap==True:
                     noises[methodctr, s,:,:]=noise
 
-                if makemeanemap==True:
+                if makemeanmap==True:
                     meanmaps[methodctr, s,:,:]=means
 
                 #calculate and store planet data

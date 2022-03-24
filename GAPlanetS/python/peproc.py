@@ -115,9 +115,9 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, writefi
         writename = writestr+'_planetcollapse.fits'
         #quick hack for old PEs where planet dimension was 6th
         if oldpe==True:
-            pecube=np.mean(pecube,axis=5, keepdims=True)
+            pecube=np.nanmean(pecube,axis=5, keepdims=True)
         else:
-            pecube=np.mean(pecube,axis=3, keepdims=True)
+            pecube=np.nanmean(pecube,axis=3, keepdims=True)
         npldim=1
     if writefiles==True:
         fits.writeto(outdir+writename, pecube, pehead, overwrite=True)
@@ -1228,7 +1228,7 @@ def pull_dsets(false_dir, real_dir, out_dir, namestr='*',exceptstr = False, date
   return(dset_stringlist, rlist, flist)
 
 
-def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pklstr='*', overwrite=False, maxx=24, maxy=25, minx=0, miny=1):
+def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pklstr='*', overwrite=False, maxx=24, maxy=25, minx=0, miny=1, seppl=False):
   """
   process one dataset at a time, generating all possible klcombo, parametercombo pairs and save normalized difference
   stats and images in a dictionary
@@ -1294,10 +1294,10 @@ def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pkl
 
               try:
                 fake_metric_cube, fake_agg_cube, fake_ann_val, fake_movm_val, fake_metric_scores, fake_metric_fname = find_best_new(falsepe, kls, pedir=false_dir, writestr=False, writefiles=False, weights=list(mcombo), outdir=false_dir+'proc/', 
-                                                                                                                                            oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=False, separate_kls=sepkl, snrthresh=snt, 
+                                                                                                                                            oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt, 
                                                                                                                                             maxx=maxx, maxy=maxy, minx=minx, miny=miny)
                 real_metric_cube, real_agg_cube, real_ann_val, real_movm_val, real_metric_scores, real_metric_fname = find_best_new(realpe, kls, pedir=real_dir, writestr=False, writefiles=False, weights=list(mcombo), outdir=real_dir+'proc/', 
-                                                                                                                                            oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=False, separate_kls=sepkl, snrthresh=snt,
+                                                                                                                                            oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt,
                                                                                                                                             maxx=maxx, maxy=maxy, minx=minx, miny=miny) 
                 go=True  
 
@@ -1312,6 +1312,7 @@ def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pkl
               ##NORMALIZE TO 90th pctile AND SUBTRACT 10th pctile for each KL mode
               sig_diff=np.zeros((len(kls)))*np.nan
               sig_diff_wt=np.zeros((len(kls)))*np.nan
+
 
               for kl in np.arange(len(kls)):
                 fake_cube[-1,:,kl,:,:,:]=fake_cube[-1,:,kl,:,:,:]-np.nanpercentile(fake_cube[-1,:,kl,:,miny-1:maxy,minx:maxx+1],10)
@@ -1396,7 +1397,7 @@ def split_by_completeness(false_dir, real_dir, out_dir, namestr='*', pklstr='*',
 
     return(toproc, done)
 
-def batch_dset_proc(dset_stringlist, toproc, false_dir, real_dir, out_dir,  pklstr='*', overwrite=False, parallel=False, maxx=24, maxy=25, minx=0, miny=1):
+def batch_dset_proc(dset_stringlist, toproc, false_dir, real_dir, out_dir,  pklstr='*', overwrite=False, parallel=False, maxx=24, maxy=25, minx=0, miny=1, seppl=False):
 
     dsetlist, rlist, flist = toproc
 
@@ -1413,7 +1414,7 @@ def batch_dset_proc(dset_stringlist, toproc, false_dir, real_dir, out_dir,  pkls
     else:
         for i in np.arange(len(dset_stringlist)):
             print(i)
-            proc_one_dset(dsetlist[i],rlist[i],flist[i], false_dir, real_dir, out_dir,  pklstr=pklstr, overwrite=overwrite, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
+            proc_one_dset(dsetlist[i],rlist[i],flist[i], false_dir, real_dir, out_dir,  pklstr=pklstr, overwrite=overwrite, maxx=maxx, maxy=maxy, minx=minx, miny=miny, seppl=seppl)
     return()
 
 def compile_keys(out_dir, done, pklstr):
@@ -1914,7 +1915,7 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
                 ax3 = plt.Subplot(f, inner[2])
                 ax4 = plt.Subplot(f, inner[3])
                 
-                f1 = ax1.imshow(fake_cube[-1,0,0,0,:,:], cmap='magma', vmax=0, vmin=1, origin='lower left', alpha=1)
+                f1 = ax1.imshow(fake_cube[-1,0,0,0,:,:], cmap='magma', vmax=0, vmin=1, origin='lower', alpha=1)
                 if i==0:
                     ax1.set_title('Cont. False Planet ADQ (ADQ$_{CF}$)', size=12)
                 ax1.set_xlabel('movement')
@@ -1936,7 +1937,7 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
 
                 f.add_subplot(ax1)
 
-                f2 = ax2.imshow(real_cube[-1,0,0,0,:,:], cmap='magma', vmax=0, vmin=1, origin='lower left')
+                f2 = ax2.imshow(real_cube[-1,0,0,0,:,:], cmap='magma', vmax=0, vmin=1, origin='lower')
                 if i==0:
                     ax2.set_title(r'H$\alpha$ Real Object DQ (ADQ$_{HR}$)', size=12)
                 if i==4:
@@ -1963,7 +1964,7 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
 
                 f.add_subplot(ax2)
 
-                f3 = ax3.imshow(diff_wt_agg, cmap='coolwarm', vmin=-0.3, vmax=0.3, origin='lower left')
+                f3 = ax3.imshow(diff_wt_agg, cmap='coolwarm', vmin=-0.3, vmax=0.3, origin='lower')
                 if i==0:
                     ax3.set_title('Parameter Quality Difference', size=12)
                 if i==4:

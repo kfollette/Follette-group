@@ -1969,7 +1969,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 #find the cont fakes klip dir with paramexplore file
                 if haopt==True:
                     fakedir=full_fpath+'/dq_cuts/Line_'+dq_str+'_sliced_klip/'
-                if contopt==True:
+                elif contopt==True:
                     fakedir=full_fpath+'/dq_cuts/Cont_'+dq_str+'_sliced_klip/'
                 else:
                     fakepath=data_str+'fakes_redo/'

@@ -379,11 +379,13 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
 
     if makenoisemap == True:
         noises = np.ones((nmethods,kldim,ydim,xdim))
-        noise = np.ones((ydim, xdim))
+
+    noise = np.ones((ydim, xdim))
 
     if makemeanmap == True:
         meanmaps = np.ones((nmethods,kldim,ydim,xdim))
-        means = np.ones((ydim, xdim))
+
+    means = np.ones((ydim, xdim))
 
     #pull values from planets needed for spurious pixels at same radius counts
     if planets != False:
@@ -421,7 +423,22 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
             allplanetpix = 0
             notplanetpix = 0
             
-            # loops through all pixels in array
+            # loops through all pixels in array to make mean and noise maps
+            for x in range (xdim):
+                for y in range (ydim):
+                    #converts x/y indices to polar coordinates
+                    radius, angle = toPolar(x,y)
+                    try:
+                        noise[x][y] = NoiseMap[radius]
+                        means[x][y] = MeanMap[radius]
+                    except:
+                        noise[x][y] = np.nan
+                        means[x][y] = np.nan
+
+            #smooth these maps to prevent pixellation effects
+            noisesm = klip.nan_gaussian_filter(noise, 1)
+            meanssm = klip.nan_gaussian_filter(means, 1)
+
             for x in range (xdim):
                 for y in range (ydim):
                     #converts x/y indices to polar coordinates
@@ -437,15 +454,9 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                         else:
                             #subtract mean first if keyword set
                             if submean==True:
-                               indiv[x][y]-=MeanMap[radius]
+                               indiv[x][y]-=meanssm[x][y]
                                 
-                            indiv[x][y]/=NoiseMap[radius]
-
-                        if makenoisemap == True:
-                            noise[x][y] = NoiseMap[radius]
-
-                        if makemeanmap ==True:
-                            means[x][y] = MeanMap[radius]
+                            indiv[x][y]/=noisesm[x][y]
 
                     #if no noise value can be calculated, pixel is given a nan value
                     except:
@@ -501,10 +512,10 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                 if checkmask==True:
                     msks[s,:,:]=msk
                 if makenoisemap==True:
-                    noises[methodctr, s,:,:]=noise
+                    noises[methodctr, s,:,:]=noisesm
 
                 if makemeanmap==True:
-                    meanmaps[methodctr, s,:,:]=means
+                    meanmaps[methodctr, s,:,:]=meanssm
 
                 #calculate and store planet data
                 if planets != False:

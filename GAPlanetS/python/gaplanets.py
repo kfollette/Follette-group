@@ -1567,10 +1567,10 @@ def get_pe_df(dfname):
             df[name] = []
     return(df, df_cols)
 
-def add_to_pe_df(data_str, pedir, pename, kllist, weights=[1,1,1,1,1,1], pe_dfname='../../optimal_params.csv'):
+def add_to_pe_df(data_str, pedir, pename, kllist, weights=[1,1,1,1,1,1], pe_dfname='../../optimal_params.csv', innerann_nanok=True):
     df, df_cols =get_pe_df(pe_dfname)
     avgkl, stdevkl = collapsekl(pedir, pename, kllist)
-    snr_norm, nq_snr, stdev_norm, nq_stdev, spurpix, agg, ann_val, movm_val, metric_scores, avgSNR = pe.find_best_new(pedir, pename, kllist, weights=weights)
+    snr_norm, nq_snr, stdev_norm, nq_stdev, spurpix, agg, ann_val, movm_val, metric_scores, avgSNR = pe.find_best_new(pedir, pename, kllist, weights=weights, innerann_nanok=innerann_nanok)
     ind=np.where(agg == np.nanmax(agg))
     data_split=re.split('_',data_str)
     objname = data_split[0]
@@ -1804,7 +1804,7 @@ def grab_planet_specs(df,dset_path):
 def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5,
     klopt=False, ctrstopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=24, maxy=25, 
     minx=0, miny=1, skipdates=False, pldf=False, seppl=False, sepkl=False, timecoll='median',combochoice=None,
-    smooth=False, haopt=False, contopt=False, maskspec=None, submean=False, kluse=None):
+    smooth=False, haopt=False, contopt=False, maskspec=None, submean=False, kluse=None, innerann_nanok=True):
     
     thisdir=os.getcwd()
 
@@ -1999,7 +1999,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                  
                 #find peak for this set according to kl collapse mode in order to select optimal ann, movm
                 print("processing PE file", pefname, "with weights", wts, "and kl list", kllist_coll)
-                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
+                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxx=maxx, maxy=maxy, minx=minx, miny=miny, innerann_nanok=innerann_nanok)
 
                 ann = int(anns[0][0])
                 movm = int(movms[0][0])
@@ -2007,7 +2007,8 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
 
                 #run metric calculation for ALL kl modes so can select optimal kl
                 kllist = [1,2,3,4,5,10,20,50,100]     
-                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
+                print(pefname, pedir)
+                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxx=maxx, maxy=maxy, minx=minx, miny=miny, innerann_nanok=innerann_nanok)
 
 
                 #find kl mode with highest score at ann, movm

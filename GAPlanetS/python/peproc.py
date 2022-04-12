@@ -25,7 +25,8 @@ from time import sleep
 from datetime import date
 
 
-def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, writefiles=True, snrthresh=False, oldpe=False, separate_planets=False):
+def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, writefiles=True, snrthresh=False, oldpe=False, 
+    separate_planets=False, innerann_nanok=True):
     """
     Averages over the planet dimension of a parameter explorer file
 
@@ -55,6 +56,14 @@ def collapse_planets(pename, pedir='./', outdir='proc/', writestr=False, writefi
     nplanets=dims[3]
     pehead["NPLANET"]=nplanets
     pehead["PLSEP"]=separate_planets
+
+    if innerann_nanok==False:
+        #find cases where inner annulus is all nan and mask them
+        innernan_mask=np.ones((dims[0],dims[1],dims[2],dims[4],dims[5]))
+        innernan_mask[np.isfinite(pecube[:,:,:,0,:,:])==False]=np.nan
+        #apply to all planets
+        for p in np.arange(dims[-3]):
+            pecube[:,:,:,p,:,:]*=innernan_mask 
 
     #if snrthresh set, find values where peak pixel SNRs (slices 1/2) are below threshhold and replace with nans
     if (snrthresh != False):
@@ -221,7 +230,8 @@ def filter_nan_gaussian_conserving(arr, sigma):
     return gauss
 
 def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, weights=[1,1,1,1,1,1], outdir='proc/', snrthresh=False,
-    oldpe=False, debug=False, smt=3, snrmeth='all',separate_planets=False, separate_kls=False, verbose=False, maxy=25, maxx=24, minx=0, miny=1):
+    oldpe=False, debug=False, smt=3, snrmeth='all',separate_planets=False, separate_kls=False, verbose=False, maxy=25, maxx=24, minx=0, miny=1,
+    innerann_nanok=True):
     """
     collapses parameter explorer file and extracts the optimal parameter value
 
@@ -251,7 +261,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
         else:
             print("EXTRACTING PLANETS SEPARATELY")
 
-    pecube, pehead, plwritename, npldim = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, writestr=writestr, writefiles=writefiles, separate_planets=separate_planets)
+    pecube, pehead, plwritename, npldim = collapse_planets(pename, pedir=pedir, outdir=outdir, snrthresh=snrthresh, oldpe=oldpe, writestr=writestr, writefiles=writefiles, separate_planets=separate_planets, innerann_nanok=innerann_nanok)
 
     #EXTRACT KL MODES OR COLLAPSE
     if verbose==True:
@@ -491,7 +501,8 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             for metricind in np.arange(len(metriclist)):
                 #only sum if non-zero weight (otherwise nans in unweighted metrics will propagate)
                 if weights[metricind]>0:
-                    agg+=weights[metricind]*metriclist[metricind]
+                    wtind=weights[metricind]*metriclist[metricind]
+                    agg+=wtind
 
             metric_cube[6,:,k,p,:,:]=agg
             agg_cube[k,p,:,:]=agg
@@ -540,7 +551,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1], mode='Lin
                 snrmeth='stdev', snrthresh=False, outdir='proc/', xname='', 
                 datadir='../', header=True, smt=3, savefig=True,
                 hpval=None, collmode=None, owa=None, oldpe=False, calflux=False, 
-                separate_planets=False, separate_kls=False):
+                separate_planets=False, separate_kls=False, innerann_nanok=True):
     """
     Collapses ALL parameter explorer files in a given directory according to the specified combination of KL modes,
     metric weights, and SNR computation method and runs the corresponding KLIP reductions for that set of parameters
@@ -681,7 +692,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1], mode='Lin
 
         ## extract best parameters according to weights and methods
         metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = find_best_new(pename, kllist, pedir=pedir, outdir=outdir, \
-            writestr=writename, weights=wts, snrmeth=snrmeth, smt=smt, snrthresh=snrthresh, separate_planets=separate_planets, separate_kls=separate_kls)
+            writestr=writename, weights=wts, snrmeth=snrmeth, smt=smt, snrthresh=snrthresh, separate_planets=separate_planets, separate_kls=separate_kls, innerann_nanok=innerann_nanok)
 
         d["pe{0}ann".format(i+1)]=ann_val
         d["pe{0}movm".format(i+1)]=movm_val
@@ -692,7 +703,7 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1], mode='Lin
 
         #save visualization of the metrics for this PE explorer
         if savefig==True:
-            paramexplore_fig(pename, kllist, pedir=pedir, outdir=outdir, weights=wts, snrmeth=snrmeth, smt=smt)
+            paramexplore_fig(pename, kllist, pedir=pedir, outdir=outdir, weights=wts, snrmeth=snrmeth, smt=smt, innerann_nanok=innerann_nanok)
     
         #define image input direcotries for KLIP based on PE filename
         haindir=d["pe{0}fpath".format(i+1)]+'dq_cuts/'+'Line_'+d["pe{0}cut".format(i+1)]+'_sliced/'
@@ -760,14 +771,14 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1], mode='Lin
                         d["pe{0}haklipim".format(i+1)]=klcube
     return(d)
 
-def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1], snrmeth='all', smt=3, separate_planets=False, separate_kls=False):
+def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1], snrmeth='all', smt=3, separate_planets=False, separate_kls=False, innerann_nanok=True):
     
     """
     
     """
 
     raw_metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = \
-        find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt, separate_planets=separate_planets, separate_kls=separate_kls)
+        find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt, separate_planets=separate_planets, separate_kls=separate_kls, innerann_nanok=innerann_nanok)
 
     #print(ann_val,movm_val, agg_cube.shape, raw_metric_cube.shape)
 
@@ -1228,7 +1239,7 @@ def pull_dsets(false_dir, real_dir, out_dir, namestr='*',exceptstr = False, date
   return(dset_stringlist, rlist, flist)
 
 
-def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pklstr='*', overwrite=False, maxx=24, maxy=25, minx=0, miny=1, seppl=False):
+def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pklstr='*', overwrite=False, maxx=24, maxy=25, minx=0, miny=1, seppl=False, innerann_nanok=True):
   """
   process one dataset at a time, generating all possible klcombo, parametercombo pairs and save normalized difference
   stats and images in a dictionary
@@ -1295,10 +1306,10 @@ def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pkl
               try:
                 fake_metric_cube, fake_agg_cube, fake_ann_val, fake_movm_val, fake_metric_scores, fake_metric_fname = find_best_new(falsepe, kls, pedir=false_dir, writestr=False, writefiles=False, weights=list(mcombo), outdir=false_dir+'proc/', 
                                                                                                                                             oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt, 
-                                                                                                                                            maxx=maxx, maxy=maxy, minx=minx, miny=miny)
+                                                                                                                                            maxx=maxx, maxy=maxy, minx=minx, miny=miny, innerann_nanok=innerann_nanok)
                 real_metric_cube, real_agg_cube, real_ann_val, real_movm_val, real_metric_scores, real_metric_fname = find_best_new(realpe, kls, pedir=real_dir, writestr=False, writefiles=False, weights=list(mcombo), outdir=real_dir+'proc/', 
                                                                                                                                             oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt,
-                                                                                                                                            maxx=maxx, maxy=maxy, minx=minx, miny=miny) 
+                                                                                                                                            maxx=maxx, maxy=maxy, minx=minx, miny=miny, innerann_nanok=innerann_nanok) 
                 go=True  
 
               except:
@@ -1397,14 +1408,14 @@ def split_by_completeness(false_dir, real_dir, out_dir, namestr='*', pklstr='*',
 
     return(toproc, done)
 
-def batch_dset_proc(dset_stringlist, toproc, false_dir, real_dir, out_dir,  pklstr='*', overwrite=False, parallel=False, maxx=24, maxy=25, minx=0, miny=1, seppl=False):
+def batch_dset_proc(dset_stringlist, toproc, false_dir, real_dir, out_dir,  pklstr='*', overwrite=False, parallel=False, maxx=24, maxy=25, minx=0, miny=1, seppl=False, innerann_nanok=True):
 
     dsetlist, rlist, flist = toproc
 
     if parallel==True:
         threadlist = []
         for k in np.arange(len(dsetlist)):
-            t = threading.Thread(target=proc_one_dset,args=(dsetlist[k],rlist[k],flist[k],false_dir, real_dir, out_dir,  pklstr, overwrite, maxx, maxy, minx, miny))
+            t = threading.Thread(target=proc_one_dset,args=(dsetlist[k],rlist[k],flist[k],false_dir, real_dir, out_dir,  pklstr, overwrite, maxx, maxy, minx, miny, innerann_nanok))
             threadlist.append(t)
             t.start()
         
@@ -1414,7 +1425,7 @@ def batch_dset_proc(dset_stringlist, toproc, false_dir, real_dir, out_dir,  pkls
     else:
         for i in np.arange(len(dset_stringlist)):
             print(i)
-            proc_one_dset(dsetlist[i],rlist[i],flist[i], false_dir, real_dir, out_dir,  pklstr=pklstr, overwrite=overwrite, maxx=maxx, maxy=maxy, minx=minx, miny=miny, seppl=seppl)
+            proc_one_dset(dsetlist[i],rlist[i],flist[i], false_dir, real_dir, out_dir,  pklstr=pklstr, overwrite=overwrite, maxx=maxx, maxy=maxy, minx=minx, miny=miny, seppl=seppl, innerann_nanok=innerann_nanok)
     return()
 
 def compile_keys(out_dir, done, pklstr):
@@ -1812,7 +1823,7 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
         plt.show()
     return(wtslist, klslist)
 
-def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*', exceptstr=False, wts=[1,1,1,1,1,1], kls=[1,2,3,4,5,10,20,50,100], datestr=False, sepkl=False, seppl=False, snt=False, makeplot=True, writefits=False, maxx=24, maxy=25, minx=0, miny=1):
+def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*', exceptstr=False, wts=[1,1,1,1,1,1], kls=[1,2,3,4,5,10,20,50,100], datestr=False, sepkl=False, seppl=False, snt=False, makeplot=True, writefits=False, maxx=24, maxy=25, minx=0, miny=1, innerann_nanok=True):
 
     #find all completed pe combos
     dset_stringlist, reallist, falselist = pull_dsets(false_dir, real_dir, out_dir, namestr=namestr, exceptstr=exceptstr)
@@ -1875,9 +1886,9 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
 
         #compute the aggregate parameter quality metric for the real and fake data
         if match==True:
-            fake_metric_cube, fake_agg_cube, fake_ann_val, fake_movm_val, fake_metric_scores, fake_metric_fname = find_best_new(falselist[falseind], kls, pedir=false_dir, writestr=False, writefiles=False, weights=wts, outdir=false_dir+'proc/', 
+            fake_metric_cube, fake_agg_cube, fake_ann_val, fake_movm_val, fake_metric_scores, fake_metric_fname = find_best_new(falselist[falseind], kls, pedir=false_dir, writestr=False, writefiles=False, weights=wts, outdir=false_dir+'proc/', innerann_nanok=innerann_nanok,
                                                                                                                                 oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
-            real_metric_cube, real_agg_cube, real_ann_val, real_movm_val, real_metric_scores, real_metric_fname = find_best_new(reallist[i], kls, pedir=real_dir, writestr=False, writefiles=False, weights=wts, outdir=real_dir+'proc/', 
+            real_metric_cube, real_agg_cube, real_ann_val, real_movm_val, real_metric_scores, real_metric_fname = find_best_new(reallist[i], kls, pedir=real_dir, writestr=False, writefiles=False, weights=wts, outdir=real_dir+'proc/', innerann_nanok=innerann_nanok,
                                                                                                                                 oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt, maxx=maxx, maxy=maxy, minx=minx, miny=miny)
             ##NORMALIZE TO MAX AND SUBTRACT MIN
             fake_cube = fake_metric_cube

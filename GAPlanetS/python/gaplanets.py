@@ -320,7 +320,7 @@ def make_prefix(data_str, wl, cut):
 def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numann=3, movm=4, KLlist=[10], IWA=0,
                   contrast=1e-2, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                   highpass=True, ghost=False, savefig=False, overwrite=False, iterations=3,rdx_params_dfname='rdx_params.csv',
-                  timecoll='median', usecutfwhm=False):
+                  timecoll='median', usecutfwhm=False, sep=False):
     """
     PURPOSE
     Injects false planets separated by the measured fwhm of the dataset in radius and the clockang parameter
@@ -508,8 +508,10 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             dataset.input[i, :, :] /= starpeak[i]
 
         # compute number of planets to inject
-        first = IWA + fwhm*0.5
-        n_planets = (dataset.input.shape[1] / 2. - IWA) / fwhm * 2
+        if sep==False:
+            sep = int(fwhm)/2
+        first = IWA + sep/2
+        n_planets = (dataset.input.shape[1] / 2. - IWA) / sep 
         #stay away from very outer part of image
         n_planets = int(n_planets)-2
         if debug == True:
@@ -517,7 +519,6 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
         # calculates separations (in pixels) where planets will be injected
         thrpt_seps = []
-        sep = int(fwhm)/2
         thissep=first
         for i in np.arange(n_planets):
             thrpt_seps.append(thissep)
@@ -1015,7 +1016,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
 
 def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90], record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                    contrast=1e-2, numann=3, movm=4, KLlist=[10], IWA=0, savefig=False, ghost=False, rdx_params_dfname='rdx_params.csv', debug=False,
-                   iterations=3, theta=0., overwrite=False, highpass=True, clockang=85, usecutfwhm=False):
+                   iterations=3, theta=0., overwrite=False, highpass=True, clockang=85, usecutfwhm=False, sep=False):
     """
     PURPOSE
     loop through data quality cuts and compile corrected contrast curves into single array
@@ -1071,7 +1072,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
                                                                     numann=numann, movm=movm, highpass=highpass,
                                                                     KLlist=KLlist, IWA=IWA, rdx_params_dfname=rdx_params_dfname, 
                                                                     debug=debug, iterations=iterations, overwrite=overwrite,
-                                                                    usecutfwhm=usecutfwhm)
+                                                                    usecutfwhm=usecutfwhm, sep=sep)
 
         if (os.path.exists(outputdir + namestr + '_contrasts.fits')) and (overwrite==False):
             print ('found existing contrast curve', outputdir + namestr + '_contrasts.fits')
@@ -1804,7 +1805,7 @@ def grab_planet_specs(df,dset_path):
 def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5,
     klopt=False, ctrstopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=24, maxy=25, 
     minx=0, miny=1, skipdates=False, pldf=False, seppl=False, sepkl=False, timecoll='median',combochoice=None,
-    smooth=False, haopt=False, contopt=False, maskspec=None, submean=False, kluse=None, innerann_nanok=True):
+    smooth=False, haopt=False, contopt=False, maskspec=None, submean=False, kluse=None, innerann_nanok=True, sep=False):
     
     thisdir=os.getcwd()
 
@@ -2064,7 +2065,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 thrpt_out, zb, df2, dataset_prefix = compute_thrpt(data_str, wl, cut, outputdir = outdir+data_str+'/', numann=ann, movm=movm, KLlist=[kl], IWA=IWA, 
                                                                     contrast=contrast, theta=0., clockang=135, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                                                                     ghost=ghost, savefig=True, iterations=3,rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 
-                                                                    highpass=hpval, overwrite=overwrite, timecoll=timecoll, usecutfwhm=True)
+                                                                    highpass=hpval, overwrite=overwrite, timecoll=timecoll, usecutfwhm=True, sep=sep)
             
                 contrast_out, df2, OWA = make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix,  outputdir=outdir+data_str+'/', 
                                                                 numann=ann, movm=movm, KLlist=[kl], IWA=IWA, rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 

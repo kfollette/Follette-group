@@ -383,16 +383,16 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     # to be added to baseline info
     cols = ["ctrst_fkpl", "tpt ann", "tpt movm", "tpt KL", "tpt IWA", "tpt hp", "tpt theta", "tpt clockang", "tpt iters","ghost", "uniq rdx str"]
 
+    #if only peakcut columns exist, add the relevant new ones
+    if "uniq rdx str" not in df.columns:
+        for c in cols:
+            df[c]=np.nan
+
     #check whether thisDQ cut has been run
     if True in (df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["nims"]].values > 0):
         #find locations where this is true
         idx = df.index[(df["Dataset"]==data_str) &  (df["pctcut"]==cut)].tolist()
         print('this dataset and cut has ', len(idx), 'entries already')
-
-        #if only peakcut columns exist, add the relevant new ones
-        if "uniq rdx str" not in df.columns:
-            for c in cols:
-                df[c]=np.nan
                 
         ##are any of them filled in? 
         thesedata_strs = df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["uniq rdx str"]].values
@@ -757,7 +757,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
                     
         fits.writeto(tpt_fname, thrpt_out, header=head, overwrite=True)
 
-        df.to_csv(rdx_params_dfname, index=False)
+    df.to_csv(rdx_params_dfname, index=False)
 
     return (thrpt_out, zone_boundaries, df, dataset_prefix)
 

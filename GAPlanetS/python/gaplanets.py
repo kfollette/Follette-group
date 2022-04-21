@@ -29,6 +29,7 @@ import matplotlib.pylab as pl
 import pickle
 from matplotlib import rc
 import accmodels as am
+from matplotlib import colors
 
 rc("text", usetex=True)
 plt.rcParams.update(plt.rcParamsDefault)
@@ -1568,10 +1569,10 @@ def get_pe_df(dfname):
             df[name] = []
     return(df, df_cols)
 
-def add_to_pe_df(data_str, pedir, pename, kllist, weights=[1,1,1,1,1,1], pe_dfname='../../optimal_params.csv', innerann_nanok=True):
+def add_to_pe_df(data_str, pedir, pename, kllist, weights=[1,1,1,1,1,1], pe_dfname='../../optimal_params.csv', innerann_nanok=True, highmovmmask=False):
     df, df_cols =get_pe_df(pe_dfname)
     avgkl, stdevkl = collapsekl(pedir, pename, kllist)
-    snr_norm, nq_snr, stdev_norm, nq_stdev, spurpix, agg, ann_val, movm_val, metric_scores, avgSNR = pe.find_best_new(pedir, pename, kllist, weights=weights, innerann_nanok=innerann_nanok)
+    snr_norm, nq_snr, stdev_norm, nq_stdev, spurpix, agg, ann_val, movm_val, metric_scores, avgSNR = pe.find_best_new(pedir, pename, kllist, weights=weights, innerann_nanok=innerann_nanok, highmovmmask=highmovmmask)
     ind=np.where(agg == np.nanmax(agg))
     data_split=re.split('_',data_str)
     objname = data_split[0]
@@ -1805,7 +1806,7 @@ def grab_planet_specs(df,dset_path):
 def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5,
     klopt=False, ctrstopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=24, maxy=25, 
     minx=0, miny=1, skipdates=False, pldf=False, seppl=False, sepkl=False, timecoll='median',combochoice=None,
-    smooth=False, haopt=False, contopt=False, maskspec=None, submean=False, kluse=None, innerann_nanok=True, sep=False):
+    smooth=False, haopt=False, contopt=False, maskspec=None, submean=False, kluse=None, innerann_nanok=True, highmovmmask=False, sep=False):
     
     thisdir=os.getcwd()
 
@@ -1987,6 +1988,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                         fakedir=fakedir[0]
                     
                 pefile = glob.glob(fakedir+'/param*.fits')
+                
                 if len(pefile) > 1:
                     print('more than one pefile')
                 else:
@@ -2000,7 +2002,13 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                  
                 #find peak for this set according to kl collapse mode in order to select optimal ann, movm
                 print("processing PE file", pefname, "with weights", wts, "and kl list", kllist_coll)
-                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxx=maxx, maxy=maxy, minx=minx, miny=miny, innerann_nanok=innerann_nanok)
+                
+                if ctrstopt==True:
+                    ctrstreq=True
+                else:
+                    ctrstreq=False
+                
+                cube, agg_cube, anns, movms, scores, mfname = pe.find_best_new(pefname,kllist_coll,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl, separate_kls=sepkl, maxx=maxx, maxy=maxy, minx=minx, miny=miny, innerann_nanok=innerann_nanok, highmovmmask=highmovmmask, ctrstreq=ctrstreq)
 
                 ann = int(anns[0][0])
                 movm = int(movms[0][0])
@@ -2009,7 +2017,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 #run metric calculation for ALL kl modes so can select optimal kl
                 kllist = [1,2,3,4,5,10,20,50,100]     
                 print(pefname, pedir)
-                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxx=maxx, maxy=maxy, minx=minx, miny=miny, innerann_nanok=innerann_nanok)
+                cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxx=maxx, maxy=maxy, minx=minx, miny=miny, innerann_nanok=innerann_nanok, highmovmmask=highmovmmask, ctrstreq=ctrstreq)
 
 
                 #find kl mode with highest score at ann, movm
@@ -2026,6 +2034,9 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                     df.loc[df["Path"]==dset_path,"opt kl"]=kl
                 elif ctrstopt==True:
                     peuse=fits.getdata(pedir+pefname)
+                    #average in planet dimension
+                    if seppl==False:
+                        peuse=np.nanmean(peuse,axis=3, keepdims=True) 
                     pk=np.zeros((len(kllist)))
                     for k in np.arange(len(kllist)):
                         #subtract 1 from ann to index from 0. note assumes step size is 1
@@ -2186,7 +2197,7 @@ def add_dsetcombos(dofds,dupobj,dup_dstrings, dupyr):
         #print(combod.keys())
     return(dofds)  
 
-def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
+def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75, cbpower=1):
     """
 
     """
@@ -2236,13 +2247,13 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75):
             indivobj_fig(thisd["linesnr"][0,0,:,:],thisd["contsnr"][0,0,:,:],thisd["sdisnr"][0,0,:,:], thisd["scale"],
                 thisd["prefix"]+'_SNR_'+smtstr,IWA=thisd["IWA"], smooth=smt, secondscale=1,secondscaleim=thisd["sdisnr2"][0,0,:,:],
                 snr=True, title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], 
-                returnfig=True, ax=(f1, inner, i, totaldsets), markctrl=int(thisd["ctrlrad"]), fwhm=int(thisd["fwhm"]))
+                returnfig=True, ax=(f1, inner, i, totaldsets), markctrl=int(thisd["ctrlrad"]), fwhm=int(thisd["fwhm"]),cbpower=cbpower)
         else:
             indivobj_fig(thisd["linecube"][0,:,:],thisd["contcube"][0,:,:],thisd["sdicube"][0,:,:], thisd["scale"],
                 thisd["prefix"],IWA=thisd["IWA"], secondscale=1,secondscaleim=thisd["sdicube2"][0,:,:], 
                 title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], 
                 plcand=thisd["plcand"], returnfig=True, ax=(f1,inner, i, totaldsets), 
-                markctrl=int(thisd["ctrlrad"]), fwhm=int(thisd["fwhm"]))
+                markctrl=int(thisd["ctrlrad"]), fwhm=int(thisd["fwhm"]),cbpower=cbpower)
 
     plt.savefig(str(d["outdir"])+str(d["objlist"])+str(d["theseparams"])+'.png')
 
@@ -2535,7 +2546,7 @@ def plotdict_ctrst(d, maxsep=1,to_mdot=None):
     ax.legend(frameon=False, fontsize=10)
     return()
 
-def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, returnfig=False, ax=None, markctrl=None, fwhm=None):
+def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, returnfig=False, ax=None, markctrl=None, fwhm=None, cbpower=1):
     """
     creates a three panel figure with line, continuum and SDI images
 
@@ -2637,9 +2648,9 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     titlestyle=dict(size=16)
 
     #ax1 = ax[0]
-    im1 = ax1.imshow(lineim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    im2 = ax2.imshow(contim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
-    im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
+    im1 = ax1.imshow(lineim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma', norm=colors.PowerNorm(gamma=cbpower))
+    im2 = ax2.imshow(contim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma', norm=colors.PowerNorm(gamma=cbpower))
+    im3 = ax3.imshow(sdiim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma', norm=colors.PowerNorm(gamma=cbpower))
  
     fontprops = fm.FontProperties(size=16)
     if stampsz<250:
@@ -2666,7 +2677,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     ax3.text(0.58,0.93, 'scale='+'{:.2f}'.format(scale), transform=ax3.transAxes,**labelstyle)
 
     if secondscale!=False:
-        im4 = ax4.imshow(secondscaleim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma')
+        im4 = ax4.imshow(secondscaleim[low:high, low:high], vmin=minm, vmax=linemax, origin='lower', cmap='magma', norm=colors.PowerNorm(gamma=cbpower))
         if num==0:
             ax4.set_title(r'ASDI Image (H$\alpha$-Cont)',**titlestyle)
         ax4.text(0.58,0.93, 'scale='+'{:.2f}'.format(secondscale), transform=ax4.transAxes,**labelstyle)

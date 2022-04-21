@@ -1299,79 +1299,83 @@ def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pkl
       klchoice = np.multiply(kllist,list(klcombo))
       kls = [int(kl) for kl in klchoice if (np.isnan(kl)==False)]
       
-      metricpossible = it.product((0,1), repeat=6)
+      metricpossible = it.product((0,1), repeat=4)
       
       for mcombo in metricpossible:
 
-        if np.nansum(mcombo)>=1:
-          go=True
-          
           #will break on false pos only (degenerate)
-          if (np.sum(mcombo)==1) and (mcombo[4]==1):
-            skip+=1
-            go = False
+          #if (np.sum(mcombo)==1) and (mcombo[4]==1):
+            #skip+=1
+            #go = False
 
           #stdev across kl modes has no meaning if nkl !>1 skip all metrics
           #elif (np.nansum(klcombo)<3) and (np.sum(mcombo[4:6])>=1):
             #skip+=1
             #go = False
 
-          else:
+          #else:
 
-            if go==True:
+        if np.nansum(mcombo)>=1:
 
-              try:
-                fake_metric_cube, fake_agg_cube, fake_ann_val, fake_movm_val, fake_metric_scores, fake_metric_fname = find_best_new(falsepe, kls, pedir=false_dir, writestr=False, writefiles=False, weights=list(mcombo), outdir=false_dir+'proc/', 
-                                                                                                                                            oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt, 
-                                                                                                                                            maxx=maxx, maxy=maxy, minx=minx, miny=miny, innerann_nanok=innerann_nanok)
-                real_metric_cube, real_agg_cube, real_ann_val, real_movm_val, real_metric_scores, real_metric_fname = find_best_new(realpe, kls, pedir=real_dir, writestr=False, writefiles=False, weights=list(mcombo), outdir=real_dir+'proc/', 
-                                                                                                                                            oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt,
-                                                                                                                                            maxx=maxx, maxy=maxy, minx=minx, miny=miny, innerann_nanok=innerann_nanok) 
-                go=True  
+          #add zero weights for final two metrics
+          mcombolist=list(mcombo)
+          mcombolist.append(0)
+          mcombolist.append(0)
 
-              except:
-                go=False
-                skip2+=1 
+          try:
+            fake_metric_cube, fake_agg_cube, fake_ann_val, fake_movm_val, fake_metric_scores, fake_metric_fname = find_best_new(falsepe, kls, pedir=false_dir, writestr=False, writefiles=False, weights=mcombolist, outdir=false_dir+'proc/', 
+                                                                                                                                        oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt, 
+                                                                                                                                        maxx=maxx, maxy=maxy, minx=minx, miny=miny, innerann_nanok=innerann_nanok, highmovmmask=highmovmmask)
+            real_metric_cube, real_agg_cube, real_ann_val, real_movm_val, real_metric_scores, real_metric_fname = find_best_new(realpe, kls, pedir=real_dir, writestr=False, writefiles=False, weights=mcombolist, outdir=real_dir+'proc/', 
+                                                                                                                                        oldpe=False, debug=False, smt=3, snrmeth='stdev',separate_planets=seppl, separate_kls=sepkl, snrthresh=snt,
+                                                                                                                                        maxx=maxx, maxy=maxy, minx=minx, miny=miny, innerann_nanok=innerann_nanok, highmovmmask=highmovmmask) 
+            go=True  
 
-            if go==True:
-              fake_cube = fake_metric_cube
-              real_cube = real_metric_cube
+          except:
+            go=False
+            skip2+=1 
+        else:
+          go=False
 
-              ##NORMALIZE TO 90th pctile AND SUBTRACT 10th pctile for each KL mode
-              sig_diff=np.zeros((len(kls)))*np.nan
-              sig_diff_wt=np.zeros((len(kls)))*np.nan
+        if go==True:
+          fake_cube = fake_metric_cube
+          real_cube = real_metric_cube
+
+          ##NORMALIZE TO 90th pctile AND SUBTRACT 10th pctile for each KL mode
+          sig_diff=np.zeros((len(kls)))*np.nan
+          sig_diff_wt=np.zeros((len(kls)))*np.nan
 
 
-              for kl in np.arange(len(kls)):
-                fake_cube[-1,:,kl,:,:,:]=fake_cube[-1,:,kl,:,:,:]-np.nanpercentile(fake_cube[-1,:,kl,:,miny-1:maxy,minx:maxx+1],10)
-                real_cube[-1,:,kl,:,:,:]=real_cube[-1,:,kl,:,:,:]-np.nanpercentile(real_cube[-1,:,kl,:,miny-1:maxy,minx:maxx+1],10)
-                        
-                #normalize to max
-                fake_cube[-1,:,kl,:,:,:]=fake_cube[-1,:,kl,:,:,:]/np.nanpercentile(fake_cube[-1,:,kl,:,miny-1:maxy,minx:maxx+1],90)
-                real_cube[-1,:,kl,:,:,:]=real_cube[-1,:,kl,:,:,:]/np.nanpercentile(real_cube[-1,:,kl,:,miny-1:maxy,minx:maxx+1],90)
-                                  
-                diff = fake_cube-real_cube
-                #weight it by the normalized aggregate metric (downweights low SNR regions)
-                diff_wt = diff*fake_cube[-1,:,kl,:,:,:]
+          for kl in np.arange(len(kls)):
+            fake_cube[-1,:,kl,:,:,:]=fake_cube[-1,:,kl,:,:,:]-np.nanpercentile(fake_cube[-1,:,kl,:,miny-1:maxy,minx:maxx+1],10)
+            real_cube[-1,:,kl,:,:,:]=real_cube[-1,:,kl,:,:,:]-np.nanpercentile(real_cube[-1,:,kl,:,miny-1:maxy,minx:maxx+1],10)
+                    
+            #normalize to max
+            fake_cube[-1,:,kl,:,:,:]=fake_cube[-1,:,kl,:,:,:]/np.nanpercentile(fake_cube[-1,:,kl,:,miny-1:maxy,minx:maxx+1],90)
+            real_cube[-1,:,kl,:,:,:]=real_cube[-1,:,kl,:,:,:]/np.nanpercentile(real_cube[-1,:,kl,:,miny-1:maxy,minx:maxx+1],90)
+                              
+            diff = fake_cube-real_cube
+            #weight it by the normalized aggregate metric (downweights low SNR regions)
+            diff_wt = diff*fake_cube[-1,:,kl,:,:,:]
 
-                #differences in metric score for real planet at fake planet peak
-                sig_diff[kl] = diff[-1,0,kl,0,int(fake_ann_val[kl][0]-1),int(fake_movm_val[kl][0])]
-                sig_diff_wt[kl] = diff_wt[-1,0,kl,0,int(fake_ann_val[kl][0]-1),int(fake_movm_val[kl][0])]
-                
-              #kl x ann x movm grids of aggregate param qual metric 
-              diff_wt_agg = diff_wt[-1,0,:,0,:,:]  
-              diff_agg = diff[-1,0,:,0,:,:]
+            #differences in metric score for real planet at fake planet peak
+            sig_diff[kl] = diff[-1,0,kl,0,int(fake_ann_val[kl][0]-1),int(fake_movm_val[kl][0])]
+            sig_diff_wt[kl] = diff_wt[-1,0,kl,0,int(fake_ann_val[kl][0]-1),int(fake_movm_val[kl][0])]
+            
+          #kl x ann x movm grids of aggregate param qual metric 
+          diff_wt_agg = diff_wt[-1,0,:,0,:,:]  
+          diff_agg = diff[-1,0,:,0,:,:]
 
-              #avg metric score diffs across KL mode
-              sig_diff_avg = np.mean(sig_diff)
-              sig_diff_wt_avg = np.mean(sig_diff_wt)
+          #avg metric score diffs across KL mode
+          sig_diff_avg = np.mean(sig_diff)
+          sig_diff_wt_avg = np.mean(sig_diff_wt)
 
-              #difference in metric score at fake planet peak
-              coll_string = dset_string+'_wts'+''.join([str(x) for x in mcombo])+'_kls'+''.join([str(x) if str(x)=='1' else '0' for x in list(klcombo)])+'_sepkl'+str(sepkl)+'_snthresh'+str(snt)
-              dtn[coll_string]=(np.nansum(diff_wt_agg[:,miny-1:maxy,minx:maxx+1]), np.nanstd(diff_wt_agg[:,miny-1:maxy,minx:maxx+1]), np.nanmedian(diff_wt_agg[:,miny-1:maxy,minx:maxx+1]), sig_diff_wt_avg)
-              dtn2[coll_string]=(np.nansum(diff_agg[:,miny-1:maxy,minx:maxx+1]), np.nanstd(diff_agg[:,miny-1:maxy,minx:maxx+1]), np.nanmedian(diff_agg[:,miny-1:maxy,minx:maxx+1]), sig_diff_avg) 
-              
-              j+=1
+          #difference in metric score at fake planet peak
+          coll_string = dset_string+'_wts'+''.join([str(x) for x in mcombolist])+'_kls'+''.join([str(x) if str(x)=='1' else '0' for x in list(klcombo)])+'_sepkl'+str(sepkl)+'_snthresh'+str(snt)
+          dtn[coll_string]=(np.nansum(diff_wt_agg[:,miny-1:maxy,minx:maxx+1]), np.nanstd(diff_wt_agg[:,miny-1:maxy,minx:maxx+1]), np.nanmedian(diff_wt_agg[:,miny-1:maxy,minx:maxx+1]), sig_diff_wt_avg)
+          dtn2[coll_string]=(np.nansum(diff_agg[:,miny-1:maxy,minx:maxx+1]), np.nanstd(diff_agg[:,miny-1:maxy,minx:maxx+1]), np.nanmedian(diff_agg[:,miny-1:maxy,minx:maxx+1]), sig_diff_avg) 
+          
+          j+=1
         else:
           #print('skipping zero sum!', mcombo)
           continue
@@ -1464,25 +1468,23 @@ def compile_keys(out_dir, done, pklstr):
     for klcombo in klpossible:
       if np.nansum(klcombo)>=1:
         j=0
-        metricpossible = it.product((0,1), repeat=6)
+        metricpossible = it.product((0,1), repeat=4)
         for mcombo in metricpossible:
+
           if np.sum(mcombo)>=1:
-            test = list(mcombo)
             #will break on false pos only (degenerate)
-            if (np.sum(mcombo)==1) and (test[4]==1):
-              skip+=1
+            #if (np.sum(mcombo)==1) and (test[4]==1):
+              #skip+=1
             #stdev has no meaning if nkl !>2 skip all metrics weighting this
             #elif (np.nansum(klcombo)<2) and (np.sum(test[4:6])>=1):
               #skip+=1         
-            else:
-              if np.sum(mcombo)==0:
-                print('WTF')
-              i+=1
-              j+=1
+            #else:
+            i+=1
+            j+=1
           else:
             continue
         k+=1
-    print('skipped', skip)
+    #print('skipped', skip)
     print('total possible combos:', i)
     print('total metric combos:', j)
     print('total kl combos:', k)
@@ -1523,14 +1525,14 @@ def compute_bulk_diagnostics(current_keys, pklstr, done, out_dir):
     #set up empty arrays to fill
     #dimensions are: 0) keys per dataset, 1) datasets, number of metrics, number of kls
     #for collapsing by kl or metric
-    wt_sum_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
-    sum_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
-    wt_std_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
-    std_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
-    wt_med_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
-    med_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
-    wt_mdiff_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
-    mdiff_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    wt_sum_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
+    sum_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
+    wt_std_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
+    std_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
+    wt_med_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
+    med_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
+    wt_mdiff_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
+    mdiff_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
 
 
     p=0 #dataset counter
@@ -1548,7 +1550,7 @@ def compute_bulk_diagnostics(current_keys, pklstr, done, out_dir):
         key_split  = key.split('_')
         #pull out parameter weights
         key_wts = key_split[2].split('wts')
-        wt_list = [int(x) if int(x)==1 else np.nan for x in key_wts[1]]
+        wt_list = [int(x) if int(x)==1 else np.nan for x in key_wts[1][:4]]
 
         #pull out kllist
         key_kls = key_split[3].split('kls')
@@ -1611,9 +1613,9 @@ def diaghists_bymetric(diagnostics):
     sum_matrix, std_matrix, med_matrix, mdiff_matrix = diagnostics
 
     ##plot histograms for the different metrics individually
-    ms = ['Peak SNR','NQ peak SNR','Avg SNR','NQ avg SNR','stdev across KL','NQ stdev', 'spur pix', 'contrast']
+    ms = ['Peak SNR','NQ peak SNR','Avg SNR','NQ avg SNR'] #,'stdev across KL','NQ stdev', 'spur pix', 'contrast']
 
-    for i in np.arange(6):
+    for i in np.arange(4):
         f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(16.,3))
         #np.ravel to tally in 1D
         thissum = np.ravel(sum_matrix[:,i,:])
@@ -1763,6 +1765,8 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
     masterlists = avg_diag_across_dsets(diaglists, refkeys)
     bestlist, cutoffs = find_best_diag(masterlists, cutoffpct, refkeys)
 
+    print(bestlist)
+
     mean_sums, mean_stds, mean_meds, mean_mdiffs = masterlists
     sumcut, stdcut, medcut, diffcut = cutoffs
 
@@ -1777,7 +1781,10 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
         wts = [int(i) for i in wtstr]
         wtslist.append(wts)
         kl_binaries = [int(k) for k in klstr]
-        kllist = np.array([1,2,3,4,5,10,20,50,100])*kl_binaries
+        try:
+            kllist = np.array([1,2,3,4,5,10,20,50,100])*kl_binaries
+        except:
+            print(kl_binaries, wts, klstr)
         kls = [int(kl) for kl in kllist if int(kl) > 0] 
         klslist.append(kls)
 

@@ -409,10 +409,14 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             #print("peak value for avg SNR under mask is at coordinates:", xcoord, ycoord)
 
             #normalize the SNR metric to range from 0 to 1
-            #normalize across all kl modes (including those not selected here)
+            #normalize across selected kl modes (including those not selected here)
             #note - hard-coded for subsections = 1
-            snr_norm = (kltrim_snr[0,0,k,p,:,:]-np.nanmin(pecube_snr[0,0,:,p,miny-1:maxy,minx:maxx+1]))/ (np.nanmax(pecube_snr[0,0,:,p,miny-1:maxy,minx:maxx+1])-np.nanmin(pecube_snr[0,0,:,p,miny-1:maxy,minx:maxx+1]))
-            snr_norm_umask = (kltrim_snr[1,0,k,p,:,:]-np.nanmin(pecube_snr[1,0,:,p,miny-1:maxy,minx:maxx+1])) / (np.nanmax(pecube_snr[1,0,:,p,miny-1:maxy,minx:maxx+1])-np.nanmin(pecube_snr[1,0,:,p,miny-1:maxy,minx:maxx+1]))
+            minref=np.nanmin(kltrim_snr[0,0,:,p,miny-1:maxy,minx:maxx+1])
+            maxref=np.nanmax(kltrim_snr[0,0,:,p,miny-1:maxy,minx:maxx+1])
+            snr_norm = (kltrim_snr[0,0,k,p,:,:]-minref)/ (maxref-minref)
+            minref_umask=np.nanmin(kltrim_snr[1,0,:,p,miny-1:maxy,minx:maxx+1])
+            maxref_umask=np.nanmax(kltrim_snr[1,0,:,p,miny-1:maxy,minx:maxx+1])
+            snr_norm_umask = (kltrim_snr[1,0,k,p,:,:]-minref_umask) / (maxref_umask-minref_umask)
             #print(k,np.nanmin(pecube_snr[0,0,k,p,:,:]),np.nanmax(pecube_snr[0,0,k,p,:,:]), np.nanmin(snr_norm), np.nanmin(snr_norm_umask), np.nanmax(snr_norm), np.nanmax(snr_norm_umask))
             
 
@@ -434,7 +438,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             #returned quantity is -1*contrast. turn back into contrast
             #and log so that higher = better
             logcontrast[k,p,:,:] = np.log10(-1*kltrim_snr[4,0,k,p,:,:])
-            pelogcontrast=np.log10(-1*pecube_snr[4,0,:,p,miny-1:maxy,minx:maxx+1])
+            pelogcontrast=np.log10(-1*kltrim_snr[4,0,:,p,miny-1:maxy,minx:maxx+1])
             #filter out unphysical contrasts
             logcontrast[logcontrast>0]=np.nan
             pelogcontrast[pelogcontrast>0]=np.nan
@@ -449,8 +453,13 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             #compute neighbor quality metrics by smoothing with Gaussian
             sig=smt
             nq_snr = filter_nan_gaussian_conserving(snr_norm,sig)
+            #remormalize
+            nq_snr = (nq_snr-np.nanmin(nq_snr))/(np.nanmax(nq_snr)-np.nanmin(nq_snr))
+
             #nq_stdev = filter_nan_gaussian_conserving(stdev_norm,sig)
             nq_snr_umask = filter_nan_gaussian_conserving(snr_norm_umask,sig)
+            #renormalize
+            nq_snr_umask = (nq_snr_umask-np.nanmin(nq_snr_umask))/(np.nanmax(nq_snr_umask)-np.nanmin(nq_snr_umask))
             #nq_stdev_umask = filter_nan_gaussian_conserving(stdev_norm_umask,sig)
 
             #normalizes neighbor quality
@@ -479,7 +488,9 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             spurpix = kltrim_snr[3,0,k,p,:,:]
             #spurious pixel metric = 1 if no spurious pixels and 0 if max number for this dataset
             if np.nanmax(spurpix)>0:
-                spurpix_norm = 1-(spurpix-np.nanmin(pecube_snr[3,0,:,p,ymin:ymax+1,xmin:xmax+1])/(np.nanmax(pecube_snr[3,0,:,p,miny-1:maxy,minx:maxx+1])-np.nanmin(pecube_snr[3,0,:,p,miny-1:maxy,minx:maxx+1])))
+                spmin=np.nanmin(kltrim_snr[3,0,:,p,ymin:ymax+1,xmin:xmax+1])
+                spmax=np.nanmax(kltrim_snr[3,0,:,p,miny-1:maxy,minx:maxx+1])
+                spurpix_norm = 1-(spurpix-spmin)/(spmax-spmin)
             else: #edge case - no spurious pixels in any image
                 spurpix_norm= 1+spurpix
              
@@ -535,23 +546,28 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             #extract metric scores for this location    
             #metric_scores = [snr_norm[ind][0], nq_snr[ind][0], snr_norm_umask[ind][0], nq_snr_umask[ind][0], \
             #stdev_norm_umask[ind][0], nq_stdev_umask[ind][0], spurpix_norm[ind][0], contrast[ind][0], agg[ind][0]]
-            metric_scores = [snr_norm[ind][0], nq_snr[ind][0], snr_norm_umask[ind][0], nq_snr_umask[ind][0], spurpix_norm[ind][0], contrast[ind][0], agg[ind][0]]
-
-
-            #translate to annuli and movement values
-            ann_val[k,p]= ymin + ind[0][0] * ystep
-            movm_val[k,p] = xmin + ind[1][0] * xstep
-            
-            if separate_planets==False:
-                plno = 'all'
+            if not ind:
+                print('contrast all NaNs for KL=', kllist[k], ". Assigning NaN metric scores")
+                metric_scores=np.repeat(np.nan,7)
+                ann_val[k,p]=np.nan
+                movm_val[k,p]=np.nan
             else:
-                plno = p+1
-            if verbose==True:
-                print('peak for planet =', plno, 'klmode = ', kllist[k], 'is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val[k][p], ' and movement', movm_val[k][p])
-            #print('SNR value for fake planets (avg of SNR methods and planets) is', avgSNR)
-                print('metric scores for (snr peak, snr peak neigbors, snr umask, snr umask neighbors, spurious pix, contrast, agg) are:', metric_scores)
+                print(ind)
+                metric_scores = [snr_norm[ind][0], nq_snr[ind][0], snr_norm_umask[ind][0], nq_snr_umask[ind][0], spurpix_norm[ind][0], contrast[ind][0], agg[ind][0]]
 
 
+                #translate to annuli and movement values
+                ann_val[k,p]= ymin + ind[0][0] * ystep
+                movm_val[k,p] = xmin + ind[1][0] * xstep
+                
+                if separate_planets==False:
+                    plno = 'all'
+                else:
+                    plno = p+1
+                if verbose==True:
+                    print('peak for planet =', plno, 'klmode = ', kllist[k], 'is at', ind[0][0], ind[1][0], 'corresponding to annuli', ann_val[k][p], ' and movement', movm_val[k][p])
+                    #print('SNR value for fake planets (avg of SNR methods and planets) is', avgSNR)
+                    print('metric scores for (snr peak, snr peak neigbors, snr umask, snr umask neighbors, spurious pix, contrast, agg) are:', metric_scores)
 
     if debug==True:
         fits.writeto(outdir+writename[:-5]+'_paramqual_fullcube.fits', qual_cube, overwrite=True)
@@ -788,14 +804,15 @@ def collapse_pes(pedir='./', kllist=[5,10,20,50], wts = [1,1,1,1,1,1], mode='Lin
                         d["pe{0}haklipim".format(i+1)]=klcube
     return(d)
 
-def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1], snrmeth='all', smt=3, separate_planets=False, separate_kls=False, innerann_nanok=True, highmovmmask=False):
+def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1], snrmeth='all', smt=3, separate_planets=False, separate_kls=False, 
+    innerann_nanok=True, highmovmmask=False,maxy=25, maxx=24, minx=0, miny=1):
     
     """
     
     """
 
     raw_metric_cube, agg_cube, ann_val, movm_val, metric_scores, metric_fname = \
-        find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt, separate_planets=separate_planets, separate_kls=separate_kls, innerann_nanok=innerann_nanok, highmovmmask=highmovmmask)
+        find_best_new(pename, kllist, pedir=pedir, writestr=writestr, weights=weights, snrmeth=snrmeth, smt=smt, separate_planets=separate_planets, separate_kls=separate_kls, innerann_nanok=innerann_nanok, highmovmmask=highmovmmask,maxy=maxy, maxx=maxx, minx=minx, miny=miny)
 
     #print(ann_val,movm_val, agg_cube.shape, raw_metric_cube.shape)
 
@@ -937,7 +954,7 @@ def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1
             cb.set_label(label='Weighted Aggregate Score', size=20)
             cb.ax.tick_params(labelsize=16)
 
-            ind = np.where(agg == np.nanmax(agg))
+            ind = np.where(agg == np.nanmax(agg[miny-1:maxy,minx:maxx+1]))
             label_text = 'a' + str(int(ann_val[k][p])) + 'm' + str(int(movm_val[k][p]))
             rect = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
             ax7.add_patch(rect)
@@ -1468,23 +1485,24 @@ def compile_keys(out_dir, done, pklstr):
     for klcombo in klpossible:
       if np.nansum(klcombo)>=1:
         j=0
-        metricpossible = it.product((0,1), repeat=4)
+        metricpossible = it.product((0,1), repeat=6)
         for mcombo in metricpossible:
 
           if np.sum(mcombo)>=1:
+            test=list(mcombo)
             #will break on false pos only (degenerate)
-            #if (np.sum(mcombo)==1) and (test[4]==1):
-              #skip+=1
+            if (np.sum(mcombo)==1) and (test[4]==1):
+              skip+=1
             #stdev has no meaning if nkl !>2 skip all metrics weighting this
             #elif (np.nansum(klcombo)<2) and (np.sum(test[4:6])>=1):
               #skip+=1         
-            #else:
-            i+=1
-            j+=1
+            else:
+              i+=1
+              j+=1
           else:
             continue
         k+=1
-    #print('skipped', skip)
+    print('skipped', skip)
     print('total possible combos:', i)
     print('total metric combos:', j)
     print('total kl combos:', k)
@@ -1525,14 +1543,14 @@ def compute_bulk_diagnostics(current_keys, pklstr, done, out_dir):
     #set up empty arrays to fill
     #dimensions are: 0) keys per dataset, 1) datasets, number of metrics, number of kls
     #for collapsing by kl or metric
-    wt_sum_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
-    sum_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
-    wt_std_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
-    std_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
-    wt_med_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
-    med_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
-    wt_mdiff_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
-    mdiff_matrix = np.zeros((len(current_keys)*len(dset_done),4,9))*np.nan
+    wt_sum_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    sum_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    wt_std_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    std_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    wt_med_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    med_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    wt_mdiff_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
+    mdiff_matrix = np.zeros((len(current_keys)*len(dset_done),6,9))*np.nan
 
 
     p=0 #dataset counter
@@ -1550,7 +1568,7 @@ def compute_bulk_diagnostics(current_keys, pklstr, done, out_dir):
         key_split  = key.split('_')
         #pull out parameter weights
         key_wts = key_split[2].split('wts')
-        wt_list = [int(x) if int(x)==1 else np.nan for x in key_wts[1][:4]]
+        wt_list = [int(x) if int(x)==1 else np.nan for x in key_wts[1]]
 
         #pull out kllist
         key_kls = key_split[3].split('kls')
@@ -1615,7 +1633,7 @@ def diaghists_bymetric(diagnostics):
     ##plot histograms for the different metrics individually
     ms = ['Peak SNR','NQ peak SNR','Avg SNR','NQ avg SNR'] #,'stdev across KL','NQ stdev', 'spur pix', 'contrast']
 
-    for i in np.arange(4):
+    for i in np.arange(6):
         f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(16.,3))
         #np.ravel to tally in 1D
         thissum = np.ravel(sum_matrix[:,i,:])
@@ -1987,10 +2005,10 @@ def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*',
                 label_text2 = 'a' + str(int(real_ann_val[0][0])) + 'm' + str(int(real_movm_val[0][0]))
                 rect2 = patches.Rectangle((ind2[1][0] - 0.5, ind2[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='r', facecolor='none')
                 ax2.add_patch(rect2)
-                if i in [1,3,4]:
-                    ax2.text(ind2[1][0] + 0.75, ind2[0][0]-0.5, label_text2, color='red')
-                else:
-                    ax2.text(ind2[1][0] - 2.5, ind2[0][0]+1, label_text2, color='red')
+                #if i in [1,3,4]:
+                ax2.text(ind2[1][0]-0.5, ind2[0][0]+0.75, label_text2, color='red')
+                #else:
+                    #ax2.text(ind2[1][0] - 2.5, ind2[0][0]+1, label_text2, color='red')
                 rect4 = patches.Rectangle((ind[1][0] - 0.5, ind[0][0] - 0.5), 1, 1, linewidth=2, edgecolor='k', facecolor='none')
                 ax2.add_patch(rect4)
                 ax2.text(ind[1][0] + 0.75, ind[0][0]-0.5, label_text, color='black')

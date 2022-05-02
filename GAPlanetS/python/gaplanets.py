@@ -318,10 +318,30 @@ def make_prefix(data_str, wl, cut):
     prefix = data_str + '_' + wl + '_' + str(cut) + 'pctcut'
     return(prefix)
 
+def subimmean(im, smt=1):
+    """
+    subtract the mean value from a 2D image in 1 pixel annuli
+    """
+    ydim, xdim = im.shape
+    ycen = (ydim-1)/2.
+    xcen = (xdim-1)/2.
+    r=np.zeros((ydim,xdim))
+    meanmap=np.zeros((ydim,xdim))
+    for y in np.arange(ydim):
+        for x in np.arange(xdim):
+            r[y,x]=np.sqrt((x-xcen)**2+(y-ycen)**2)
+    for rad in np.arange(xdim/2):
+        inds = np.where((r>(rad-1)) & (r<(rad+1)))
+        meanmap[inds]=np.nanmedian(im[inds])
+    meanmap=pe.filter_nan_gaussian_conserving(meanmap, smt)
+    im-=meanmap
+    return(im)
+
+
 def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numann=3, movm=4, KLlist=[10], IWA=0,
                   contrast=1e-2, theta=0., clockang=85, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
                   highpass=True, ghost=False, savefig=False, overwrite=False, iterations=3,rdx_params_dfname='rdx_params.csv',
-                  timecoll='median', usecutfwhm=False, sep=False):
+                  timecoll='median', usecutfwhm=False, sep=False, submean=True):
     """
     PURPOSE
     Injects false planets separated by the measured fwhm of the dataset in radius and the clockang parameter
@@ -504,7 +524,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         # set IWA
         dataset.IWA = IWA
 
-        # divide by starpeak values again to get input images in contrast units
+        # divide by starpeak values to get input images in contrast units
         for i in np.arange(0, len(starpeak)):
             dataset.input[i, :, :] /= starpeak[i]
 
@@ -514,7 +534,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         first = IWA + sep/2
         n_planets = (dataset.input.shape[1] / 2. - IWA) / sep 
         #stay away from very outer part of image
-        n_planets = int(n_planets)-2
+        n_planets = int(n_planets)-4
         if debug == True:
             print('I will inject ', n_planets, 'planets')
 
@@ -621,8 +641,10 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
             klctr=0
             for KL in KLlist:
 
+                if submean==True:
+                    for im in np.arange(nimages):
+                        dataset.output[klctr,im,0,:,:]=subimmean(dataset.output[klctr,im,0,:,:])
             #planet recovery loop
-
                 plctr=0
                 theta=inittheta
                 for sep in thrpt_seps:
@@ -631,7 +653,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
                     # dataset shape is [KL modes, n images, 1(wl dim), xdim, ydim]
                     fake_flux = fakes.retrieve_planet_flux(dataset.output[klctr, :, 0, :, :], dataset.centers, dataset.wcs, sep, theta,
                                                            searchrad=8, guessfwhm=fwhm,
-                                                           guesspeak=contrast * np.median(dataset.star_flux),
+                                                           guesspeak=contrast,
                                                            thetas=np.repeat(theta + 90, dataset.output.shape[1]), refinefit=True)
                     #record fake flux for this planet for each image in cube
                     fake_fluxes[plctr,:] = fake_flux
@@ -882,7 +904,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
         #loop over KL modes
         for KL in KLlist:
 
-            contrast_seps, contrast = klip.meas_contrast(klcube[klctr,:,:], IWA, OWA, dataset_fwhm*2,
+            contrast_seps, contrast = klip.meas_contrast(klcube[klctr,:,:], IWA, OWA, dataset_fwhm,
                                                      center=dataset_center, low_pass_filter=False)
             if klctr == 0:
                 contrast_out=np.zeros((len(KLlist), 3+iterations, len(contrast_seps)))
@@ -2016,7 +2038,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
 
                 #run metric calculation for ALL kl modes so can select optimal kl
                 kllist = [1,2,3,4,5,10,20,50,100]     
-                print(pefname, pedir)
+                print("processing all KL modes for", pedir+pefname)
                 cube1, agg_cube1, anns1, movms1, scores1, mfname1 = pe.find_best_new(pefname,kllist,pedir=pedir,weights=wts,snrmeth='stdev', outdir=outdir+data_str+'/', separate_planets=seppl,separate_kls=True, maxx=maxx, maxy=maxy, minx=minx, miny=miny, innerann_nanok=innerann_nanok, highmovmmask=highmovmmask, ctrstreq=ctrstreq)
 
 

@@ -2272,10 +2272,11 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75, cbpower=1):
         if "combo" in sorted_dset_strs[i]:
             dset_pieces =sorted_dset_strs[i].split('_')
             datestr = dset_pieces[1]+' combo'
+            plottitle = thisd["obj"] + '\n'+ datestr 
         else:
             datestr = thisd["date_obj"].strftime("%b %d %Y")
-        
-        
+            plottitle = thisd["obj"] + '\n'+ datestr +'\n'+ 'a'+str(thisd["ann"])+'m'+str(thisd["movm"])+', KL'+str(thisd["kl"])
+
         if snr==True:
             if smt!=False:
                 smtstr='sm'+str(smt)
@@ -2296,7 +2297,7 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75, cbpower=1):
 
     return ()
 
-def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, plcen=None, nperrow=2):
+def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, plcen=None, nperrow=2, cbpower=1):
     """
     OPTIONAL INPUTS:
     plcen = a number equal to the index of the planet candidate you'd like to center the image stamp on
@@ -2401,8 +2402,12 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
         ##COORDS RELATIVE TO STAMP CENTER
         stampcen = (stampsz - 1)/2.
         stampsz_asec = stampsz*platescale
-        nticks = np.floor(stampsz_asec/2/0.25)
-        ticklabels = np.arange(-1*nticks, nticks+1)*0.25
+        if stampsz<70:
+            tickint = 0.1
+        else:
+            tickint = 0.25
+        nticks = np.floor(stampsz_asec/2/tickint)
+        ticklabels = np.arange(-1*nticks, nticks+1)*tickint
         ticklabels_str = [str(lab)+'\"' for lab in ticklabels]
         ticks = ticklabels/platescale + stampcen
 
@@ -2448,7 +2453,7 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
             sclmax = np.nanstd(sdiim[ylow:yhigh, xlow:xhigh])*5
             minm = -1 * sclmax / 2
 
-        im1 = ax.imshow(sdiim[ylow:yhigh, xlow:xhigh], vmin=minm, vmax=sclmax, origin='lower', cmap='magma')
+        im1 = ax.imshow(sdiim[ylow:yhigh, xlow:xhigh], vmin=minm, vmax=sclmax, origin='lower', cmap='magma',norm=colors.PowerNorm(gamma=cbpower))
      
         if stampsz<302:
             scalebar = AnchoredSizeBar(ax.transData, 0.1/platescale, '0.1\"', 'lower left', pad=0.1, color='white', 
@@ -2464,7 +2469,7 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
             title = dset_strs[i].replace('_', ' ')
         else:
             datestr = thisd["date_obj"].strftime("%b %d %Y")
-            title = thisd["obj"] + '\n'+ datestr
+            title = thisd["obj"] + '\n'+ datestr + '\n'+ 'a'+str(thisd["ann"])+'m'+str(thisd["movm"])+', KL'+str(thisd["kl"])
         ax.set_title(title, **titlestyle)
 
 
@@ -2633,8 +2638,12 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     ##COORDS RELATIVE TO STAMP CENTER
     stampcen = (stampsz - 1)/2.
     stampsz_asec = stampsz*platescale
-    nticks = np.floor(stampsz_asec/2/0.25)
-    ticklabels = np.arange(-1*nticks, nticks+1)*0.25
+    if stampsz<70:
+        tickint = 0.1
+    else:
+        tickint = 0.25
+    nticks = np.floor(stampsz_asec/2/tickint)
+    ticklabels = np.arange(-1*nticks, nticks+1)*tickint
     ticklabels_str = [str(lab)+'\"' for lab in ticklabels]
     ticks = ticklabels/platescale + stampcen
 
@@ -2776,7 +2785,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
         resclr ='goldenrod' 
     else:
         resclr='white'
-    resel = patches.Circle((stampsz-fwhm/2-5,fwhm/2+5 ),radius=fwhm/2, fill=True, color=resclr)
+    resel = patches.Circle((stampsz-fwhm/2-2,fwhm/2 ),radius=fwhm/2, fill=True, color=resclr)
     ax4.add_patch(resel, )
 
     if title!=False:

@@ -1825,6 +1825,17 @@ def grab_planet_specs(df,dset_path):
     #Wedge((.8, .3), .2, 45, 90, width=0.10),  # Ring sector
     return(tuple(pllabel),tuple(plsep),tuple(plpa), tuple(seperr))
 
+def grab_disk_specs(df,dset_path):
+    """
+    Given (properly formatted) dataframe, extract parameters for disk rim and overplot.
+    """
+    majorax = df[df["Path"]==dset_path]["disk major axis"].values
+    minorax = df[df["Path"]==dset_path]["disk minor axis"].values
+    diskpa = df[df["Path"]==dset_path]["disk PA"].values
+    #for later. this is how to make a wedge-shaped patch. pull pa uncert as well
+    #Wedge((.8, .3), .2, 45, 90, width=0.10),  # Ring sector
+    return(tuple(majorax),tuple(minorax),tuple(diskpa))
+
 def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/Shareddrives/',hpmult=0.5,
     klopt=False, ctrstopt=False, weights=[1,1,1,1,1,1], kllist_coll = [10,100], overwrite=False, maxx=24, maxy=25, 
     minx=0, miny=1, skipdates=False, pldf=False, seppl=False, sepkl=False, timecoll='median',combochoice=None,
@@ -2119,6 +2130,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 #set planet marking keywords to False by default
                 plspecs = False
                 plcand = False
+                diskspecs=False
 
                 ##compile a bunch of stuff for plotting, labeling, etc.
 
@@ -2134,6 +2146,8 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                         #check whether marked as candidate
                         if df[df["Path"]==dset_path]["candidate"].values[0]=="Y":
                             plcand=True
+                    if df[df["Path"]==dset_path]["mark disk"].values[0]=="Y":
+                        diskspecs = grab_disk_specs(pldf,dset_path)
 
                 ##generate images
                 print("[obj,date,cut,movm,ann,fwhm,IWA,kl]",params)
@@ -2144,7 +2158,7 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 dict_keys = ['prefix', 'full_fpath', 'dset_path', 'satrad', 'ctrlrad', 'scale', 
                 'ccurve_seps', 'ccurve_ctrst', 'ccurve_lbl',
                 'linecube', 'contcube', 'sdicube', 'sdicube2', 'linesnr', 'contsnr', 'sdisnr', 'sdisnr2', 
-                'obj', 'date', 'date_obj', 'plspecs', 'plcand',
+                'obj', 'date', 'date_obj', 'plspecs', 'plcand', 'diskspecs',
                 'cut', 'movm', 'ann', 'fwhm', 'IWA', 'kl', 'hpval']
 
                 for k in dict_keys:
@@ -2207,6 +2221,7 @@ def add_dsetcombos(dofds,dupobj,dup_dstrings, dupyr):
 
         #grab planet specs from first dict
         combod["plspecs"]=dicts[0]["plspecs"]
+        combod["diskspecs"]=dicts[0]["diskspecs"]
         combod["plcand"]=dicts[0]["plcand"]
         combod["ctrlrad"]=dicts[0]["ctrlrad"]
         combod["obj"]=dupobj[ds]
@@ -2268,12 +2283,12 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75, cbpower=1):
                 smtstr=''
             indivobj_fig(thisd["linesnr"][0,0,:,:],thisd["contsnr"][0,0,:,:],thisd["sdisnr"][0,0,:,:], thisd["scale"],
                 thisd["prefix"]+'_SNR_'+smtstr,IWA=thisd["IWA"], smooth=smt, secondscale=1,secondscaleim=thisd["sdisnr2"][0,0,:,:],
-                snr=True, title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], 
+                snr=True, title = plottitle, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], diskspecs=thisd["diskspecs"],
                 returnfig=True, ax=(f1, inner, i, totaldsets), markctrl=int(thisd["ctrlrad"]), fwhm=int(thisd["fwhm"]),cbpower=cbpower)
         else:
             indivobj_fig(thisd["linecube"][0,:,:],thisd["contcube"][0,:,:],thisd["sdicube"][0,:,:], thisd["scale"],
                 thisd["prefix"],IWA=thisd["IWA"], secondscale=1,secondscaleim=thisd["sdicube2"][0,:,:], 
-                title = thisd["obj"] + '\n'+ datestr, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], 
+                title = plottitle , lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], diskspecs=thisd["diskspecs"],
                 plcand=thisd["plcand"], returnfig=True, ax=(f1,inner, i, totaldsets), 
                 markctrl=int(thisd["ctrlrad"]), fwhm=int(thisd["fwhm"]),cbpower=cbpower)
 
@@ -2344,6 +2359,7 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
 
         plspecs=thisd["plspecs"]
         plcand=thisd["plcand"]
+        diskspecs=thisd["diskspecs"]
         fwhm=thisd["fwhm"]
         ##if planets need to be marked, find their coordinates and define patches
         if plspecs!=False:
@@ -2412,10 +2428,13 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
             xticklabels_str=ticklabels_str
             yticklabels_str=ticklabels_str
         
-        print(xlow,xhigh,ylow,yhigh)
         # set up tick labels according to parameter ranges
         plt.setp(ax, xticks=ticks, xticklabels=xticklabels_str, yticks=ticks, yticklabels=yticklabels_str)
      
+        if diskspecs!=False:
+            diskell = patches.Ellipse((cen,cen),diskspecs[0],diskspecs[1],diskspecs[2]+90, color='c',fill=False,lw=2,ls='--')
+            ax.add_patch(diskell)
+
         if snr==True:
             cbarlabel = 'SNR'
         else:
@@ -2491,6 +2510,11 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
                     labelposy = stampcen+plsep_y[j] 
                 ax.text(labelposx,labelposy,circ_label, color='white',fontsize=16, horizontalalignment=align, verticalalignment='center')
         
+        #add disk ellipse
+        if diskspecs!=False:
+            diskell = patches.Ellipse((cen,cen),diskspecs[0],diskspecs[1],diskspecs[2]+90, color='c',fill=False,lw=2,ls='--')
+            ax.add_patch(diskell)
+
         if stampsz>302:
             resclr='goldenrod'
         else:
@@ -2568,7 +2592,7 @@ def plotdict_ctrst(d, maxsep=1,to_mdot=None):
     ax.legend(frameon=False, fontsize=10)
     return()
 
-def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, returnfig=False, ax=None, markctrl=None, fwhm=None, cbpower=1):
+def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, diskspecs=False, returnfig=False, ax=None, markctrl=None, fwhm=None, cbpower=1):
     """
     creates a three panel figure with line, continuum and SDI images
 
@@ -2666,6 +2690,12 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
                 seperr=fwhm/2
             plseperr.append(seperr)
             pllabels.append(str(lb))
+
+    if diskspecs!=False:
+        print(cen, diskspecs)
+        for axx in (ax1,ax2,ax3,ax4):
+            diskell = patches.Ellipse(((stampsz-1)/2,(stampsz-1)/2),diskspecs[0][0]*2,diskspecs[1][0]*2,diskspecs[2][0]+90, color='y',fill=False,lw=2,ls='-')
+            axx.add_patch(diskell)
 
     titlestyle=dict(size=16)
 

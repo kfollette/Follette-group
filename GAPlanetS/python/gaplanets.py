@@ -1794,7 +1794,17 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
         print('setting scale to', scale)
         scale = float(scale)
     
-    sdicube = linecube - scale * contcube
+    if smooth>0:
+        nkl = linecube.shape[0]
+        linesm=np.zeros(linecube.shape)
+        contsm=np.zeros(contcube.shape)
+        for kl in np.arange(nkl):
+            linesm[kl,:,:] = klip.nan_gaussian_filter(linecube[kl,:,:],smooth)
+            contsm[kl,:,:] = klip.nan_gaussian_filter(contcube[kl,:,:],smooth)
+        sdicube = linesm - scale * contsm
+    else:
+        sdicube = linecube - scale * contcube
+
     prefix = data_str + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA)+ 'hp'+str(highpass)
 
     if kllist==[1,2,3,4,5,10,20,50,100]:
@@ -1807,7 +1817,7 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
         klstr='_'.join(klstrlist)
     prefix+='_kl'+klstr
 
-    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=outputdir+prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits', method='stdev', smooth=smooth, planets=planets, checkmask=False, submean=submean)
+    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=outputdir+prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits', method='stdev', smooth=False, planets=planets, checkmask=False, submean=submean)
     if planets!=False:
         sdisnr = sdisnr[0]
 

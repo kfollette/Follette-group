@@ -943,7 +943,7 @@ def paramexplore_fig(pedir, pename, kllist, writestr=False, weights=[1,1,1,1,1,1
 
             # plot metric
             agg=metric_cube[6,:,:]
-            im7 = ax7.imshow(agg, origin='lower', vmin=1, vmax=np.nanmax(agg))
+            im7 = ax7.imshow(agg, origin='lower', vmax=np.nanmax(agg[miny-1:maxy,minx:maxx+1]))
             ax7.set_ylabel("annuli parameter", **titlestyle)
             ax7.set_xlabel("movement parameter", **titlestyle)
             ax7.set_title("Aggregate Parameter Quality Metric", **bigtitlestyle)

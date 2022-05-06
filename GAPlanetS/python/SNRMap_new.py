@@ -417,6 +417,7 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
             #if needed, extract means as well
             else:
                 NoiseMap, MeanMap = noisemap(indiv, planets, fwhm, method=method, returnmean=True)
+        
             fivesig = 0
             fivesig_atmask=0
             fivesig_inmask = 0
@@ -430,7 +431,8 @@ def create_map(filename, fwhm, head = None, smooth = False, planets=False, saveO
                     radius, angle = toPolar(x,y)
                     try:
                         noise[x][y] = NoiseMap[radius]
-                        means[x][y] = MeanMap[radius]
+                        if submean==True:
+                            means[x][y] = MeanMap[radius]
                     except:
                         noise[x][y] = np.nan
                         means[x][y] = np.nan

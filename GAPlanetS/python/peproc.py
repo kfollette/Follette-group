@@ -399,9 +399,11 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
             maxind_umask = np.where(kltrim_snr[1,0,k,p,:,:] == np.nanmax(kltrim_snr[1,0,k,p,:,:]))
 
             #translates to x and y coordinates
-            xcoord = maxind[0][0]
-            ycoord = maxind[1][0]
-            #print("peak value for peak SNR is at coordinates:", xcoord, ycoord)
+            try:
+                xcoord = maxind[0][0]
+                ycoord = maxind[1][0]
+            except:
+                print("cant compute max. check pe file. is it all nans?")  
 
             #translates to x and y coordinates for umask
             xcoord_umask = maxind_umask[0][0]

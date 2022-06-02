@@ -409,6 +409,8 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         for c in cols:
             df[c]=np.nan
 
+    calcthrpt=True
+
     #check whether thisDQ cut has been run
     if True in (df.loc[(df["Dataset"]==data_str) &  (df["pctcut"]==cut),["nims"]].values > 0):
         #find locations where this is true
@@ -436,7 +438,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
                 if overwrite==True:
                     print('Overwriting')
                 else:
-                    print('will read in existing file')
+                    print('will read in existing file', tpt_fname)
             #if not the same
             else:
                 print('but these are new parameters. copying to a new line')
@@ -471,8 +473,6 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
     
     #df["ctrst_fkpl"]=contrast
 
-    calcthrpt=True
-    
     if (os.path.exists(tpt_fname)) and (overwrite == False):
         print("throughput file", tpt_fname, "already exists.")
         calcthrpt=False
@@ -534,7 +534,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         first = IWA + sep/2
         n_planets = (dataset.input.shape[1] / 2. - IWA) / sep 
         #stay away from very outer part of image
-        n_planets = int(n_planets)-4
+        n_planets = int(n_planets)-5
         if debug == True:
             print('I will inject ', n_planets, 'planets')
 
@@ -651,10 +651,13 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
                     # thetas for retrieve planet call are measured from +x axis, so should always add 90 to pa for thetas keyword
                     # dataset shape is [KL modes, n images, 1(wl dim), xdim, ydim]
-                    fake_flux = fakes.retrieve_planet_flux(dataset.output[klctr, :, 0, :, :], dataset.centers, dataset.wcs, sep, theta,
-                                                           searchrad=8, guessfwhm=fwhm,
-                                                           guesspeak=contrast,
-                                                           thetas=np.repeat(theta + 90, dataset.output.shape[1]), refinefit=True)
+                    try:
+                        fake_flux = fakes.retrieve_planet_flux(dataset.output[klctr, :, 0, :, :], dataset.centers, dataset.wcs, sep, theta,
+                                                               searchrad=8, guessfwhm=fwhm,
+                                                               guesspeak=contrast,
+                                                               thetas=np.repeat(theta + 90, dataset.output.shape[1]), refinefit=True)
+                    except:
+                        print("failed on sep", sep)
                     #record fake flux for this planet for each image in cube
                     fake_fluxes[plctr,:] = fake_flux
                     #translate to throughput (images come out in contrast units)
@@ -788,7 +791,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
 
 def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir = 'dq_cuts/contrastcurves/', numann=3,
                         movm=4, KLlist=[10], IWA=0, rdx_params_dfname='rdx_params.csv', record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], 
-                        savefig=False, debug=False, overwrite=False, highpass=True, maxsep=1.5, timecoll='median'):
+                        savefig=False, debug=False, overwrite=False, highpass=True, maxsep=1.5, timecoll='median',detections=False):
     """
     PURPOSE
     calculates raw contrast by running KLIP on images and then corrects for throughput
@@ -807,6 +810,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
     numann, movm, KLlist = the usual klip annuli, movement and KL mode parameters
     debug = if set to True, prints some sanity checks about injected planet locations, etc.
     savefig = if set to true, saves a throughput figure in the contrastcurve directory
+    detections = a tuple of lists containing separations in arcseconds and contrasts for detections
 
     OUTPUT
     contrast_seps = separations in pixels where contrasts were computed
@@ -1000,6 +1004,12 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
                                 plt.plot((bd, bd), (0, 1), '--', color='grey', label='zone boundary')
                             else:
                                 plt.plot((bd, bd), (0, 1), '--', color='grey')
+                if detections!=False:
+                    ptseps = detections[0]
+                    ptctrsts = detections[1]
+                    for pt in np.arange(len(ptseps)):
+                        plt.plot(ptseps[pt],ptctrsts[pt],'ko')
+
                 plt.legend()
                 plt.title(rawc_prefix.replace('_',' ') + " KL"+str(KL)+" Corrected Contrast")
                 plt.savefig(outputdir + dataset_prefix + "_KL"+str(KL)+ '_contrastcurve.jpg')
@@ -1114,7 +1124,7 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
         contrast_seps = ctrsts[0,0,:]
 
         #note assumes here just one kl mode in slice with index 0
-        if cut == 0:
+        if (cut == 0) or (len(pctcuts)==1):
             # create a blank array to store contrast curves
             contrasts = np.zeros([len(pctcuts), len(KLlist), len(ctrsts[0,2,:])])
         
@@ -1707,8 +1717,8 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
         preims = preims[0].split(wl)
         imstring = preims[1][:-5]
         print(wl, " image has not yet been sliced. Slicing now.")
-        imname = indir+wl+imstring+'_'+str(cut)+'pctcut.fits'
-        rotoff_name = indir+'rotoff_no'+wl+'cosmics_'+str(cut)+'pctcut.fits'
+        imname = indir+'cubes/'+wl+imstring+'_'+str(cut)+'pctcut.fits'
+        rotoff_name = 'preprocessed/rotoff_no'+wl+'cosmics_'+str(cut)+'pctcut.fits'
         SliceCube(imname, rotoff_name, slicedir=slicedir)
         pykh.addstarpeak(slicedir, debug=True, mask=True)
 
@@ -1794,16 +1804,16 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
         print('setting scale to', scale)
         scale = float(scale)
     
-    if smooth>0:
-        nkl = linecube.shape[0]
-        linesm=np.zeros(linecube.shape)
-        contsm=np.zeros(contcube.shape)
-        for kl in np.arange(nkl):
-            linesm[kl,:,:] = klip.nan_gaussian_filter(linecube[kl,:,:],smooth)
-            contsm[kl,:,:] = klip.nan_gaussian_filter(contcube[kl,:,:],smooth)
-        sdicube = linesm - scale * contsm
-    else:
-        sdicube = linecube - scale * contcube
+    #if smooth>0:
+        #nkl = linecube.shape[0]
+        #linesm=np.zeros(linecube.shape)
+        #contsm=np.zeros(contcube.shape)
+        #for kl in np.arange(nkl):
+            #linesm[kl,:,:] = klip.nan_gaussian_filter(linecube[kl,:,:],smooth)
+            #contsm[kl,:,:] = klip.nan_gaussian_filter(contcube[kl,:,:],smooth)
+        #sdicube = linesm - scale * contsm
+    #else:
+    sdicube = linecube - scale * contcube
 
     prefix = data_str + '_' + str(cut) + 'pctcut_' + 'a' + str(numann) + 'm' + str(movm) + 'iwa' + str(IWA)+ 'hp'+str(highpass)
 
@@ -1817,7 +1827,7 @@ def run_redx(data_str, scale = False, indir='dq_cuts/', highpass=True, params=Fa
         klstr='_'.join(klstrlist)
     prefix+='_kl'+klstr
 
-    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=outputdir+prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits', method='stdev', smooth=False, planets=planets, checkmask=False, submean=submean)
+    sdisnr = snr.create_map(sdicube, (linefwhm + contfwhm) / 2., saveOutput=True, outputName=outputdir+prefix +'_SDI_scl'+'{:.2f}'.format(scale) + '_SNRMap.fits', method='stdev', smooth=smooth, planets=planets, checkmask=False, submean=submean)
     if planets!=False:
         sdisnr = sdisnr[0]
 
@@ -1828,12 +1838,13 @@ def grab_planet_specs(df,dset_path):
     Given (properly formatted) dataframe, extract locations and designations for planet(s).
     """
     pllabel = df[df["Path"]==dset_path]["Designation"].values
+    pllabeldir = df[df["Path"]==dset_path]["label direction"].values
     plsep = df[df["Path"]==dset_path]["Separation (pix)"].values
     seperr = df[df["Path"]==dset_path]["Sep Error"].values
     plpa = df[df["Path"]==dset_path]["PA"].values
     #for later. this is how to make a wedge-shaped patch. pull pa uncert as well
     #Wedge((.8, .3), .2, 45, 90, width=0.10),  # Ring sector
-    return(tuple(pllabel),tuple(plsep),tuple(plpa), tuple(seperr))
+    return(tuple(pllabel),tuple(plsep),tuple(plpa), tuple(seperr),tuple(pllabeldir))
 
 def grab_disk_specs(df,dset_path):
     """
@@ -2118,8 +2129,8 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 os.chdir(full_fpath)
                 thrpt_out, zb, df2, dataset_prefix = compute_thrpt(data_str, wl, cut, outputdir = outdir+data_str+'/', numann=ann, movm=movm, KLlist=[kl], IWA=IWA, 
                                                                     contrast=contrast, theta=0., clockang=135, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
-                                                                    ghost=ghost, savefig=True, iterations=3,rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 
-                                                                    highpass=hpval, overwrite=overwrite, timecoll=timecoll, usecutfwhm=True, sep=sep)
+                                                                    ghost=ghost, savefig=True, iterations=3, rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 
+                                                                    highpass=hpval, overwrite=overwrite, timecoll=timecoll, usecutfwhm=True, sep=sep, submean=submean)
             
                 contrast_out, df2, OWA = make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix,  outputdir=outdir+data_str+'/', 
                                                                 numann=ann, movm=movm, KLlist=[kl], IWA=IWA, rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 
@@ -2244,7 +2255,7 @@ def add_dsetcombos(dofds,dupobj,dup_dstrings, dupyr):
         #print(combod.keys())
     return(dofds)  
 
-def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75, cbpower=1):
+def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75, cbpower=1, markpls=True, markdisk=False):
     """
 
     """
@@ -2258,6 +2269,7 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75, cbpower=1):
     outer = gridspec.GridSpec(totaldsets, 1, wspace=0, hspace=0.01)
 
     dkeys = list(d.keys())
+    arecombos=False
     dset_strs = []
     datestrs = []
     for key in dkeys:
@@ -2267,14 +2279,26 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75, cbpower=1):
             if "combo" in key:    
                 #pull out year and add 0.2 so it appears at the end of that year
                 datestr = key_split[1]+'.2'
+                arecombos=True
             else:
                 datestr = '20'+key_split[1][-2:]
             
             #add to datestring and dataset lists
             datestrs.append(datestr)
             dset_strs.append(key)
-    #sort datasets according to date strings (just puts combos in right place)
-    sorted_dset_strs = [x for _, x in sorted(zip(datestrs, dset_strs))]
+
+    if arecombos==True:
+        #sort datasets according to date strings (just puts combos in right place)
+        sorted_dset_strs = [x for _, x in sorted(zip(datestrs, dset_strs))]
+    else:
+        sorted_dset_strs = dset_strs
+
+    if isinstance(stampsz,list)!=True:
+        stampsz=np.repeat(stampsz,totaldsets)
+    elif len(stampsz)==totaldsets:
+        print('stampsz=ndatasets')
+    else:
+        print('stampsz must be one number or array with same length as number of dsets')
 
     for i in np.arange((totaldsets)):
         thisd = d[sorted_dset_strs[i]]
@@ -2294,20 +2318,20 @@ def plotdict_ims(d, snr=False, smt=False, lims=[-1,4], stampsz=75, cbpower=1):
                 smtstr=''
             indivobj_fig(thisd["linesnr"][0,0,:,:],thisd["contsnr"][0,0,:,:],thisd["sdisnr"][0,0,:,:], thisd["scale"],
                 thisd["prefix"]+'_SNR_'+smtstr,IWA=thisd["IWA"], smooth=smt, secondscale=1,secondscaleim=thisd["sdisnr2"][0,0,:,:],
-                snr=True, title = plottitle, lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], plcand=thisd["plcand"], diskspecs=thisd["diskspecs"],
-                returnfig=True, ax=(f1, inner, i, totaldsets), markctrl=int(thisd["ctrlrad"]), fwhm=int(thisd["fwhm"]),cbpower=cbpower)
+                snr=True, title = plottitle, lims=lims, stampsz=stampsz[i], plspecs=thisd["plspecs"], plcand=thisd["plcand"], diskspecs=thisd["diskspecs"],
+                returnfig=True, ax=(f1, inner, i, totaldsets), markctrl=int(thisd["ctrlrad"]), fwhm=int(thisd["fwhm"]),cbpower=cbpower, markpls=markpls, markdisk=markdisk)
         else:
             indivobj_fig(thisd["linecube"][0,:,:],thisd["contcube"][0,:,:],thisd["sdicube"][0,:,:], thisd["scale"],
                 thisd["prefix"],IWA=thisd["IWA"], secondscale=1,secondscaleim=thisd["sdicube2"][0,:,:], 
-                title = plottitle , lims=lims, stampsz=stampsz, plspecs=thisd["plspecs"], diskspecs=thisd["diskspecs"],
+                title = plottitle , lims=lims, stampsz=stampsz[i], plspecs=thisd["plspecs"], diskspecs=thisd["diskspecs"],
                 plcand=thisd["plcand"], returnfig=True, ax=(f1,inner, i, totaldsets), 
-                markctrl=int(thisd["ctrlrad"]), fwhm=int(thisd["fwhm"]),cbpower=cbpower)
+                markctrl=int(thisd["ctrlrad"]), fwhm=int(thisd["fwhm"]),cbpower=cbpower, markpls=markpls, markdisk=markdisk)
 
     plt.savefig(str(d["outdir"])+str(d["objlist"])+str(d["theseparams"])+'.png')
 
     return ()
 
-def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, plcen=None, nperrow=2, cbpower=1):
+def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, plcen=None, nperrow=2, cbpower=1, markpls=True, markdisk=False):
     """
     OPTIONAL INPUTS:
     plcen = a number equal to the index of the planet candidate you'd like to center the image stamp on
@@ -2320,7 +2344,7 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
     totaldsets = d["totaldsets"]
 
     nrows = int(np.ceil(totaldsets/nperrow))
-    fig = plt.figure(figsize=(5*nperrow,nrows*5))
+    fig = plt.figure(figsize=(7*nperrow,nrows*7), dpi=450)
     gs = fig.add_gridspec(nrows, nperrow, hspace=0.25, wspace=0.4) # ,6)
 
     dkeys = list(d.keys())
@@ -2368,22 +2392,32 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
         IWAmask = ctrlmask(imsz, imsz, 0, IWA)
         sdiim*=IWAmask
 
-        plspecs=thisd["plspecs"]
-        plcand=thisd["plcand"]
-        diskspecs=thisd["diskspecs"]
+        if markpls == True:
+            plspecs=thisd["plspecs"]
+            plcand=thisd["plcand"]
+        else:
+            plspecs = False
+        
+        if markdisk == True:
+            diskspecs=thisd["diskspecs"]
+        else:
+            diskspecs = False
+        
         fwhm=thisd["fwhm"]
         ##if planets need to be marked, find their coordinates and define patches
         if plspecs!=False:
             plsep_y=[]
             plsep_x=[]
             pllabels=[]
+            pllabeldirs=[]
             plseperr=[]
 
             #apply PA offset for VisAO (Balmer+2022) = 0.497+/-0.192 CCW
-            paoff=-0.0497
+            paoff=0.0497
 
             for j in np.arange(len(plspecs[0])):
                 lb = plspecs[0][j]
+                lbdir = plspecs[4][j]
                 plsep = plspecs[1][j]
                 plpa = plspecs[2][j]+paoff
                 plsep_y.append(float(plsep)*np.sin((float(plpa)+90)*np.pi/180))
@@ -2393,6 +2427,7 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
                     seperr=fwhm/2
                 plseperr.append(seperr)
                 pllabels.append(str(lb))
+                pllabeldirs.append(str(lbdir))
 
             #adjust stamp size according to planet separation if specified
             if adjstamp==True:
@@ -2400,9 +2435,9 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
                 ymax = np.nanmax(np.abs(plsep_y))
 
                 if xmax>ymax:
-                    stampsz=xmax*2+100
+                    stampsz=xmax*2+40
                 else:
-                    stampsz=ymax*2+100
+                    stampsz=ymax*2+40
         
         #this is dumb and I'm missing something silly in the algebra, but only centered
         #perfectly if odd numbered
@@ -2414,8 +2449,10 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
         stampsz_asec = stampsz*platescale
         if stampsz<70:
             tickint = 0.1
-        else:
+        elif stampsz<300:
             tickint = 0.25
+        else:
+            tickint = 0.5
         nticks = np.floor(stampsz_asec/2/tickint)
         ticklabels = np.arange(-1*nticks, nticks+1)*tickint
         ticklabels_str = [str(lab)+'\"' for lab in ticklabels]
@@ -2511,19 +2548,18 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
                     circ=patches.Circle((stampcen+plsep_x[j],stampcen+plsep_y[j]),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty, alpha=0.5)
                 circ_label=pllabels[j]
                 ax.add_patch(circ, )
-                if plspecs[2][j]>180:
-                    addx = [circrad+1]
-                    align = 'left'
-                else:
-                    addx = [-1*(circrad+1)]
-                    align = 'right'
+                
                 if plcen!=None:
-                    labelposx = stampcen+addx[0]
+                    labelposx = stampcen
                     labelposy = stampcen
                 else:
-                    labelposx = stampcen+plsep_x[j]+addx[0]
-                    labelposy = stampcen+plsep_y[j] 
-                ax.text(labelposx,labelposy,circ_label, color='white',fontsize=16, horizontalalignment=align, verticalalignment='center')
+                    labelposx = stampcen+plsep_x[j]
+                    labelposy = stampcen+plsep_y[j]
+
+                if pllabeldirs[j]=="L":
+                    ax.text(labelposx-circrad-1,labelposy,circ_label, color='white',fontsize=16, ha='right', va='center')
+                else:
+                    ax.text(labelposx+circrad+1,labelposy,circ_label, color='white',fontsize=16, ha='left',va='center')
         
         #add disk ellipse
         if diskspecs!=False:
@@ -2604,10 +2640,10 @@ def plotdict_ctrst(d, maxsep=1,to_mdot=None):
         mdot = am.contrast_to_MMdot(dist,star_mag,contr,R, M, units=units, law=law,filtwid=filtwid,zeropt=zeropt)
 
 
-    ax.legend(frameon=False, fontsize=10)
+    ax.legend(fontsize=9, framealpha=0.7)
     return()
 
-def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, diskspecs=False, returnfig=False, ax=None, markctrl=None, fwhm=None, cbpower=1):
+def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, diskspecs=False, returnfig=False, ax=None, markctrl=None, fwhm=None, cbpower=1, markpls=True, markdisk=False):
     """
     creates a three panel figure with line, continuum and SDI images
 
@@ -2645,13 +2681,19 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
     if secondscale!=False:
         secondscaleim*=IWAmask
 
+    ##for some reason that I can't quite figure out, only properly centered when odd
+    if stampsz%2==0:
+        stampsz+=1
+
     ##COORDS RELATIVE TO STAMP CENTER
     stampcen = (stampsz - 1)/2.
     stampsz_asec = stampsz*platescale
     if stampsz<70:
         tickint = 0.1
-    else:
+    elif stampsz<300:
         tickint = 0.25
+    else:
+        tickint = 0.5
     nticks = np.floor(stampsz_asec/2/tickint)
     ticklabels = np.arange(-1*nticks, nticks+1)*tickint
     ticklabels_str = [str(lab)+'\"' for lab in ticklabels]
@@ -2689,17 +2731,19 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
         minm = -1 * linemax / 2
 
     ##if planets need to be marked, find their coordinates and define patches
-    if plspecs!=False:
+    if plspecs!=False and (markpls!=False):
         plsep_y=[]
         plsep_x=[]
         pllabels=[]
+        pllabeldirs=[]
         plseperr=[]
 
         #apply PA offset for VisAO (Balmer+2022) = 0.497+/-0.192 CCW
-        paoff=-0.0497
+        paoff=0.0497
 
         for i in np.arange(len(plspecs[0])):
             lb = plspecs[0][i]
+            lbdir=plspecs[4][i]
             plsep = plspecs[1][i]
             plpa = plspecs[2][i]+paoff
             plsep_y.append(float(plsep)*np.sin((float(plpa)+90)*np.pi/180))
@@ -2709,9 +2753,9 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
                 seperr=fwhm/2
             plseperr.append(seperr)
             pllabels.append(str(lb))
+            pllabeldirs.append(str(lbdir))
 
-    if diskspecs!=False:
-        print(cen, diskspecs)
+    if (diskspecs!=False) and (markdisk!=False):
         for axx in (ax1,ax2,ax3,ax4):
             diskell = patches.Ellipse(((stampsz-1)/2,(stampsz-1)/2),diskspecs[0][0]*2,diskspecs[1][0]*2,diskspecs[2][0]+90, color='y',fill=False,lw=2,ls='-')
             axx.add_patch(diskell)
@@ -2766,7 +2810,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
             a.add_patch(ctrlcirc, )
 
     #add planet markers
-    if plspecs!=False:
+    if (plspecs!=False) and (markpls!=False):
         for i in np.arange(len(pllabels)):
             #if candidate, make it a dashed line
             if plcand==True:
@@ -2787,7 +2831,7 @@ def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=
                     #addx = [circrad+10 if plspecs[2][i]>180 else -1*(circrad+15)]
                 labelposx = stampcen+plsep_x[i]
                 labelposy = stampcen+plsep_y[i]
-                if plspecs[2][i]<180:
+                if pllabeldirs[i]=="L":
                     a.text(labelposx-circrad-1,labelposy,circ_label, color='white',fontsize=16, ha='right', va='center')
                 else:
                     a.text(labelposx+circrad+1,labelposy,circ_label, color='white',fontsize=16, ha='left',va='center')

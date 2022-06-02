@@ -2607,6 +2607,85 @@ def plotdict_ctrst(d, maxsep=1,to_mdot=None):
     ax.legend(frameon=False, fontsize=10)
     return()
 
+def plotdict_ctrst_alt(d, maxsep=1,colorby=None, colorin=None, to_mdot=None):
+    """
+
+    """
+
+    #if d is string, open it
+    if isinstance(d, str):
+        d = pickle.load( open(d, "rb" ) )
+
+    platescale = 0.00795
+
+    totaldsets = d["totaldsets"]
+
+    if colorby=='Rmag':
+        magstep = 0.1
+        rmagmin=6
+        rmagmax=12.5
+        rsteps=int((rmagmax-rmagmin)/magstep+1)
+        colors = pl.cm.magma(np.linspace(0.1,0.9,rsteps))
+
+    f,ax = plt.subplots(1, figsize=(8,6), dpi=750)
+    dkeys = d.keys()
+    dset_strs = []
+    for key in dkeys:
+        if key!="totaldsets":
+            dset_strs.append(key)
+    maxctrst=[]
+    minctrst = []
+    haslabel = []
+    for i in np.arange((totaldsets)):
+        thisd = d[dset_strs[i]]
+        if "combo" not in thisd["prefix"]:
+            seps = thisd["ccurve_seps"]*platescale
+            ctrsts = thisd["ccurve_ctrst"]
+            IWA = thisd["IWA"]*platescale
+            obj = thisd["obj"]
+            rmag = colorin[obj]
+            rmag=round(rmag,1)
+
+            #extrapolate to iwa
+            #slope of innermost two points
+            m = (np.log10(ctrsts[0])-np.log10(ctrsts[1]))/((seps[1]-seps[0]))
+            IWA_y = 10**((seps[0]-IWA)*m+np.log10(ctrsts[0]))
+
+            ax.plot([IWA, seps[0]],[IWA_y, ctrsts[0]],  '--', color=colors[int((rmag-rmagmin)/magstep)])
+            if obj not in haslabel:
+                ax.plot(seps, ctrsts, label=obj+': R='+str(rmag), color=colors[int((rmag-rmagmin)/magstep)])
+                haslabel.append(obj)
+            else:
+                ax.plot(seps, ctrsts, color=colors[int((rmag-rmagmin)/magstep)])
+
+            maxctrst.append(IWA_y)
+            nindlast = len(seps[seps<maxsep])
+            minctrst.append(np.nanmin(ctrsts[:nindlast+2]))
+
+    plt.yscale("log")
+    plt.xlim(0, maxsep)
+    plt.ylim(np.nanmin(minctrst),np.nanmax(maxctrst))
+    plt.yscale("log")
+    plt.xlabel("distance in arcseconds")
+    plt.ylabel("contrast")
+
+    if to_mdot!=None:
+        #dist =
+        #star_mag = 
+        R = 1.6 #jupiter radii 
+        units='Msun'
+        law='aoyama'
+        filtwid = 0.006
+        xeropt = 2.339e-5
+        mdot = am.contrast_to_MMdot(dist,star_mag,contr,R, M, units=units, law=law,filtwid=filtwid,zeropt=zeropt)
+
+    #legend magnitude separation
+    #lgnd_rsep=0.5
+    #nlgndsteps =int((rmagmax-rmagmin)/lgnd_rsep+1)
+    #lvalues=np.arange(nlgndsteps)*lgnd_rsep+rmagmin
+    ax.legend(frameon=False, fontsize=10)
+    return()
+
 def indivobj_fig(lineim, contim, sdiim, scale, prefix, title=False, secondscale=False, secondscaleim=False, IWA=0, outputdir='final_ims/', snr=False, stampsz=75, smooth=0, lims = False, plspecs=False, plcand=False, diskspecs=False, returnfig=False, ax=None, markctrl=None, fwhm=None, cbpower=1):
     """
     creates a three panel figure with line, continuum and SDI images

@@ -1318,7 +1318,7 @@ def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pkl
       klchoice = np.multiply(kllist,list(klcombo))
       kls = [int(kl) for kl in klchoice if (np.isnan(kl)==False)]
       
-      metricpossible = it.product((0,1), repeat=4)
+      metricpossible = it.product((0,1), repeat=6)
       
       for mcombo in metricpossible:
 
@@ -1338,8 +1338,6 @@ def proc_one_dset(dset_string, realpe,falsepe, false_dir, real_dir, out_dir, pkl
 
           #add zero weights for final two metrics
           mcombolist=list(mcombo)
-          mcombolist.append(0)
-          mcombolist.append(0)
 
           try:
             fake_metric_cube, fake_agg_cube, fake_ann_val, fake_movm_val, fake_metric_scores, fake_metric_fname = find_best_new(falsepe, kls, pedir=false_dir, writestr=False, writefiles=False, weights=mcombolist, outdir=false_dir+'proc/', 

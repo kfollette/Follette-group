@@ -1668,7 +1668,6 @@ def compute_dset_diagnostics(current_keys, done, pklstr, out_dir):
     std_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
     wt_med_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
     med_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
-    print(wt_sum_list.shape)
 
     wt_mdiff_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
     mdiff_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
@@ -1706,7 +1705,6 @@ def compute_dset_diagnostics(current_keys, done, pklstr, out_dir):
             #check same
             if uniqname==refkeys[k]:
                 #also in list form
-                print(k,p,d,d[key])
                 wt_sum_list[k,p]=(d[key][0])
                 sum_list[k,p]=(d2[key][0])
                 wt_std_list[k,p]=(d[key][1])
@@ -1716,7 +1714,7 @@ def compute_dset_diagnostics(current_keys, done, pklstr, out_dir):
                 wt_mdiff_list[k,p]=(d[key][-1])
                 mdiff_list[k,p]=(d2[key][-1])
         
-            #if not same, find the right place to put it
+            #if not same, find the right place to put it 
             else:
                 if uniqname in refkeys:
                     refind = [i for i in range(len(refkeys)) if refkeys[i] == uniqname]
@@ -1873,12 +1871,39 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
 
 def diaghist_onekey(current_keys, key, done, pklstr, out_dir, wt=True):
 
-    wt_diaglist, diaglist, refkey = compute_dset_diagnostics(key, done, pklstr, out_dir)
-    if wt==True:
-        diaglist = wt_diaglist
-    masterlist = avg_diag_across_dsets(diaglist, refkey)
+    wt_sum_list = np.zeros((1,len(done[0])))*np.nan
+    sum_list = np.zeros((1,len(done[0])))*np.nan
+    wt_std_list = np.zeros((1,len(done[0])))*np.nan
+    std_list = np.zeros((1,len(done[0])))*np.nan
+    wt_med_list = np.zeros((1,len(done[0])))*np.nan
+    med_list = np.zeros((1,len(done[0])))*np.nan
+    wt_mdiff_list = np.zeros((1,len(done[0])))*np.nan
+    mdiff_list = np.zeros((1,len(done[0])))*np.nan
 
-    mean_sum, mean_std, mean_med, mean_mdiff = masterlist
+    print(wt_sum_list.shape)
+    p=0
+    for pname in done[0]:
+        print(pname)
+        if wt==True:
+            d = pickle.load( open( out_dir + pname + pklstr + 'wt.p', "rb" ) )
+        else:
+            d = pickle.load( open( out_dir + pname + pklstr + '.p', "rb" ) )
+        keys = d.keys()
+
+        for k in keys:
+            if key in k:
+                sum_list[0,p]=(d[k][0])
+                std_list[0,p]=(d[k][1])
+                med_list[0,p]=(d[k][2])  
+                mdiff_list[0,p]=(d[k][-1]) 
+        p+=1
+
+    mean_sum=np.mean(sum_list[0,:])
+    mean_std=np.mean(std_list[0,:])
+    mean_med=np.mean(med_list[0,:])
+    mean_mdiff=np.mean(mdiff_list[0,:])
+
+    print(key, mean_sum, mean_std, mean_med, mean_mdiff)
 
     wt_diaglists, diaglists, refkeys = compute_dset_diagnostics(current_keys, done, pklstr, out_dir)
     if wt==True:
@@ -1892,10 +1917,10 @@ def diaghist_onekey(current_keys, key, done, pklstr, out_dir, wt=True):
     #mean_med=d[key][2]
     #mean_mdiff=d[key][-1]
 
-    sumval = np.nanpercentile(np.abs(mean_sums),mean_sum)
+    sumval = np.nanpercentile(np.abs(mean_sums),abs(mean_sum))
     stdval = np.nanpercentile(mean_stds,mean_std)
-    medval = np.nanpercentile(np.abs(mean_meds),mean_med)
-    diffval = np.nanpercentile(np.abs(mean_mdiffs), mean_mdiff)
+    medval = np.nanpercentile(np.abs(mean_meds),abs(mean_med))
+    diffval = np.nanpercentile(np.abs(mean_mdiffs), abs(mean_mdiff))
 
     print(sumval,stdval,medval,diffval)
     wtslist = []
@@ -1904,10 +1929,10 @@ def diaghist_onekey(current_keys, key, done, pklstr, out_dir, wt=True):
     #loop through all metric combos meeting criteria
     #for i in np.arange(len(bestlist)):
     
-    wtstr=key[:6]
+    wtstr=key[3:9]
     print('wtstr',wtstr)
     wts = [int(i) for i in wtstr]
-    klstr=key[6:]
+    klstr=key[13:]
     print('klstr',klstr)
     kl_binaries = [int(k) for k in klstr]
     try:
@@ -1919,18 +1944,18 @@ def diaghist_onekey(current_keys, key, done, pklstr, out_dir, wt=True):
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10,8))
 
     #Jea's preferred formatting
-    #plt.rcParams["legend.frameon"] = False
-    #plt.rcParams["legend.fontsize"] = 12
-    #plt.rcParams["legend.borderpad"] = 0.3
-    #plt.rcParams["legend.labelspacing"] = 0.3
-    #plt.rcParams["legend.handletextpad"] = 0.3
-    #plt.rcParams["font.family"] = "serif"
-    #plt.rcParams["font.serif"] = "DejaVu Serif"
-    #plt.rcParams["font.size"] = 14
-    #plt.rcParams["xtick.top"] = True
-    #plt.rcParams["ytick.right"] = True
-    #plt.rcParams["xtick.direction"] = "in"
-    #plt.rcParams["ytick.direction"] = "in"
+    plt.rcParams["legend.frameon"] = False
+    plt.rcParams["legend.fontsize"] = 12
+    plt.rcParams["legend.borderpad"] = 0.3
+    plt.rcParams["legend.labelspacing"] = 0.3
+    plt.rcParams["legend.handletextpad"] = 0.3
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["font.serif"] = "DejaVu Serif"
+    plt.rcParams["font.size"] = 14
+    plt.rcParams["xtick.top"] = True
+    plt.rcParams["ytick.right"] = True
+    plt.rcParams["xtick.direction"] = "in"
+    plt.rcParams["ytick.direction"] = "in"
 
     nbins = 60
 

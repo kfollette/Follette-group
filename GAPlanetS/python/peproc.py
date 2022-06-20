@@ -1668,6 +1668,7 @@ def compute_dset_diagnostics(current_keys, done, pklstr, out_dir):
     std_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
     wt_med_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
     med_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
+    print(wt_sum_list.shape)
 
     wt_mdiff_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
     mdiff_list = np.zeros((len(current_keys),len(dset_done)))*np.nan
@@ -1705,6 +1706,7 @@ def compute_dset_diagnostics(current_keys, done, pklstr, out_dir):
             #check same
             if uniqname==refkeys[k]:
                 #also in list form
+                print(k,p,d,d[key])
                 wt_sum_list[k,p]=(d[key][0])
                 sum_list[k,p]=(d2[key][0])
                 wt_std_list[k,p]=(d[key][1])
@@ -1868,6 +1870,100 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
         plt.savefig('wts'+wtstr+'_kls'+klstr+'_metricselect_hists.png')
         plt.show()
     return(wtslist, klslist)
+
+def diaghist_onekey(current_keys, key, done, pklstr, out_dir, wt=True):
+
+    wt_diaglist, diaglist, refkey = compute_dset_diagnostics(key, done, pklstr, out_dir)
+    if wt==True:
+        diaglist = wt_diaglist
+    masterlist = avg_diag_across_dsets(diaglist, refkey)
+
+    mean_sum, mean_std, mean_med, mean_mdiff = masterlist
+
+    wt_diaglists, diaglists, refkeys = compute_dset_diagnostics(current_keys, done, pklstr, out_dir)
+    if wt==True:
+        diaglists = wt_diaglists
+    masterlists = avg_diag_across_dsets(diaglists, refkeys)
+
+    mean_sums, mean_stds, mean_meds, mean_mdiffs = masterlists
+
+    #mean_sum=d[key][0]
+    #mean_std=d[key][1]
+    #mean_med=d[key][2]
+    #mean_mdiff=d[key][-1]
+
+    sumval = np.nanpercentile(np.abs(mean_sums),mean_sum)
+    stdval = np.nanpercentile(mean_stds,mean_std)
+    medval = np.nanpercentile(np.abs(mean_meds),mean_med)
+    diffval = np.nanpercentile(np.abs(mean_mdiffs), mean_mdiff)
+
+    print(sumval,stdval,medval,diffval)
+    wtslist = []
+    klslist = []
+
+    #loop through all metric combos meeting criteria
+    #for i in np.arange(len(bestlist)):
+    
+    wtstr=key[:6]
+    print('wtstr',wtstr)
+    wts = [int(i) for i in wtstr]
+    klstr=key[6:]
+    print('klstr',klstr)
+    kl_binaries = [int(k) for k in klstr]
+    try:
+        kllist = np.array([1,2,3,4,5,10,20,50,100])*kl_binaries
+    except:
+        print(kl_binaries, wts, klstr)
+    kls = [int(kl) for kl in kllist if int(kl) > 0] 
+
+    f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10,8))
+
+    #Jea's preferred formatting
+    #plt.rcParams["legend.frameon"] = False
+    #plt.rcParams["legend.fontsize"] = 12
+    #plt.rcParams["legend.borderpad"] = 0.3
+    #plt.rcParams["legend.labelspacing"] = 0.3
+    #plt.rcParams["legend.handletextpad"] = 0.3
+    #plt.rcParams["font.family"] = "serif"
+    #plt.rcParams["font.serif"] = "DejaVu Serif"
+    #plt.rcParams["font.size"] = 14
+    #plt.rcParams["xtick.top"] = True
+    #plt.rcParams["ytick.right"] = True
+    #plt.rcParams["xtick.direction"] = "in"
+    #plt.rcParams["ytick.direction"] = "in"
+
+    nbins = 60
+
+    n, b1, patches = ax1.hist(mean_sums, range=(0,200), bins=nbins,density=True, histtype='step', lw=3)
+    ax1.set_xlabel('Avg. Sum of DQ$_{CF}$-DQ$_{HR}$')
+    yl = ax1.get_ylim()
+    ax1.plot((mean_sum,mean_sum),(0,yl[1]), color='r')
+    ax1.set_xlim(0,200)
+    ax1.set_ylabel("Density")
+
+    n, b1, patches = ax2.hist(mean_stds, range = (0.1,0.6), bins=nbins,density=True, lw=3, histtype='step')
+    ax2.set_xlabel(r'Avg. $\sigma$ of DQ$_{CF}$-DQ$_{HR}$')
+    y2 = ax2.get_ylim()
+    ax2.plot((mean_std,mean_std),(0,y2[1]), color='r')
+    ax2.set_xlim(0.1,0.6)
+
+    n,b1,patches = ax3.hist(mean_meds, range=(-0.05,0.06),bins=nbins,density=True, lw=3, histtype='step')
+    ax3.set_xlabel(r'Avg. Median of DQ$_{CF}$-DQ$_{HR}$')
+    y3 = ax3.get_ylim()
+    ax3.plot((mean_med,mean_med),(0,y3[1]), color='r')
+    ax3.set_xlim(-0.05,0.06)
+    ax3.set_ylabel("Density")
+
+    n, b1, patches = ax4.hist(mean_mdiffs, range =(0,1), bins=nbins,density=True, lw=3, histtype='step')
+    ax4.set_xlabel(r'Avg. DQ$_{CF}$-DQ$_{HR}$ at Continuum Peak')
+    y4 = ax4.get_ylim()
+    ax4.plot((mean_mdiff,mean_mdiff),(0,y4[1]), color='r')
+
+    plt.suptitle('Weights: '+str(wts)+', KLs: '+str(kls))
+    plt.savefig('wts'+wtstr+'_kls'+klstr+'_metricshists.png')
+    plt.show()
+    return(wtslist, klslist)
+
 
 def false_true_compare(false_dir, real_dir, out_dir,  namestr='*', pklstr = '*', exceptstr=False, wts=[1,1,1,1,1,1], kls=[1,2,3,4,5,10,20,50,100], datestr=False, sepkl=False, seppl=False, snt=False, makeplot=True, writefits=False, maxx=24, maxy=25, minx=0, miny=1, innerann_nanok=True, highmovmmask=False):
 

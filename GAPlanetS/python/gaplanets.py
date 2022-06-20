@@ -2349,7 +2349,7 @@ def plotdict_ctrst_alt(d, maxsep=1,colorby=None, colorin=None, to_mdot=None):
         rmagmin=6
         rmagmax=12.5
         rsteps=int((rmagmax-rmagmin)/magstep+1)
-        colors = pl.cm.magma(np.linspace(0.1,0.9,rsteps))
+        colors = pl.cm.seismic(np.linspace(0.1,0.9,rsteps))
 
     f,ax = plt.subplots(1, figsize=(8,6), dpi=750)
     dkeys = d.keys()
@@ -2388,7 +2388,7 @@ def plotdict_ctrst_alt(d, maxsep=1,colorby=None, colorin=None, to_mdot=None):
 
     plt.yscale("log")
     plt.xlim(0, maxsep)
-    plt.ylim(np.nanmin(minctrst),np.nanmax(maxctrst))
+    plt.ylim(np.nanmin(minctrst),1)
     plt.yscale("log")
     plt.xlabel("distance in arcseconds")
     plt.ylabel("contrast")
@@ -2407,7 +2407,7 @@ def plotdict_ctrst_alt(d, maxsep=1,colorby=None, colorin=None, to_mdot=None):
     #lgnd_rsep=0.5
     #nlgndsteps =int((rmagmax-rmagmin)/lgnd_rsep+1)
     #lvalues=np.arange(nlgndsteps)*lgnd_rsep+rmagmin
-    ax.legend(frameon=False, fontsize=10)
+    ax.legend(fontsize=10, fancybox=True, framealpha=0.75)
     return()
 
 def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, plcen=None, nperrow=2, cbpower=1, markpls=True, markdisk=False):

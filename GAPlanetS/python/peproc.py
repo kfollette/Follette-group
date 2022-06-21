@@ -554,9 +554,7 @@ def find_best_new(pename, kllist, pedir='./', writestr=False, writefiles=True, w
                 ann_val[k,p]=np.nan
                 movm_val[k,p]=np.nan
             else:
-                print(ind)
                 metric_scores = [snr_norm[ind][0], nq_snr[ind][0], snr_norm_umask[ind][0], nq_snr_umask[ind][0], spurpix_norm[ind][0], contrast[ind][0], agg[ind][0]]
-
 
                 #translate to annuli and movement values
                 ann_val[k,p]= ymin + ind[0][0] * ystep
@@ -1466,7 +1464,6 @@ def batch_dset_proc(dset_stringlist, toproc, false_dir, real_dir, out_dir,  pkls
             print("Finished")
     else:
         for i in np.arange(len(dset_stringlist)):
-            print(i)
             proc_one_dset(dsetlist[i],rlist[i],flist[i], false_dir, real_dir, out_dir,  pklstr=pklstr, overwrite=overwrite, maxx=maxx, maxy=maxy, minx=minx, miny=miny, seppl=seppl, innerann_nanok=innerann_nanok, highmovmmask=highmovmmask)
     return()
 
@@ -1783,7 +1780,7 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
     masterlists = avg_diag_across_dsets(diaglists, refkeys)
     bestlist, cutoffs = find_best_diag(masterlists, cutoffpct, refkeys)
 
-    print(bestlist)
+    #print(bestlist)
 
     mean_sums, mean_stds, mean_meds, mean_mdiffs = masterlists
     sumcut, stdcut, medcut, diffcut = cutoffs
@@ -1846,7 +1843,7 @@ def diaghist_wcutoff(current_keys, done, pklstr, out_dir, cutoffpct, wt=True):
         n,b1,patches = ax3.hist(mean_meds, range=(-0.05,0.06),bins=nbins,density=True, lw=3, histtype='step')
         n,b1,patches = ax3.hist(mean_meds, range=(-0.05,0.06),bins=nbins,density=True, lw=3, alpha=0)
         first = np.where(np.abs(b1)<medcut)[0][0]
-        print(first, patches[first])
+        #print(first, patches[first])
         last = np.where(b1<medcut)[0][-1]
         plt.setp(patches[first:last+1], 'facecolor', 'b', 'alpha', 0.2) 
         ax3.set_xlabel(r'Avg. Median of DQ$_{CF}$-DQ$_{HR}$')
@@ -1880,7 +1877,6 @@ def diaghist_onekey(current_keys, key, done, pklstr, out_dir, wt=True):
     wt_mdiff_list = np.zeros((1,len(done[0])))*np.nan
     mdiff_list = np.zeros((1,len(done[0])))*np.nan
 
-    print(wt_sum_list.shape)
     p=0
     for pname in done[0]:
         print(pname)
@@ -1903,8 +1899,6 @@ def diaghist_onekey(current_keys, key, done, pklstr, out_dir, wt=True):
     mean_med=np.mean(med_list[0,:])
     mean_mdiff=np.mean(mdiff_list[0,:])
 
-    print(key, mean_sum, mean_std, mean_med, mean_mdiff)
-
     wt_diaglists, diaglists, refkeys = compute_dset_diagnostics(current_keys, done, pklstr, out_dir)
     if wt==True:
         diaglists = wt_diaglists
@@ -1922,7 +1916,6 @@ def diaghist_onekey(current_keys, key, done, pklstr, out_dir, wt=True):
     medval = np.nanpercentile(np.abs(mean_meds),abs(mean_med))
     diffval = np.nanpercentile(np.abs(mean_mdiffs), abs(mean_mdiff))
 
-    print(sumval,stdval,medval,diffval)
     wtslist = []
     klslist = []
 
@@ -1930,10 +1923,8 @@ def diaghist_onekey(current_keys, key, done, pklstr, out_dir, wt=True):
     #for i in np.arange(len(bestlist)):
     
     wtstr=key[3:9]
-    print('wtstr',wtstr)
     wts = [int(i) for i in wtstr]
     klstr=key[13:]
-    print('klstr',klstr)
     kl_binaries = [int(k) for k in klstr]
     try:
         kllist = np.array([1,2,3,4,5,10,20,50,100])*kl_binaries

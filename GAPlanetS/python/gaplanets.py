@@ -534,7 +534,7 @@ def compute_thrpt(data_str, wl, cut, outputdir = 'dq_cuts/contrastcurves/', numa
         first = IWA + sep/2
         n_planets = (dataset.input.shape[1] / 2. - IWA) / sep 
         #stay away from very outer part of image
-        n_planets = int(n_planets)-5
+        n_planets = int(n_planets)-6
         if debug == True:
             print('I will inject ', n_planets, 'planets')
 
@@ -932,7 +932,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
                 plt.ylim(np.nanmin(contrast), 1e-1)
                 plt.xlim(0, maxsep)
                 plt.xlabel("distance in arcseconds")
-                plt.ylabel("contrast")
+                plt.ylabel("5$\sigma$ contrast")
                 if IWA > 0:
                     plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
                 plt.plot((ctrl_rad, ctrl_rad),(0,1),'m--', label="control radius")
@@ -992,7 +992,7 @@ def make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix, outputdir 
                 plt.yscale("log")
                 plt.ylim(np.nanmin(contrast), 1e-1)
                 plt.xlabel("distance in arcseconds")
-                plt.ylabel("contrast")
+                plt.ylabel("5$\sigma$ contrast")
                 plt.xlim(0,maxsep)
                 if IWA > 0:
                     plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k-', label='IWA')
@@ -1130,8 +1130,15 @@ def cut_comparison(data_str, wl, outputdir='dq_cuts/contrastcurves/',pctcuts=[0,
         
         klctr=0
         for kl in KLlist:
-            #pull only throughput corrected average curve (slice 2 in ctrsts)
-            contrasts[i,klctr,:] = ctrsts[klctr,2,:]
+            ## catch for planet outside edge
+            try:
+                #pull only throughput corrected average curve (slice 2 in ctrsts)
+                contrasts[i,klctr,:] = ctrsts[klctr,2,:]
+            except:
+                if ctrsts.shape[-1]>contrasts.shape[-1]:
+                    contrasts[i,klctr,:] = ctrsts[klctr,2,:-1]
+                else:
+                    contrasts[i,klctr,:-1] = ctrsts[klctr,2,:]
             klctr+=1
 
         # loop counter
@@ -1316,7 +1323,7 @@ def contrastcut_fig(data_str, wl, contrast_seps, contrasts, zone_boundaries, KLl
             text_block+= 'initial PA = ' + pa + '\n clock angle =' + ca + '\n n iterations =' + numit 
             text_block+= '\ncontrast = '+ ctrst
 
-        ax1.text(outer_asec*0.8, (10**(np.log10(cmax)-(np.log10(cmax)-np.log10(cfloor))/2)), text_block, multialignment="left",size=6)
+        ax1.text(outer_asec*0.8, (10**(np.log10(cmax)-(np.log10(cmax)-np.log10(cfloor))/2)), text_block, multialignment="left",size=6, usetex=True)
 
         #separate legend for cut lines and IWA/CR/ZB
         ax2.legend(loc='upper right', fontsize='x-small', facecolor='white', framealpha=1)
@@ -1771,6 +1778,7 @@ def klip_data(data_str, wl, params=False, fakes=False, planets=False, highpass=T
         #snmap = fits.getdata(outputdir+prefix + '_SNRMap.fits')
     #else:
     if planets != False:
+        print(planets)
         snmap, snrs, snr_sums, snr_spurious = snr.create_map("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix), fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits', ctrlrad=ctrlrad, method='stdev', smooth=smooth, submean=submean)
     else: 
         snmap = snr.create_map("{out}{pre}-KLmodes-all.fits".format(out=outputdir, pre=prefix), fwhm, planets=planets, saveOutput=True, outputName=outputdir+prefix + '_SNRMap.fits', method="stdev", smooth=smooth, submean=submean)
@@ -2129,11 +2137,11 @@ def bulk_rdx(sorted_objs, wl, outdir, scalefile, df, base_fpath='/content/drive/
                 os.chdir(full_fpath)
                 thrpt_out, zb, df2, dataset_prefix = compute_thrpt(data_str, wl, cut, outputdir = outdir+data_str+'/', numann=ann, movm=movm, KLlist=[kl], IWA=IWA, 
                                                                     contrast=contrast, theta=0., clockang=135, debug=False, record_seps=[0.1, 0.25, 0.5, 0.75, 1.0],
-                                                                    ghost=ghost, savefig=True, iterations=3, rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 
+                                                                    ghost=ghost, savefig=True, iterations=3, rdx_params_dfname='rdx_params.csv', 
                                                                     highpass=hpval, overwrite=overwrite, timecoll=timecoll, usecutfwhm=True, sep=sep, submean=submean)
             
                 contrast_out, df2, OWA = make_contrast_curve(data_str, wl, cut, thrpt_out, dataset_prefix,  outputdir=outdir+data_str+'/', 
-                                                                numann=ann, movm=movm, KLlist=[kl], IWA=IWA, rdx_params_dfname=outdir+'rdx_params'+hpstr+'.csv', 
+                                                                numann=ann, movm=movm, KLlist=[kl], IWA=IWA, rdx_params_dfname='rdx_params.csv', 
                                                                 record_seps=[0.1, 0.25, 0.5, 0.75, 1.0], savefig=True, debug=False, highpass=hpval, 
                                                                 overwrite=overwrite, timecoll=timecoll)
                 
@@ -2391,7 +2399,7 @@ def plotdict_ctrst_alt(d, maxsep=1,colorby=None, colorin=None, to_mdot=None):
     plt.ylim(np.nanmin(minctrst),1)
     plt.yscale("log")
     plt.xlabel("distance in arcseconds")
-    plt.ylabel("contrast")
+    plt.ylabel("5$\sigma$ contrast")
 
     if to_mdot!=None:
         #dist =
@@ -2622,15 +2630,22 @@ def plotdict_sdigrid(d, snr=False, lims=[-1,4], secondscale=False, stampsz=75, p
                         circrad = 10
 
                 if plcen!=None:
-                    circ=patches.Circle((stampcen,stampcen),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty, alpha=0.5)
+                    #don't label if outside stamp
+                    if ((plsep_x[j]-plsep_x[0]<stampsz/2) and (plsep_y[j]-plsep_y[0]<stampsz/2)):
+                        circ=patches.Circle((stampcen+(plsep_x[j]-plsep_x[0]),stampcen+(plsep_y[j]-plsep_y[0])),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty, alpha=0.5)
+                        circ_label=pllabels[j]
+                        ax.add_patch(circ, )
+                    else:
+                        circ_label=''
                 else:
                     circ=patches.Circle((stampcen+plsep_x[j],stampcen+plsep_y[j]),radius=circrad, fill=False, ec='cyan', lw=2, ls=lsty, alpha=0.5)
-                circ_label=pllabels[j]
-                ax.add_patch(circ, )
+                    circ_label=pllabels[j]
+                    ax.add_patch(circ, )
                 
                 if plcen!=None:
-                    labelposx = stampcen
-                    labelposy = stampcen
+                    if ((plsep_x[j]-plsep_x[0]<stampsz/2) and (plsep_y[j]-plsep_y[0]<stampsz/2)):
+                        labelposx = stampcen+(plsep_x[j]-plsep_x[0])
+                        labelposy = stampcen+(plsep_y[j]-plsep_y[0])
                 else:
                     labelposx = stampcen+plsep_x[j]
                     labelposy = stampcen+plsep_y[j]
@@ -2706,7 +2721,7 @@ def plotdict_ctrst(d, maxsep=1,to_mdot=None):
     plt.ylim(np.nanmin(minctrst),np.nanmax(maxctrst))
     plt.yscale("log")
     plt.xlabel("distance in arcseconds")
-    plt.ylabel("contrast")
+    plt.ylabel("5$\sigma$ contrast")
 
     if to_mdot!=None:
         #dist =
@@ -2974,9 +2989,9 @@ def contrast_klcompare(data_str, ha_ctrsts, cont_ctrsts, KLlist, IWA, zone_bound
     plt.yscale("log")
     plt.xlim(0, 1)
     plt.xlabel("distance in arcseconds")
-    plt.ylabel("contrast")
+    plt.ylabel("5$\sigma$ contrast")
     plt.xlabel("distance in arcseconds")
-    plt.ylabel("contrast")
+    plt.ylabel("5$\sigma$ contrast")
     if IWA > 0:
         plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k', label='IWA')
     for bd in zone_boundaries_arcsec:
@@ -3005,9 +3020,9 @@ def contrast_klcompare(data_str, ha_ctrsts, cont_ctrsts, KLlist, IWA, zone_bound
     plt.yscale("log")
     plt.xlim(0, 1)
     plt.xlabel("distance in arcseconds")
-    plt.ylabel("contrast")
+    plt.ylabel("5$\sigma$ contrast")
     plt.xlabel("distance in arcseconds")
-    plt.ylabel("contrast")
+    plt.ylabel("5$\sigma$ contrast")
     if IWA > 0:
         plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k', label='IWA')
     for bd in zone_boundaries_arcsec:
@@ -3060,9 +3075,9 @@ def final_contrast_fig(data_str, ha_ctrsts, cont_ctrsts, IWA, zone_boundaries, o
     plt.yscale("log")
     plt.xlim(0, 1)
     plt.xlabel("distance in arcseconds")
-    plt.ylabel("contrast")
+    plt.ylabel("5 $\sigma$ contrast")
     plt.xlabel("distance in arcseconds")
-    plt.ylabel("contrast")
+    plt.ylabel("5$\sigma$ contrast")
     if IWA > 0:
         plt.plot((IWA * platescale, IWA * platescale), (1e-5, 1e-1), 'k', label='IWA')
     for bd in zone_boundaries_arcsec:

@@ -151,17 +151,25 @@ def isPlanet(radius, theta, planets):
             PA = convertAngle(PAs[x])
             theta1 = convertAngle(PA - pa_wid)
             theta2 = convertAngle(PA + pa_wid)
-            core_wid = np.arctan(r_wid/radius)*180/np.pi
-            core1 = convertAngle(PA - core_wid)
-            core2 = convertAngle(PA + core_wid)
+            try:
+                core_wid = np.arctan(r_wid/radius)*180/np.pi
+                core1 = convertAngle(PA - core_wid)
+                core2 = convertAngle(PA + core_wid)
 
-            #returns true if the point falls within the bounds of the angle limits, as well as within specified radii
-            if(inWedge(theta, theta1, theta2)):
-                isplanetpix = True
-                if(inWedge(theta, core1, core2)):
-                    iscorepix = True
-                #records which planet in the list this pixel corresponds to
-                whichplanet = x
+                #returns true if the point falls within the bounds of the angle limits, as well as within specified radii
+                if(inWedge(theta, theta1, theta2)):
+                    isplanetpix = True
+                    if(inWedge(theta, core1, core2)):
+                        iscorepix = True
+                    #records which planet in the list this pixel corresponds to
+                    whichplanet = x
+                    
+            #planet inside IWA exception
+            except:
+                    isplanetpix = False
+                    iscorepix = False
+                    whichplanet = np.nan
+
                   
     return(isplanetpix, iscorepix, whichplanet)
 

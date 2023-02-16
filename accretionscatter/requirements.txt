@@ -36,7 +36,7 @@ seaborn==0.11.1
 six==1.15.0
 tqdm==4.59.0
 urllib3==1.26.5
-Werkzeug==1.0.1
+Werkzeug==2.2.3
 yarg==0.1.9
 dash==1.19.0
 numpy==1.19.5
